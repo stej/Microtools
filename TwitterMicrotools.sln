@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TwitterConversation", "TwitterConversation.fsproj", "{AE4C0E5A-9C16-4454-ACB4-BBC9ECEC39C6}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TwitterPreview", "TwitterPreview.fsproj", "{4F4C5607-FAF9-4C1D-A012-928CD97FD5AD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7AEE97CC-9D24-4757-B88C-B7F43442052C}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TwitterClient", "TwitterClient.fsproj", "{19B1E3BD-D2D4-4F06-B047-9343615982EF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AE4C0E5A-9C16-4454-ACB4-BBC9ECEC39C6}.Debug|x86.ActiveCfg = Debug|x86
+		{AE4C0E5A-9C16-4454-ACB4-BBC9ECEC39C6}.Debug|x86.Build.0 = Debug|x86
+		{AE4C0E5A-9C16-4454-ACB4-BBC9ECEC39C6}.Release|x86.ActiveCfg = Release|x86
+		{AE4C0E5A-9C16-4454-ACB4-BBC9ECEC39C6}.Release|x86.Build.0 = Release|x86
+		{4F4C5607-FAF9-4C1D-A012-928CD97FD5AD}.Debug|x86.ActiveCfg = Debug|x86
+		{4F4C5607-FAF9-4C1D-A012-928CD97FD5AD}.Debug|x86.Build.0 = Debug|x86
+		{4F4C5607-FAF9-4C1D-A012-928CD97FD5AD}.Release|x86.ActiveCfg = Release|x86
+		{4F4C5607-FAF9-4C1D-A012-928CD97FD5AD}.Release|x86.Build.0 = Release|x86
+		{19B1E3BD-D2D4-4F06-B047-9343615982EF}.Debug|x86.ActiveCfg = Debug|x86
+		{19B1E3BD-D2D4-4F06-B047-9343615982EF}.Debug|x86.Build.0 = Debug|x86
+		{19B1E3BD-D2D4-4F06-B047-9343615982EF}.Release|x86.ActiveCfg = Release|x86
+		{19B1E3BD-D2D4-4F06-B047-9343615982EF}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

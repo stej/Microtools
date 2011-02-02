@@ -1,0 +1,40 @@
+<Window 
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  Title="Twitter conversation"
+  Width="560"
+>
+  <DockPanel LastChildFill="true">
+    <StackPanel
+        DockPanel.Dock="Bottom"
+        Orientation="horizontal"
+        Background="Gray">
+        <Button
+            HorizontalAlignment="right"
+            x:Name="updateAll"
+            Margin="0 0 5 0">
+            Update all
+        </Button>
+        <Label 
+            Padding="0"
+            Margin="5 0 5 0" 
+            Height="20">Twitter limit:</Label>
+        <TextBlock 
+            x:Name="limit" 
+            Height="20">unknown</TextBlock>
+        <Label 
+            Padding="0"
+            Margin="5 0 5 0">State:</Label>
+        <TextBlock 
+            x:Name="appState" 
+            Height="20"></TextBlock>
+    </StackPanel>
+    <ScrollViewer HorizontalScrollBarVisibility="auto">
+		<StackPanel
+			x:Name="conversations"
+			HorizontalAlignment="left"
+			VerticalAlignment="top">
+		</StackPanel>
+	</ScrollViewer>
+  </DockPanel>
+</Window>
