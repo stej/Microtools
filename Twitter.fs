@@ -51,35 +51,50 @@ type TwitterLimits() =
                 asyncUpdateLoop()
 
             let rec loop limits = async {
-                let! msg = mbox.Receive()
-                log Debug (sprintf "Twitter mailbox message: %A" msg)
-                match msg with
-                | UpdateLimit ->
-                    return! loop( { limits with StandardRequest = getRateLimit() })
-                | UpdateSearchLimit(searchResponse) ->
-                    let status = searchResponse.StatusCode |> int
-                    try 
-                        if (status <> 420) then
-                            log Debug (sprintf "Status code of search response is %A" status)
+                // first try to process GetLimits messages
+                 let! res = mbox.TryScan((function
+                    | GetLimits(chnl) -> Some(async {
+                             printf "G-"
+                             log Debug (sprintf "Twitter mailbox - GetLimits %d" mbox.CurrentQueueLength)
+                             chnl.Reply(limits)
+                             return limits })
+                    | _ -> None
+                ), 5)
+
+                match res with
+                | Some limits -> 
+                    return! loop limits
+                | None -> 
+                    log Debug (sprintf "Twitter mailbox - after GetLimits %d" mbox.CurrentQueueLength)
+                    let! msg = mbox.Receive()
+                    log Debug (sprintf "Twitter mailbox message: %A" msg)
+                    match msg with
+                    | UpdateLimit ->
+                        return! loop( { limits with StandardRequest = getRateLimit() })
+                    | UpdateSearchLimit(searchResponse) ->
+                        let status = searchResponse.StatusCode |> int
+                        try 
+                            if (status <> 420) then
+                                log Debug (sprintf "Status code of search response is %A" status)
+                                return! loop(limits)
+                            else
+                                let retryAfter = searchResponse.Headers.["Retry-After"] |> Double.TryParse
+                                match retryAfter with
+                                |(true, num) -> 
+                                    log Error (sprintf "Search rate limit reached. Retry-After is %f" num)
+                                    return! loop { limits with SearchLimit = Some(DateTime.Now.AddSeconds(num)) }
+                                | _ -> 
+                                    log Error (sprintf "Unable to parse response Retry-After %s" (searchResponse.Headers.ToString()))
+                                    return! loop limits
+                        with ex ->
+                            log Error (sprintf "Excepting when parsing search limit %A" ex)
                             return! loop(limits)
-                        else
-                            let retryAfter = searchResponse.Headers.["Retry-After"] |> Double.TryParse
-                            match retryAfter with
-                            |(true, num) -> 
-                                log Error (sprintf "Search rate limit reached. Retry-After is %f" num)
-                                return! loop { limits with SearchLimit = Some(DateTime.Now.AddSeconds(num)) }
-                            | _ -> 
-                                log Error (sprintf "Unable to parse response Retry-After %s" (searchResponse.Headers.ToString()))
-                                return! loop limits
-                    with ex ->
-                        log Error (sprintf "Excepting when parsing search limit %A" ex)
+                    | GetLimits(chnl) ->
+                        printf "G2-"
+                        chnl.Reply(limits)
                         return! loop(limits)
-                | GetLimits(chnl) ->
-                    printf "GLimit"
-                    chnl.Reply(limits)
-                    return! loop(limits)
-                | StartLimitChecking ->
-                    return! loop(limits)}
+                    | StartLimitChecking ->
+                        return! loop(limits)}
 
             mbox.Scan(fun msg ->
                 match msg with
