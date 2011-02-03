@@ -3,6 +3,7 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   Title="Twitter client"
   Width="560"
+  Height="200"
 >
   <DockPanel LastChildFill="true">
     <StackPanel
