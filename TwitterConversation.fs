@@ -82,7 +82,7 @@ let (showConversationIsUpdating, showConversationIsReady, showConversationWillBe
         WpfUtils.dispatchMessage wrapperCtl (fun _ -> wrapperCtl.Background <- brush)
     ((fun ctl -> updateBackground ctl panelWorkingBrush), 
      (fun ctl -> updateBackground ctl Brushes.White),
-     (fun ctl -> printfn "\n   updating"; updateBackground ctl panelWaitingBrush))
+     (fun ctl -> updateBackground ctl panelWaitingBrush))
     
 let getAsyncConversationUpdate (controls:WpfUtils.conversationControls) rootStatus =
     let wrapper = controls.Wrapper

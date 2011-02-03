@@ -3,26 +3,6 @@ module PreviewsState
 open System
 open Status
 
-(*
-let private displayedStatuses = new ResizeArray<status>()
-let private statusComparer = { new System.Collections.Generic.IComparer<status> with 
-                                member x.Compare(status1, status2) = status1.StatusId.CompareTo(status2.StatusId) }
-
-let addStatuses (statuses: status seq) =
-    statuses 
-      |> Seq.filter (fun status -> not (displayedStatuses.Exists(fun s0 -> s0.StatusId = status.StatusId)))
-      |> Seq.iter (fun status -> printfn "Add %d" status.StatusId; displayedStatuses.Add(status) |> ignore)
-    displayedStatuses.Sort(statusComparer)
-    displayedStatuses        
-  
-let getStatusesToDisplay() =
-    displayedStatuses |> Seq.toList
-
-let getFirstStatusId() =
-    if displayedStatuses.Count > 0 then Some(displayedStatuses.[0].StatusId)
-    else None
-*)
-
 let addAndRootStatuses currStatuses currStatusesWithRoots toAdd =
     /// todo - make map
     let flattened = Flatten currStatusesWithRoots

@@ -80,7 +80,6 @@ let registerOnTwitter() =
     let rtoken = session.GetRequestToken()
     let authLink = session.GetUserAuthorizationUrlForToken(rtoken, "go");
 
-    printfn "%s" authLink
     System.Diagnostics.Process.Start(authLink) |> ignore
 
     printf "Type PIN returned on Twitter page: "
