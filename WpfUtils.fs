@@ -15,9 +15,12 @@ open Status
 let private regexUrl = new System.Text.RegularExpressions.Regex("(https?:(?://|\\\\)+[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*])")
 
 let (fontSize, pictureSize) = 
-    match System.Configuration.ConfigurationManager.AppSettings.["size"].ToString() with
-    | "big" -> (14., 48.)
-    | _ -> (12., 30.)
+    let s = match System.Configuration.ConfigurationManager.AppSettings.["size"].ToString() with
+            | "big" -> (14., 48.)
+            | "medium" -> (13., 40.)
+            | _ -> (12., 30.)
+    printf "UI size is %A" s
+    s
 
 let private createPicture size margin (status:status) = 
     let source = new Imaging.BitmapImage()

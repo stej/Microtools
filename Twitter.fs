@@ -131,11 +131,15 @@ type TwitterLimits() =
         | _ -> false
 
     member x.AsyncGetLimits() = mbox.PostAndAsyncReply(GetLimits)
-    member x.AsyncIsSafeToQueryTwitter() = 
-        let res = async { return! x.AsyncGetLimits() } |> Async.RunSynchronously
+    member x.AsyncIsSafeToQueryTwitter() = async {
+        let! res = x.AsyncGetLimits()
         match res.StandardRequest with
-         | Some(x) when x.remainingHits > 0 -> true
-         | _ -> false
+        | Some(x) when x.remainingHits > 0 -> 
+            match res.SearchLimit with
+            | Some(date) when date > DateTime.Now -> return false
+            | _ -> return true
+        | _ -> return false
+    }
 
 let twitterLimits = new TwitterLimits()
 

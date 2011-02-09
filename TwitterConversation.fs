@@ -182,16 +182,26 @@ window.Loaded.Add(fun _ ->
 
 updateAll.Click.Add(fun _ -> 
     async {
-        let update statusId =
-            if Twitter.twitterLimits.IsSafeToQueryTwitter() then
-                let status = ConversationState.conversationsState.GetConversation(statusId)
-                let controls = controlsCache.[status.StatusId]
-                getAsyncConversationUpdate controls status |> Async.RunSynchronously
-        ConversationState.conversationsState.GetConversations()
-            |> List.map (fun s -> s.StatusId)
-            |> List.sortBy (fun s -> -s)
-            |> List.map (fun statusid -> showConversationWillBeProcessed (controlsCache.[statusid].Wrapper); statusid)
-            |> List.iter update
+        let rec update (statusIds: int64 list) = async {
+            match statusIds with 
+            | [] -> ()
+            | statusId::rest ->
+                let! limitSafe = Twitter.twitterLimits.AsyncIsSafeToQueryTwitter()
+                if limitSafe then 
+                    let status = ConversationState.conversationsState.GetConversation(statusId)
+                    do! getAsyncConversationUpdate (controlsCache.[statusId]) status
+                    return! update rest
+                else
+                    do! Async.Sleep(1000)
+                    setState (sprintf "Search waiting, %A" (System.DateTime.Now))
+                    return! update statusIds
+        }
+        let ids = ConversationState.conversationsState.GetConversations()
+                    |> List.map (fun s -> s.StatusId)
+                    |> List.sortBy (fun s -> -s)
+        for id in ids do showConversationWillBeProcessed (controlsCache.[id].Wrapper)
+        //|> List.map (fun statusid -> showConversationWillBeProcessed (controlsCache.[statusid].Wrapper); statusid)
+        do! update ids
 
         // add statuses, that were not visible, because they hadn't any children, but now, they got new children through 
         // all the searches
