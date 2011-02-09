@@ -6,6 +6,7 @@ open Utils
 open OAuth
 open Status
 open System.Windows.Threading
+open System.Threading
 
 let args = System.Environment.GetCommandLineArgs()
 let statusId = match args with
@@ -174,47 +175,77 @@ window.Loaded.Add(fun _ ->
                                               //|> ConversationState.conversationsState.UpdateConversation
                                               //|> refreshContent
                )
-        setState"Done.."
+        setState "Done.."
     } |> Async.Start
 
     updateTwitterLimit |> Async.Start
 )
 
+let mutable (cts:CancellationTokenSource) = null
+let setButtonText text =
+    WpfUtils.dispatchMessage updateAll (fun _ -> updateAll.Content <- text)
+let updateAllStarted() =
+    setButtonText "Cancel"
+let updateAllFinished() =
+    setButtonText "Update all"
+    MessageBox.Show("Conversations updated") |> ignore
+    printfn "\n\n------------Update all done-------\n\n"
+    cts.Dispose()
+    cts <- null
+let updateAllCancelled() =
+    setButtonText "Update all"
+    printfn "\n\n------------Update all done-------"
+    printfn "-- Cancelled --\n\n"
+    cts.Dispose()
+    cts <- null
+    
 updateAll.Click.Add(fun _ -> 
-    async {
-        let rec update (statusIds: int64 list) = async {
-            match statusIds with 
-            | [] -> ()
-            | statusId::rest ->
-                let! limitSafe = Twitter.twitterLimits.AsyncIsSafeToQueryTwitter()
-                if limitSafe then 
-                    let status = ConversationState.conversationsState.GetConversation(statusId)
-                    do! getAsyncConversationUpdate (controlsCache.[statusId]) status
-                    return! update rest
-                else
-                    do! Async.Sleep(1000)
-                    setState (sprintf "Search waiting, %A" (System.DateTime.Now))
-                    return! update statusIds
-        }
-        let ids = ConversationState.conversationsState.GetConversations()
-                    |> List.map (fun s -> s.StatusId)
-                    |> List.sortBy (fun s -> -s)
-        for id in ids do showConversationWillBeProcessed (controlsCache.[id].Wrapper)
-        //|> List.map (fun statusid -> showConversationWillBeProcessed (controlsCache.[statusid].Wrapper); statusid)
-        do! update ids
+    if cts <> null then
+        cts.Cancel()
+    else 
+        cts <- new CancellationTokenSource()
+        updateAllStarted()
+        let compute = async {
+            let rec update (statusIds: int64 list) = async {
+                match statusIds with 
+                | [] -> ()
+                | statusId::rest ->
+                    let! limitSafe = Twitter.twitterLimits.AsyncIsSafeToQueryTwitter()
+                    if limitSafe then 
+                        let status = ConversationState.conversationsState.GetConversation(statusId)
+                        do! getAsyncConversationUpdate (controlsCache.[statusId]) status
+                        return! update rest
+                    else
+                        do! Async.Sleep(1000)
+                        setState (sprintf "Search waiting, %A" (System.DateTime.Now))
+                        return! update statusIds
+            }
+            let ids = ConversationState.conversationsState.GetConversations()
+                        |> List.map (fun s -> s.StatusId)
+                        |> List.sortBy (fun s -> -s)
+            for id in ids do showConversationWillBeProcessed (controlsCache.[id].Wrapper)
+            do! update ids
 
-        // add statuses, that were not visible, because they hadn't any children, but now, they got new children through 
-        // all the searches
-        readStatuses() 
-                |> Seq.filter (fun status -> not (ConversationState.conversationsState.ContainsStatus(status.StatusId)))
-                |> Seq.map ImagesSource.ensureStatusImage
-                |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.Beginning
-                                                  |> StatusesReplies.loadSavedReplyTree
-                                                  |> ConversationState.conversationsState.AddConversation
-                                                  |> setNewConversationContent)
-        MessageBox.Show("Conversations updated") |> ignore
-        printfn "\n\n------------Update all done-------\n\n"
-    } |> Async.Start
+            // add statuses, that were not visible, because they hadn't any children, but now, they got new children through 
+            // all the searches
+            readStatuses() 
+                    |> Seq.filter (fun status -> not (ConversationState.conversationsState.ContainsStatus(status.StatusId)))
+                    |> Seq.map ImagesSource.ensureStatusImage
+                    |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.Beginning
+                                                      |> StatusesReplies.loadSavedReplyTree
+                                                      |> ConversationState.conversationsState.AddConversation
+                                                      |> setNewConversationContent)
+            updateAllFinished()
+        }
+        let compCanc = Async.TryCancelled(compute, (fun _ -> updateAllCancelled()))
+        Async.Start(compCanc, cts.Token)
+        //Async.StartWithContinuations(
+        //    compute,
+        //    (fun result -> updateAllFinished()),
+        //    (fun ex -> updateAllFinished(); setState (sprintf "%A" ex)),
+        //    (fun cncl -> updateAllFinished()),
+        //    cts.Token)
+        //Async.Start(compute, cts.Token)
 )
 
 printfn "starting app"
