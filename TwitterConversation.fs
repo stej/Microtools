@@ -33,6 +33,9 @@ let limitCtl = window.FindName("limit") :?> TextBlock
 let panel = window.FindName("conversations") :?> StackPanel
 let appStateCtl = window.FindName("appState") :?> TextBlock
 let updateAll = window.FindName("updateAll") :?> Button
+let pauseUpdate = window.FindName("pause") :?> Button
+let continueUpdate = window.FindName("continue") :?> Button
+let cancelUpdate = window.FindName("cancel") :?> Button
 
 let setState text = 
     WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- text)
@@ -182,31 +185,50 @@ window.Loaded.Add(fun _ ->
 )
 
 let mutable (cts:CancellationTokenSource) = null
-let setButtonText text =
-    WpfUtils.dispatchMessage updateAll (fun _ -> updateAll.Content <- text)
+let mutable (paused:bool) = false
 let updateAllStarted() =
-    setButtonText "Cancel"
+    WpfUtils.dispatchMessage window (fun _ ->
+        updateAll.Visibility <- Visibility.Collapsed; pauseUpdate.Visibility <- Visibility.Visible; cancelUpdate.Visibility <- Visibility.Visible)
+    paused <- false
 let updateAllFinished() =
-    setButtonText "Update all"
+    WpfUtils.dispatchMessage window (fun _ ->
+        updateAll.Visibility <- Visibility.Visible; pauseUpdate.Visibility <- Visibility.Collapsed; cancelUpdate.Visibility <- Visibility.Collapsed)
     MessageBox.Show("Conversations updated") |> ignore
     printfn "\n\n------------Update all done-------\n\n"
     cts.Dispose()
     cts <- null
 let updateAllCancelled() =
-    setButtonText "Update all"
+    WpfUtils.dispatchMessage window (fun _ ->
+        updateAll.Visibility <- Visibility.Visible; pauseUpdate.Visibility <- Visibility.Collapsed; cancelUpdate.Visibility <- Visibility.Collapsed; continueUpdate.Visibility <- Visibility.Collapsed)
     printfn "\n\n------------Update all done-------"
     printfn "-- Cancelled --\n\n"
     cts.Dispose()
     cts <- null
-    
+let updateAllPaused() =
+    paused <- true
+    pauseUpdate.Visibility <- Visibility.Collapsed; continueUpdate.Visibility <- Visibility.Visible
+let updateAllContinue() =
+    paused <- false
+    pauseUpdate.Visibility <- Visibility.Visible; continueUpdate.Visibility <- Visibility.Collapsed
+cancelUpdate.Click.Add(fun _ ->
+    if cts <> null then cts.Cancel()
+    else log Error "Cancellation token is null"
+)
+pauseUpdate.Click.Add(fun _ ->
+    updateAllPaused()
+)
+continueUpdate.Click.Add(fun _ ->
+    updateAllContinue()
+)
 updateAll.Click.Add(fun _ -> 
-    if cts <> null then
-        cts.Cancel()
-    else 
-        cts <- new CancellationTokenSource()
-        updateAllStarted()
-        let compute = async {
-            let rec update (statusIds: int64 list) = async {
+    cts <- new CancellationTokenSource()
+    updateAllStarted()
+    let compute = async {
+        let rec update (statusIds: int64 list) = async {
+            if paused then
+                do! Async.Sleep(1000)
+                return! update statusIds
+            else 
                 match statusIds with 
                 | [] -> ()
                 | statusId::rest ->
@@ -219,33 +241,26 @@ updateAll.Click.Add(fun _ ->
                         do! Async.Sleep(1000)
                         setState (sprintf "Search waiting, %A" (System.DateTime.Now))
                         return! update statusIds
-            }
-            let ids = ConversationState.conversationsState.GetConversations()
-                        |> List.map (fun s -> s.StatusId)
-                        |> List.sortBy (fun s -> -s)
-            for id in ids do showConversationWillBeProcessed (controlsCache.[id].Wrapper)
-            do! update ids
-
-            // add statuses, that were not visible, because they hadn't any children, but now, they got new children through 
-            // all the searches
-            readStatuses() 
-                    |> Seq.filter (fun status -> not (ConversationState.conversationsState.ContainsStatus(status.StatusId)))
-                    |> Seq.map ImagesSource.ensureStatusImage
-                    |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.Beginning
-                                                      |> StatusesReplies.loadSavedReplyTree
-                                                      |> ConversationState.conversationsState.AddConversation
-                                                      |> setNewConversationContent)
-            updateAllFinished()
         }
-        let compCanc = Async.TryCancelled(compute, (fun _ -> updateAllCancelled()))
-        Async.Start(compCanc, cts.Token)
-        //Async.StartWithContinuations(
-        //    compute,
-        //    (fun result -> updateAllFinished()),
-        //    (fun ex -> updateAllFinished(); setState (sprintf "%A" ex)),
-        //    (fun cncl -> updateAllFinished()),
-        //    cts.Token)
-        //Async.Start(compute, cts.Token)
+        let ids = ConversationState.conversationsState.GetConversations()
+                    |> List.map (fun s -> s.StatusId)
+                    |> List.sortBy (fun s -> -s)
+        for id in ids do showConversationWillBeProcessed (controlsCache.[id].Wrapper)
+        do! update ids
+
+        // add statuses, that were not visible, because they hadn't any children, but now, they got new children through 
+        // all the searches
+        readStatuses() 
+                |> Seq.filter (fun status -> not (ConversationState.conversationsState.ContainsStatus(status.StatusId)))
+                |> Seq.map ImagesSource.ensureStatusImage
+                |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.Beginning
+                                                  |> StatusesReplies.loadSavedReplyTree
+                                                  |> ConversationState.conversationsState.AddConversation
+                                                  |> setNewConversationContent)
+        updateAllFinished()
+    }
+    let compCanc = Async.TryCancelled(compute, (fun _ -> updateAllCancelled()))
+    Async.Start(compCanc, cts.Token)
 )
 
 printfn "starting app"

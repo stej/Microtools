@@ -9,11 +9,17 @@
         DockPanel.Dock="Bottom"
         Orientation="horizontal"
         Background="Gray">
-        <Button
-            HorizontalAlignment="right"
-            x:Name="updateAll"
-            Margin="0 0 5 0">
+        <Button HorizontalAlignment="right" x:Name="updateAll" Margin="0 0 5 0">
             Update all
+        </Button>
+        <Button HorizontalAlignment="right" x:Name="pause" Margin="0" Visibility="collapsed">
+            Pause
+        </Button>
+        <Button HorizontalAlignment="right" x:Name="continue" Margin="0" Visibility="collapsed">
+            Continue
+        </Button>
+        <Button HorizontalAlignment="right" x:Name="cancel" Margin="0 0 5 0" Visibility="collapsed">
+            Cancel
         </Button>
         <Label 
             Padding="0"
