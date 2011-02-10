@@ -1,13 +1,14 @@
 module ImagesSource
 
 open System.IO
+open System
 
-let private directory = "images"
+let private directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "images")
 
 let private getImagePathFromUrl url user =
     let imageName = Path.GetFileName(url)
     Path.Combine(directory, (sprintf "Twitter-%s-%s" user imageName))
-    
+       
 let imageInCache url user =
     let imagePath = getImagePathFromUrl url user
     File.Exists(imagePath)
@@ -38,3 +39,8 @@ let ensureStatusImageNoRet (status: Status.status) =
     ensureStatusImage status |> ignore
 let ensureStatusesImages (statuses: Status.status list) =
     statuses |>  List.map ensureStatusImage
+    
+printfn "Images directory is %s" directory
+if not (Directory.Exists(directory)) then 
+    printfn "Creating %s" directory
+    Directory.CreateDirectory(directory) |> ignore
