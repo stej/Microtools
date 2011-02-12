@@ -14,7 +14,7 @@ engine.SetSearchPaths([|AppDomain.CurrentDomain.BaseDirectory
                         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\Lib")|])
 Array.ForEach(AppDomain.CurrentDomain.GetAssemblies(), (fun a -> runtime.LoadAssembly(a)))
 
-let private createScope (values:Dictionary<string, obj>) =
+let createScope (values:Dictionary<string, obj>) =
   let scope = engine.Runtime.CreateScope()
   if values <> null then
     for par in values do 

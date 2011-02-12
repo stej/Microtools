@@ -27,6 +27,10 @@
         DockPanel.Dock="Top"
         x:Name="run" 
         Margin="0">Run</Button>
+    <Button
+        DockPanel.Dock="Top"
+        x:Name="clearScope" 
+        Margin="0">Clear scope</Button>
     <Border   
       BorderThickness="2"
       CornerRadius = "10"

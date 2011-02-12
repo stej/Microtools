@@ -24,6 +24,7 @@ let details = window.FindName("statusDetails") :?> StackPanel
 let appStateCtl = window.FindName("appState") :?> TextBlock
 let commandText = window.FindName("ipyCommand") :?> TextBox
 let runCommand = window.FindName("run") :?> Button
+let clearScope = window.FindName("clearScope") :?> Button
 
 let fillPictures statuses =
     wrap.Children.Clear()
@@ -50,19 +51,26 @@ type public Helpers () =
     member x.show statuses = 
         WpfUtils.dispatchMessage window (fun _ -> fillPictures statuses; fillDetails statuses)
     
+let newScope() =
+    let values = new Dictionary<string, obj>()
+    values.["db"] <- (StatusDb.statusesDb :> obj)
+    values.["limits"] <- (Twitter.twitterLimits :> obj)
+    values.["helper"] <- (Helpers() :> obj)
+    createScope values
+let scope = ref (newScope())
+
+clearScope.Click.Add(fun _ ->
+    scope := newScope()
+)
 runCommand.Click.Add(fun _ -> 
     let text = ref ""
     WpfUtils.dispatchMessage commandText (fun _ -> text := commandText.Text)
     log Info (sprintf "Running script %s" (!text))
     
-    let values = new Dictionary<string, obj>()
-    values.["db"] <- (StatusDb.statusesDb :> obj)
-    values.["limits"] <- (Twitter.twitterLimits :> obj)
-    values.["helper"] <- (Helpers() :> obj)
     async { 
         try 
             setAppState "working ... "
-            executeIpy (!text) values |> ignore 
+            engine.Execute((!text), (!scope)) |> ignore 
             setAppState "done"
         with ex -> 
             printfn "Unable to execute script  %s" (!text)
