@@ -70,6 +70,7 @@ type StatusesDbMessages =
 | ReadStatusReplies of Int64 * AsyncReplyChannel<status seq>
 | GetRootStatusesHavingReplies of int * AsyncReplyChannel<status seq>
 | GetTimelineStatusesBefore of int * Int64 * AsyncReplyChannel<status seq>
+| GetStatusesFromSql of string * AsyncReplyChannel<status seq>
 | SaveStatus of Status.StatusSource * status
 | SaveStatuses of Status.StatusSource * status list
 | DeleteStatus of status
@@ -158,7 +159,13 @@ type StatusesDbState() =
             addCmdParameter cmd "@p3" count
             executeSelectStatuses cmd
         )
-
+    let getStatusesFromSql sql = 
+        Utils.log Utils.Debug (sprintf "getStatusesFromSql %s" sql)
+        useDb (fun conn ->
+            use cmd = conn.CreateCommand()
+            cmd.CommandText <- sql
+            executeSelectStatuses cmd
+        )
     let updateStatusSource source (status:status) =
         useDb (fun conn ->
             use cmd = conn.CreateCommand(CommandText = "update Status set source = @p0 where StatusId = @p1")
@@ -279,7 +286,10 @@ type StatusesDbState() =
                     return! loop()
                 | GetTimelineStatusesBefore(count, fromId, chnl) ->
                     chnl.Reply(getTimelineStatusesBefore count fromId)
-                    return! loop() }
+                    return! loop() 
+                | GetStatusesFromSql(sql, chnl) ->
+                    chnl.Reply(getStatusesFromSql(sql))
+                    return! loop()}
             Utils.log Utils.Debug "Starting status db"
             loop()
         )
@@ -293,6 +303,7 @@ type StatusesDbState() =
     member x.ReadStatusReplies(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusReplies(id, reply))
     member x.GetRootStatusesHavingReplies(maxCount) = mbox.PostAndReply(fun reply -> GetRootStatusesHavingReplies(maxCount, reply))
     member x.GetTimelineStatusesBefore(count:int, fromId:Int64) = mbox.PostAndReply(fun reply -> GetTimelineStatusesBefore(count, fromId, reply))
+    member x.GetStatusesFromSql(sql) = mbox.PostAndReply(fun reply -> GetStatusesFromSql(sql, reply))
 
     member x.AsyncLoadStatuses() = mbox.PostAndAsyncReply(LoadStatuses)
     member x.AsyncGetLastTwitterStatusId() = mbox.PostAndAsyncReply(GetLastTwitterStatusId)

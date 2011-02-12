@@ -12,7 +12,7 @@ open System.Windows.Media
 open System.Diagnostics
 open Status
 
-let private regexUrl = new System.Text.RegularExpressions.Regex("(https?:(?://|\\\\)+[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*])")
+let private regexUrl = new System.Text.RegularExpressions.Regex("(https?:(?://|\\\\)+(?:[\w]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
 
 let (fontSize, pictureSize) = 
     let s = match System.Configuration.ConfigurationManager.AppSettings.["size"].ToString() with
@@ -43,22 +43,27 @@ let private BrowseHlClick (e:Navigation.RequestNavigateEventArgs) =
     e.Handled <- true
 
 let private textToTextblock (text:string) = 
+    Utils.log Utils.Debug (sprintf "Parsing %s" text)
     let parts = regexUrl.Split(System.Web.HttpUtility.HtmlDecode(text))
 
     let ret = new TextBlock(TextWrapping = TextWrapping.Wrap,
                             Padding = new Thickness(0.),
                             Margin = new Thickness(5., 0., 0., 5.),
                             FontSize = fontSize)
-    parts 
-    |> Seq.iter (fun part ->
+    for part in parts do
         if regexUrl.IsMatch(part) then
-            let hl = new Hyperlink(new Run(part),
-                                   NavigateUri = new Uri(part))
-            hl.RequestNavigate.Add(BrowseHlClick)
-            ret.Inlines.Add(hl)
+            Utils.log Utils.Debug (sprintf "Parsed url: %s" part)
+            try
+                let hl = new Hyperlink(new Run(part),
+                                       NavigateUri = new Uri(part))
+                hl.RequestNavigate.Add(BrowseHlClick)
+                ret.Inlines.Add(hl)
+            with ex ->
+                Utils.log Utils.Error (sprintf "Wrong parsed url: %s" part)
+                printfn "Url %s parsed incorrectly" part
+                ret.Inlines.Add(new Run(part))
         else
             ret.Inlines.Add(new Run(part))
-    )
     ret
 
 let createLittlePicture status = 

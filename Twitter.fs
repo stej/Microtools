@@ -76,7 +76,7 @@ type TwitterLimits() =
                         try 
                             if (status <> 420) then
                                 log Debug (sprintf "Status code of search response is %A" status)
-                                return! loop(limits)
+                                return! loop { limits with SearchLimit = None }
                             else
                                 let retryAfter = searchResponse.Headers.["Retry-After"] |> Double.TryParse
                                 match retryAfter with

@@ -1,30 +1,32 @@
 <Window 
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-  Title="Twitter preview"
-  Width="560"
+  Title="Twitter client"
+  Width="660"
+  Height="200"
 >
   <DockPanel LastChildFill="true">
-    <Button DockPanel.Dock="Top" x:Name="switchView">Switch</Button>
-    <Button DockPanel.Dock="Top" x:Name="up">Up</Button>
     <StackPanel
         DockPanel.Dock="Bottom"
         Orientation="horizontal"
         Background="Gray">
-        <Label 
-            Padding="0"
-            Margin="5 0 5 0" 
-            Height="20">Twitter limit:</Label>
-        <TextBlock 
-            x:Name="limit" 
-            Height="20">unknown</TextBlock>
-        <Label 
-            Padding="0"
-            Margin="5 0 5 0">State:</Label>
+        <Button HorizontalAlignment="right" x:Name="switchView" Margin="0">Switch</Button>
         <TextBlock 
             x:Name="appState" 
             Height="20"></TextBlock>
     </StackPanel>
+    <TextBox 
+        DockPanel.Dock="Top"
+        x:Name="ipyCommand" 
+        TextWrapping="Wrap" 
+        MinLines="1" 
+        MaxLines="7"
+        AcceptsReturn="True"
+        VerticalScrollBarVisibility="Visible"></TextBox>
+    <Button
+        DockPanel.Dock="Top"
+        x:Name="run" 
+        Margin="0">Run</Button>
     <Border   
       BorderThickness="2"
       CornerRadius = "10"

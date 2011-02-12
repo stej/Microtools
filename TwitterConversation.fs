@@ -191,6 +191,7 @@ let updateAllStarted() =
         updateAll.Visibility <- Visibility.Collapsed; pauseUpdate.Visibility <- Visibility.Visible; cancelUpdate.Visibility <- Visibility.Visible)
     paused <- false
 let updateAllFinished() =
+    setState "Update finished ..."
     WpfUtils.dispatchMessage window (fun _ ->
         updateAll.Visibility <- Visibility.Visible; pauseUpdate.Visibility <- Visibility.Collapsed; cancelUpdate.Visibility <- Visibility.Collapsed)
     MessageBox.Show("Conversations updated") |> ignore
@@ -198,6 +199,7 @@ let updateAllFinished() =
     cts.Dispose()
     cts <- null
 let updateAllCancelled() =
+    setState "Cancelled ..."
     WpfUtils.dispatchMessage window (fun _ ->
         updateAll.Visibility <- Visibility.Visible; pauseUpdate.Visibility <- Visibility.Collapsed; cancelUpdate.Visibility <- Visibility.Collapsed; continueUpdate.Visibility <- Visibility.Collapsed)
     printfn "\n\n------------Update all done-------"
@@ -206,9 +208,11 @@ let updateAllCancelled() =
     cts <- null
 let updateAllPaused() =
     paused <- true
+    setState "Paused ..."
     pauseUpdate.Visibility <- Visibility.Collapsed; continueUpdate.Visibility <- Visibility.Visible
 let updateAllContinue() =
     paused <- false
+    setState "Continue ..."
     pauseUpdate.Visibility <- Visibility.Visible; continueUpdate.Visibility <- Visibility.Collapsed
 cancelUpdate.Click.Add(fun _ ->
     if cts <> null then cts.Cancel()
@@ -235,6 +239,7 @@ updateAll.Click.Add(fun _ ->
                     let! limitSafe = Twitter.twitterLimits.AsyncIsSafeToQueryTwitter()
                     if limitSafe then 
                         let status = ConversationState.conversationsState.GetConversation(statusId)
+                        setState (sprintf "Updating status %s - %d" status.UserName status.StatusId)
                         do! getAsyncConversationUpdate (controlsCache.[statusId]) status
                         return! update rest
                     else
