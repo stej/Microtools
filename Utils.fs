@@ -116,3 +116,7 @@ type Microsoft.FSharp.Control.Async with
         and remover1 : IDisposable  = ev1.Subscribe(callback1) 
         and remover2 : IDisposable  = ev2.Subscribe(callback2) 
         () )))
+        
+type Settings =
+    static member private settings = System.Configuration.ConfigurationManager.AppSettings;
+    static member Filter = match Settings.settings.["filter"] with | null -> "" | filter -> filter

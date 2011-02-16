@@ -118,33 +118,28 @@ type conversationControls = {
     UpdateButton : Button
     //DeleteButton : Button
 }
+type conversationNodeControlsInfo = {
+    Detail : StackPanel
+    Img : Border
+    Status: status
+}
 
 type ConversationControlPlacement =
   | End
   | Beginning
 
-let createConversationControls addUpdate (addTo:ConversationControlPlacement) (panel:StackPanel) =
+let createConversationControls (addTo:ConversationControlPlacement) (panel:StackPanel) =
     let conversationPnl = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,
                                          VerticalAlignment = VerticalAlignment.Top)
     let statusesPnl = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,
                                      VerticalAlignment = VerticalAlignment.Top)
     //conversationPnl.Background <- Brushes.Gray
 
-    let update = if addUpdate then
-                    new Button(Content = "Update", 
-                               Width = 60.,
-                               HorizontalAlignment = HorizontalAlignment.Left)
-                            //CommandParameter = (sourceStatus.StatusId :> obj)
-                 else
-                    null
-
     (*let delete = new Button(Content = "Delete", 
                             Width = 60.,
-                            HorizontalAlignment = HorizontalAlignment.Left)*)
-
-    //conversationPnl.Children.Add(delete) |> ignore
-    if addUpdate then
-       conversationPnl.Children.Add(update) |> ignore
+                            HorizontalAlignment = HorizontalAlignment.Left)
+    conversationPnl.Children.Add(delete) |> ignore
+    *)
     conversationPnl.Children.Add(statusesPnl) |> ignore
 
     match addTo with
@@ -153,22 +148,33 @@ let createConversationControls addUpdate (addTo:ConversationControlPlacement) (p
 
     {   Wrapper = conversationPnl
         Statuses = statusesPnl
-        UpdateButton = update }
+        UpdateButton = null }
         //DeleteButton = delete  }
-
-let updateConversation (showAsNew:status -> bool) (controls:conversationControls) status =
+let addUpdateButton (controls:conversationControls) =
+    let update = new Button(Content = "Update", 
+                            Width = 60.,
+                            HorizontalAlignment = HorizontalAlignment.Left)
+                         //CommandParameter = (sourceStatus.StatusId :> obj)
+    controls.Wrapper.Children.Add(update) |> ignore
+    { controls with UpdateButton = update }
+    
+let updateConversation (controls:conversationControls) status =
     controls.Statuses.Children.Clear()
 
-    let rec addTweets depth currentStatus (showAsNew:status -> bool) =
+    let conversationCtl = new ResizeArray<_>()
+    let rec addTweets depth currentStatus =
         let detail, img = createDetail currentStatus
         img.Margin <- new Thickness(depth * (pictureSize+2.), 0., 0., 5.)
-        if (showAsNew currentStatus) then detail.Background <- Brushes.Yellow
         controls.Statuses.Children.Add(detail) |> ignore
-        currentStatus.Children |> Seq.iter (fun s -> addTweets (depth+1.) s showAsNew)
-    addTweets 0. status showAsNew
+        currentStatus.Children |> Seq.iter (fun s -> addTweets (depth+1.) s)
+        conversationCtl.Add({ Detail = detail
+                              Img = img
+                              Status = currentStatus})
+    addTweets 0. status
+    conversationCtl |> Seq.toList
 
-/// partial, set just the function
-let setNewConversation = updateConversation (fun _ -> false)
+/// partial, set just the function; remove
+let setNewConversation = updateConversation
     
 let createXamlWindow (file : string) = 
   use xmlReader = XmlReader.Create(file)

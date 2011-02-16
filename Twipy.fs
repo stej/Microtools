@@ -38,7 +38,7 @@ let fillDetails statuses =
     statuses 
       |> Seq.sortBy (fun status -> status |> Status.GetStatusIdsForNode |> Seq.sortBy (fun statusid -> -statusid) |> Seq.nth 0)
       |> Seq.iter (
-            fun status -> WpfUtils.dispatchMessage window (fun _ -> let controls = WpfUtils.createConversationControls false WpfUtils.End details
+            fun status -> WpfUtils.dispatchMessage window (fun _ -> let controls = WpfUtils.createConversationControls WpfUtils.End details
                                                                     WpfUtils.setNewConversation controls status)
         )
 

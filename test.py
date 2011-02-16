@@ -54,3 +54,32 @@ clr.AddReferenceToFileAndPath('c:\\prgs\\dev\\Sho 2.0 for .NET 4\\bin\\ShoViz.dl
 import ShoNS.Visualization
 f = ShoNS.Visualization.ShoPlotHelper.Figure()
 f.Bar(sizes)
+
+##############
+st = db.GetRootStatusesHavingReplies(100000)
+sizes = {}
+def countSize(status):
+  curr = 0
+  for ch in status.Children: curr = curr + countSize(ch)
+  return curr + 1
+for status in st:
+  helper.loadTree(status)
+  size = countSize(status)
+  if not sizes.has_key(size): sizes[size] = 0
+  sizes[size] = sizes[size] + 1
+
+import System
+System.Environment.SetEnvironmentVariable( "SHODIR", "C:\\prgs\\dev\Sho 2.0 for .NET 4\\")
+import clr
+clr.AddReference('System.Windows.Forms')
+clr.AddReferenceToFileAndPath('c:\\prgs\\dev\\Sho 2.0 for .NET 4\\bin\\ShoViz.dll')
+import ShoNS.Visualization
+f = ShoNS.Visualization.ShoPlotHelper.Figure()
+f.Bar([k for k in sizes.keys()], [sizes[k] for k in sizes.keys()])
+
+####################
+# I have statuses in st, then display some of them:
+import Microsoft.FSharp.Collections
+list = Microsoft.FSharp.Collections.ListModule.OfSeq[Status+status]([st[0]])
+a = Microsoft.FSharp.Collections.FSharpList[Status+status](10, list)
+print a.GetType()

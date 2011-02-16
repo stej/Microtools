@@ -126,7 +126,7 @@ let bindUpdate (controls:WpfUtils.conversationControls) status =
     )*)
 
 let addConversationCtls addTo rootStatus =
-    WpfUtils.dispatchMessage window (fun _ -> let controls = WpfUtils.createConversationControls true addTo panel
+    WpfUtils.dispatchMessage window (fun _ -> let controls = WpfUtils.createConversationControls addTo panel |> WpfUtils.addUpdateButton
                                               controlsCache.[rootStatus.StatusId] <- controls
                                               bindUpdate controls rootStatus
                                               //bindDelete controls rootStatus
@@ -136,12 +136,15 @@ let addConversationCtls addTo rootStatus =
 let refreshOneConversation originalRootStatusBeforeUpdate rootStatus =
     let controls = controlsCache.[rootStatus.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
-        WpfUtils.updateConversation (containsInChildren originalRootStatusBeforeUpdate >> not) controls rootStatus)
+        WpfUtils.updateConversation controls rootStatus
+        |> Seq.iter (fun detailCtl -> //conversationNodeControlsInfo
+            if not (containsInChildren originalRootStatusBeforeUpdate detailCtl.Status) then detailCtl.Detail.Background <- Brushes.Yellow)
+    )
 
 let setNewConversationContent rootStatus =
     let controls = controlsCache.[rootStatus.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
-        WpfUtils.setNewConversation controls rootStatus
+        WpfUtils.setNewConversation controls rootStatus |> ignore
     )
 
 StatusUpdated.Add(fun (controls, originalStatus, updatedStatus) ->

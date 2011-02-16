@@ -14,6 +14,7 @@ OAuth.checkAccessTokenFile()
 open System.Windows
 open System.Windows.Controls
 open System.Windows.Data
+open System.Windows.Media
 
 let window = WpfUtils.createXamlWindow "TwitterClient.xaml"
 let switcher = window.FindName("switchView") :?> Button
@@ -25,6 +26,9 @@ let detailsHolder = window.FindName("detailsHolder") :?> UIElement
 let details = window.FindName("statusDetails") :?> StackPanel
 let limitCtl = window.FindName("limit") :?> TextBlock
 let appStateCtl = window.FindName("appState") :?> TextBlock
+let filterCtl = window.FindName("filter") :?> TextBox
+
+filterCtl.Text <- Utils.Settings.Filter
 
 let fillPictures statuses =
     wrap.Children.Clear()
@@ -34,16 +38,18 @@ let fillPictures statuses =
       |> Seq.map (fun status -> WpfUtils.createLittlePicture status) 
       |> Seq.iter (fun pic -> wrap.Children.Add(pic) |> ignore)
 let fillDetails statuses =
+    let filter = parseFilter filterCtl.Text
+    let showStatus rootStatus =
+        let controls = WpfUtils.createConversationControls WpfUtils.End details
+        WpfUtils.setNewConversation controls rootStatus
+        |> Seq.iter (fun detailCtl ->   //conversationNodeControlsInfo
+                        if detailCtl.Status.MatchesFilter(filter) then
+                            detailCtl.Detail.Background <- Brushes.Gray
+                     )
     details.Children.Clear()
     statuses 
-      //|> Seq.sortBy (fun status -> status.StatusId)
       |> Seq.sortBy (fun status -> status |> Status.GetStatusIdsForNode |> Seq.sortBy (fun statusid -> -statusid) |> Seq.nth 0)
-      //|> Seq.map (fun status -> (fst (WpfUtils.createDetail status))) 
-      //|> Seq.iter (fun statusctl -> details.Children.Add(statusctl) |> ignore)
-      |> Seq.iter (
-            fun status -> WpfUtils.dispatchMessage window (fun _ -> let controls = WpfUtils.createConversationControls false WpfUtils.End details
-                                                                    WpfUtils.setNewConversation controls status)
-        )
+      |> Seq.iter (fun rootStatus -> WpfUtils.dispatchMessage window (fun f -> showStatus rootStatus))
 
 let setAppState state = 
     WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
@@ -77,7 +83,12 @@ window.Loaded.Add(
             asyncLoop()
         } |> Async.Start
 )
-
+/// fires immediatelly refresh of the content are; would be better to use Rx to wait for some time before refresh (500ms)
+filterCtl.TextChanged.Add(fun _ ->
+    let list,tree = PreviewsState.userStatusesState.GetStatuses()
+    fillPictures list
+    fillDetails tree
+)
 up.Click.Add(fun _ -> 
     async {
         let firstStatusId:Int64 = 

@@ -6,6 +6,10 @@ open System.Collections.Generic
 open Utils
 open OAuth
 
+type filterType =
+    | UserName
+    | Text
+type statusFilter = (filterType * string) list 
 type status = { Id : string; StatusId : Int64; App : string; Account : string
                 Text : string
                 Date : DateTime
@@ -25,7 +29,25 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                 Hidden : bool
                 Children : ResizeArray<status>
                 //CopyId : int
-}
+              }
+              // returns info about if the status matches the filter
+              member x.MatchesFilter (filter:statusFilter) = 
+                let matchItem = function 
+                                | (UserName, text) -> System.String.Compare(x.UserName, text, StringComparison.InvariantCultureIgnoreCase) = 0
+                                | (Text, text) -> x.Text.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0
+                let rec matchrec filter =
+                    match filter with
+                    | head::tail -> if matchItem head then true
+                                    else matchrec tail
+                    | [] -> false
+                matchrec filter
+
+/// parses filter text to objects
+let parseFilter (text:string) = 
+    text.Split([|' '|], StringSplitOptions.RemoveEmptyEntries)
+    |> Seq.map (fun part -> if part.StartsWith("@") then (UserName, (if part.Length > 0 then part.Substring(1) else ""))
+                            else (Text, part))
+    |> Seq.toList
 
 /// returns true if the initialStatus or any of its child is equal to possibleChild
 let rec containsInChildren initialStatus possibleChild =

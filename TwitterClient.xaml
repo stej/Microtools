@@ -4,8 +4,13 @@
   Title="Twitter client"
   Width="660"
   Height="200"
+  Topmost="true"
 >
   <DockPanel LastChildFill="true">
+    <TextBox 
+        DockPanel.Dock="Bottom"
+        MinLines="1"
+        x:Name="filter"></TextBox>
     <StackPanel
         DockPanel.Dock="Bottom"
         Orientation="horizontal"
