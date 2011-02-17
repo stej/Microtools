@@ -54,6 +54,7 @@
     </None>
     <None Include="Script1.fsx" />
     <None Include="backup.fsx" />
+    <None Include="TwitterClient.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="DevDefined.OAuth">

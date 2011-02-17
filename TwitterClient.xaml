@@ -7,58 +7,64 @@
   Topmost="true"
 >
   <DockPanel LastChildFill="true">
-    <TextBox 
-        DockPanel.Dock="Bottom"
+    <DockPanel LastChildFill="true"
+        DockPanel.Dock="Bottom">
+      <Label DockPanel.Dock="Left"
+        Padding="0" 
+        Margin="5 3 5 0">Filter:</Label>
+      <TextBox 
         MinLines="1"
         MaxLines="2"
+        TextWrapping="Wrap" 
         x:Name="filter"></TextBox>
+    </DockPanel>
     <StackPanel
         DockPanel.Dock="Bottom"
         Orientation="horizontal"
         Background="Gray">
-        <Button HorizontalAlignment="right" x:Name="switchView" Margin="0">Switch</Button>
-        <Button HorizontalAlignment="right" x:Name="up" Margin="0">Up</Button>
-        <Label 
+      <Button HorizontalAlignment="right" x:Name="switchView" Margin="0">Switch</Button>
+      <Button HorizontalAlignment="right" x:Name="up" Margin="0">Up</Button>
+      <Label 
             Padding="0"
             Margin="5 0 5 0" 
             Height="20">Twitter limit:</Label>
-        <TextBlock 
+      <TextBlock 
             x:Name="limit" 
             Height="20">unknown</TextBlock>
-        <Label 
+      <Label 
             Padding="0"
             Margin="5 0 5 0">State:</Label>
-        <TextBlock 
+      <TextBlock 
             x:Name="appState" 
             Height="20"></TextBlock>
-        <Button HorizontalAlignment="right" x:Name="clear" Margin="10 0 0 0"> Clear</Button>
+      <Button HorizontalAlignment="right" x:Name="clear" Margin="10 0 0 0">Clear</Button>
     </StackPanel>
     <Border   
       BorderThickness="2"
       CornerRadius = "10"
       x:Name="imagesHolder">
-        <DockPanel LastChildFill="true">
-          <ScrollViewer 
+      <DockPanel LastChildFill="true">
+        <ScrollViewer 
             VerticalScrollBarVisibility="auto"
             HorizontalScrollBarVisibility="disabled"
             HorizontalAlignment="stretch"
             VerticalAlignment="stretch">
-            <WrapPanel Height="auto" x:Name="images">
-            </WrapPanel>
-          </ScrollViewer>
-        </DockPanel>
+          <WrapPanel Height="auto" x:Name="images">
+          </WrapPanel>
+        </ScrollViewer>
+      </DockPanel>
     </Border>
     <Border   
       BorderThickness="2"
       CornerRadius = "10"
       x:Name="detailsHolder"
       Visibility="collapsed">
-        <DockPanel LastChildFill="true">
-          <ScrollViewer >
-            <StackPanel Height="auto" x:Name="statusDetails">
-            </StackPanel>
-          </ScrollViewer>
-        </DockPanel>
+      <DockPanel LastChildFill="true">
+        <ScrollViewer >
+          <StackPanel Height="auto" x:Name="statusDetails">
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
     </Border>
   </DockPanel>
 </Window>
