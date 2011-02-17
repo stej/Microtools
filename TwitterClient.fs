@@ -44,7 +44,7 @@ let fillDetails statuses =
         WpfUtils.setNewConversation controls rootStatus
         |> Seq.iter (fun detailCtl ->   //conversationNodeControlsInfo
                         if detailCtl.Status.MatchesFilter(filter) then
-                            detailCtl.Detail.Background <- Brushes.Gray
+                            detailCtl.Detail.Opacity <- 0.3
                      )
     details.Children.Clear()
     statuses 

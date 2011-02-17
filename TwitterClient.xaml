@@ -10,6 +10,7 @@
     <TextBox 
         DockPanel.Dock="Bottom"
         MinLines="1"
+        MaxLines="2"
         x:Name="filter"></TextBox>
     <StackPanel
         DockPanel.Dock="Bottom"

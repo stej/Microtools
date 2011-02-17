@@ -5,14 +5,14 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{ae4c0e5a-9c16-4454-acb4-bbc9ecec39c6}</ProjectGuid>
+    <ProjectGuid>{6fd0c85b-2768-4904-8f50-669961ff0d90}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>TwitterConversation</RootNamespace>
-    <AssemblyName>TwitterConversation</AssemblyName>
+    <RootNamespace>Twipy</RootNamespace>
+    <AssemblyName>Twipy</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
-    <Name>TwitterConversation</Name>
+    <Name>Twipy</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -23,9 +23,8 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
-    <DocumentationFile>bin\Debug\TwitterConversation.XML</DocumentationFile>
-    <StartArguments>
-    </StartArguments>
+    <DocumentationFile>bin\Debug\Twipy.XML</DocumentationFile>
+    <StartArguments>12137237630164992</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
@@ -35,7 +34,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
-    <DocumentationFile>bin\Release\TwitterConversation.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\Twipy.XML</DocumentationFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
@@ -46,10 +45,11 @@
     <Compile Include="StatusDb.fs" />
     <Compile Include="Twitter.fs" />
     <Compile Include="StatusesReplies.fs" />
-    <Compile Include="ConversationState.fs" />
+    <Compile Include="PreviewsState.fs" />
     <Compile Include="ImagesSource.fs" />
     <Compile Include="WpfUtils.fs" />
-    <Compile Include="TwitterConversation.fs" />
+    <Compile Include="ipy.fs" />
+    <Compile Include="Twipy.fs" />
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -64,8 +64,20 @@
     <Reference Include="FSharp.PowerPack.Parallel.Seq">
       <HintPath>lib\FSharp.PowerPack.Parallel.Seq.dll</HintPath>
     </Reference>
+    <Reference Include="IronPython">
+      <HintPath>lib\IronPython.dll</HintPath>
+    </Reference>
+    <Reference Include="IronPython.Modules">
+      <HintPath>lib\IronPython.Modules.dll</HintPath>
+    </Reference>
     <Reference Include="log4net">
       <HintPath>lib\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Dynamic">
+      <HintPath>lib\Microsoft.Dynamic.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Scripting">
+      <HintPath>lib\Microsoft.Scripting.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core" />

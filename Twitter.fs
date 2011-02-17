@@ -131,10 +131,12 @@ type TwitterLimits() =
         | _ -> false
 
     member x.AsyncGetLimits() = mbox.PostAndAsyncReply(GetLimits)
+    /// returns true if the search/normal limits are not reached and if
+    /// the normal limits are greater than Settings.MinRateLimit
     member x.AsyncIsSafeToQueryTwitter() = async {
         let! res = x.AsyncGetLimits()
         match res.StandardRequest with
-        | Some(x) when x.remainingHits > 0 -> 
+        | Some(x) when x.remainingHits > Settings.MinRateLimit -> 
             match res.SearchLimit with
             | Some(date) when date > DateTime.Now -> return false
             | _ -> return true
