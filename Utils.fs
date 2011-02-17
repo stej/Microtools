@@ -120,4 +120,4 @@ type Microsoft.FSharp.Control.Async with
 type Settings =
     static member private settings = System.Configuration.ConfigurationManager.AppSettings;
     static member Filter = match Settings.settings.["filter"] with | null -> "" | filter -> filter
-    static member MinRateLimit = match Settings.settings.["minRateLimit "] with | null -> 0 | filter -> int filter
+    static member MinRateLimit = match Settings.settings.["minRateLimit"] with | null -> 0 | filter -> int filter

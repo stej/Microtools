@@ -159,7 +159,7 @@ let getStatus source (id:Int64) =
         match limits.StandardRequest with
         | None -> 
             None
-        | Some(rateInfo) when rateInfo.remainingHits <= 0 -> 
+        | Some(rateInfo) when rateInfo.remainingHits < Settings.MinRateLimit -> 
             None
         | Some(rateInfo) -> 
             log Info (sprintf "Downloading %d" id)
