@@ -39,32 +39,32 @@
             Height="20"></TextBlock>
       <Button HorizontalAlignment="right" x:Name="clear" Margin="10 0 0 0">Clear</Button>
     </StackPanel>
-    <Border   
-      BorderThickness="2"
-      CornerRadius = "10"
-      x:Name="imagesHolder">
-      <DockPanel LastChildFill="true">
+    <!-- strange, ugly, working
+      only one of the borders is visible - what panel should I use? -->
+    <UniformGrid Columns="1" Rows="1">
+      <Border   
+        BorderThickness="2"
+        CornerRadius = "10"
+        x:Name="detailsHolder"
+        Visibility="collapsed">
+        <ScrollViewer HorizontalScrollBarVisibility="auto">
+         <StackPanel Height="auto" x:Name="statusDetails">
+         </StackPanel>
+       </ScrollViewer>
+      </Border>
+      <Border   
+        BorderThickness="2"
+        CornerRadius = "10"
+        x:Name="imagesHolder">
         <ScrollViewer 
-            VerticalScrollBarVisibility="auto"
-            HorizontalScrollBarVisibility="disabled"
-            HorizontalAlignment="stretch"
-            VerticalAlignment="stretch">
-          <WrapPanel Height="auto" x:Name="images">
-          </WrapPanel>
-        </ScrollViewer>
-      </DockPanel>
-    </Border>
-    <Border   
-      BorderThickness="2"
-      CornerRadius = "10"
-      x:Name="detailsHolder"
-      Visibility="collapsed">
-      <DockPanel LastChildFill="true">
-        <ScrollViewer >
-          <StackPanel Height="auto" x:Name="statusDetails">
-          </StackPanel>
-        </ScrollViewer>
-      </DockPanel>
-    </Border>
+           VerticalScrollBarVisibility="auto"
+           HorizontalScrollBarVisibility="disabled"
+           HorizontalAlignment="stretch"
+           VerticalAlignment="stretch">
+         <WrapPanel Height="auto" x:Name="images">
+         </WrapPanel>
+       </ScrollViewer>
+      </Border>
+    </UniformGrid>
   </DockPanel>
 </Window>

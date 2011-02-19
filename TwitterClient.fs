@@ -97,7 +97,7 @@ up.Click.Add(fun _ ->
                           Int64.MaxValue
             | Some(id) -> printf "first status id is %d" id
                           id
-        StatusDb.statusesDb.GetTimelineStatusesBefore(15,firstStatusId)
+        StatusDb.statusesDb.GetTimelineStatusesBefore(50,firstStatusId)
             |> Seq.toList
             |> ImagesSource.ensureStatusesImages
             |> PreviewsState.userStatusesState.AddStatuses

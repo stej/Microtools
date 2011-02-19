@@ -12,7 +12,7 @@ open System.Windows.Media
 open System.Diagnostics
 open Status
 
-let private regexUrl = new System.Text.RegularExpressions.Regex("(https?:(?://|\\\\)+(?:[\w]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
+let private regexUrl = new System.Text.RegularExpressions.Regex("(?<user>@\w+)|" + "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
 
 let (fontSize, pictureSize) = 
     let s = match System.Configuration.ConfigurationManager.AppSettings.["size"].ToString() with
@@ -42,6 +42,15 @@ let private BrowseHlClick (e:Navigation.RequestNavigateEventArgs) =
     Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)) |> ignore
     e.Handled <- true
 
+let private linkFromText text =
+    let matchGroups = regexUrl.Match(text).Groups
+    let url = if matchGroups.["url"].Success then text
+              else if matchGroups.["user"].Success then (sprintf "http://twitter.com/#!/%s" text)
+              else failwith "unknown regex group"
+    let hl = new Hyperlink(new Run(text),
+                           NavigateUri = new Uri(url))
+    hl.RequestNavigate.Add(BrowseHlClick)
+    hl
 let private textToTextblock (text:string) = 
     Utils.log Utils.Debug (sprintf "Parsing %s" text)
     let parts = regexUrl.Split(System.Web.HttpUtility.HtmlDecode(text))
@@ -54,9 +63,7 @@ let private textToTextblock (text:string) =
         if regexUrl.IsMatch(part) then
             Utils.log Utils.Debug (sprintf "Parsed url: %s" part)
             try
-                let hl = new Hyperlink(new Run(part),
-                                       NavigateUri = new Uri(part))
-                hl.RequestNavigate.Add(BrowseHlClick)
+                let hl = linkFromText part
                 ret.Inlines.Add(hl)
             with ex ->
                 Utils.log Utils.Error (sprintf "Wrong parsed url: %s" part)
@@ -72,7 +79,8 @@ let createLittlePicture status =
 let createDetail (status:status) =
     let row = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,
                              VerticalAlignment = VerticalAlignment.Top,
-                             Orientation = Orientation.Horizontal)
+                             Orientation = Orientation.Horizontal,
+                             Margin = new Thickness(0., 0., 0., 5.))
     let meta =
         let m = new TextBlock(TextWrapping = TextWrapping.Wrap,
                               Padding = new Thickness(0.),
