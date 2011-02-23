@@ -48,6 +48,7 @@
     <Compile Include="PreviewsState.fs" />
     <Compile Include="ImagesSource.fs" />
     <Compile Include="WpfUtils.fs" />
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="TwitterClient.fs" />
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

@@ -88,5 +88,9 @@ switcher.Click.Add(fun _ ->
     detailsHolder.Visibility <- Visibility.Collapsed
 )
 
+[<assembly: System.Reflection.AssemblyTitle("Twipy")>]
+[<assembly: System.Runtime.InteropServices.Guid("8c34ad41-4bc6-4b4e-b791-ef0b951a94d53")>]
+()
+
 [<System.STAThread>]
 (new Application()).Run(window) |> ignore

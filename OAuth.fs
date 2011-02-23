@@ -11,13 +11,10 @@ let accessTokenPath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.Base
 let mutable (accessToken:Framework.IToken) = null
 
 let createToken consumerKey realm token tokenSecret =
-    // todo initializer..
-    let tb = new Framework.TokenBase()
-    tb.ConsumerKey <- consumerKey
-    tb.Realm <- realm
-    tb.Token <- token
-    tb.TokenSecret <- tokenSecret
-    tb
+    new Framework.TokenBase(ConsumerKey = consumerKey,
+                            Realm = realm,
+                            Token = token,
+                            TokenSecret = tokenSecret)
 
 let readToken path =
     printf "reading.."

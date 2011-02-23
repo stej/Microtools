@@ -118,6 +118,10 @@ switcher.Click.Add(fun _ ->
     imagesHolder.Visibility <- Visibility.Visible
     detailsHolder.Visibility <- Visibility.Collapsed
 )
+[<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]
+[<assembly: System.Runtime.InteropServices.Guid("b607f47b-df94-4c4c-a7ff-1a182bf8d8bb3")>]
+()
 
 [<System.STAThread>]
-(new Application()).Run(window) |> ignore
+do
+    (new Application()).Run(window) |> ignore

@@ -231,6 +231,7 @@ updateAll.Click.Add(fun _ ->
     cts <- new CancellationTokenSource()
     updateAllStarted()
     let compute = async {
+        // called for each conversation root
         let rec update (statusIds: int64 list) = async {
             if paused then
                 do! Async.Sleep(1000)
@@ -270,6 +271,10 @@ updateAll.Click.Add(fun _ ->
     let compCanc = Async.TryCancelled(compute, (fun _ -> updateAllCancelled()))
     Async.Start(compCanc, cts.Token)
 )
+
+[<assembly: System.Reflection.AssemblyTitle("TwitterConversation")>]
+[<assembly: System.Runtime.InteropServices.Guid("2d58c139-c06e-42e5-bd91-2ff7c0c01c543")>]
+()
 
 printfn "starting app"
 [<System.STAThread>]

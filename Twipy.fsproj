@@ -49,6 +49,7 @@
     <Compile Include="ImagesSource.fs" />
     <Compile Include="WpfUtils.fs" />
     <Compile Include="ipy.fs" />
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Twipy.fs" />
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
