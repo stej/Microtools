@@ -5,70 +5,81 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{19b1e3bd-d2d4-4f06-b047-9343615982ef}</ProjectGuid>
+    <ProjectGuid>{6fd0c85b-2768-4904-8f50-669961ff0d90}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>TwitterClient</RootNamespace>
-    <AssemblyName>TwitterClient</AssemblyName>
+    <RootNamespace>Twipy</RootNamespace>
+    <AssemblyName>Twipy</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
-    <Name>TwitterClient</Name>
+    <Name>Twipy</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
-    <DocumentationFile>bin\Debug\TwitterClient.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\Twipy.XML</DocumentationFile>
     <StartArguments>12137237630164992</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
-    <DocumentationFile>bin\Release\TwitterClient.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\Twipy.XML</DocumentationFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <ItemGroup>
-    <Compile Include="Utils.fs" />
-    <Compile Include="OAuth.fs" />
-    <Compile Include="Status.fs" />
-    <Compile Include="StatusDb.fs" />
-    <Compile Include="Twitter.fs" />
-    <Compile Include="StatusesReplies.fs" />
-    <Compile Include="PreviewsState.fs" />
-    <Compile Include="ImagesSource.fs" />
-    <Compile Include="WpfUtils.fs" />
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="TwitterClient.fs" />
+    <Compile Include="..\Common\Utils.fs" />
+    <Compile Include="..\Common\OAuth.fs" />
+    <Compile Include="..\Common\Status.fs" />
+    <Compile Include="..\Common\StatusDb.fs" />
+    <Compile Include="..\Common\Twitter.fs" />
+    <Compile Include="..\Common\StatusesReplies.fs" />
+    <Compile Include="..\Common\PreviewsState.fs" />
+    <Compile Include="..\Common\ImagesSource.fs" />
+    <Compile Include="..\Common\WpfUtils.fs" />
+    <Compile Include="..\Common\ipy.fs" />
+    <Compile Include="..\Common\AssemblyInfo.fs" />
+    <Compile Include="Twipy.fs" />
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="Script1.fsx" />
-    <None Include="backup.fsx" />
-    <None Include="TwitterClient.xaml" />
+    <None Include="Twipy.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="DevDefined.OAuth">
-      <HintPath>lib\DevDefined.OAuth.dll</HintPath>
+      <HintPath>..\lib\DevDefined.OAuth.dll</HintPath>
     </Reference>
     <Reference Include="DynamicJson">
-      <HintPath>lib\DynamicJson.dll</HintPath>
+      <HintPath>..\lib\DynamicJson.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.PowerPack.Parallel.Seq">
-      <HintPath>lib\FSharp.PowerPack.Parallel.Seq.dll</HintPath>
+      <HintPath>..\lib\FSharp.PowerPack.Parallel.Seq.dll</HintPath>
+    </Reference>
+    <Reference Include="IronPython">
+      <HintPath>..\lib\IronPython.dll</HintPath>
+    </Reference>
+    <Reference Include="IronPython.Modules">
+      <HintPath>..\lib\IronPython.Modules.dll</HintPath>
     </Reference>
     <Reference Include="log4net">
-      <HintPath>lib\log4net.dll</HintPath>
+      <HintPath>..\lib\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Dynamic">
+      <HintPath>..\lib\Microsoft.Dynamic.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Scripting">
+      <HintPath>..\lib\Microsoft.Scripting.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core" />
@@ -79,7 +90,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.SQLite">
-      <HintPath>lib\System.Data.SQLite.dll</HintPath>
+      <HintPath>..\lib\System.Data.SQLite.dll</HintPath>
     </Reference>
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Serialization" />

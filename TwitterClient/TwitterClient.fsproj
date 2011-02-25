@@ -5,69 +5,88 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{ae4c0e5a-9c16-4454-acb4-bbc9ecec39c6}</ProjectGuid>
+    <ProjectGuid>{19b1e3bd-d2d4-4f06-b047-9343615982ef}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>TwitterConversation</RootNamespace>
-    <AssemblyName>TwitterConversation</AssemblyName>
+    <RootNamespace>TwitterClient</RootNamespace>
+    <AssemblyName>TwitterClient</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
-    <Name>TwitterConversation</Name>
+    <Name>TwitterClient</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
-    <DocumentationFile>bin\Debug\TwitterConversation.XML</DocumentationFile>
-    <StartArguments>
-    </StartArguments>
+    <DocumentationFile>bin\Debug\TwitterClient.XML</DocumentationFile>
+    <StartArguments>12137237630164992</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
-    <DocumentationFile>bin\Release\TwitterConversation.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\TwitterClient.XML</DocumentationFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <ItemGroup>
-    <Compile Include="Utils.fs" />
-    <Compile Include="OAuth.fs" />
-    <Compile Include="Status.fs" />
-    <Compile Include="StatusDb.fs" />
-    <Compile Include="Twitter.fs" />
-    <Compile Include="StatusesReplies.fs" />
-    <Compile Include="ConversationState.fs" />
-    <Compile Include="ImagesSource.fs" />
-    <Compile Include="WpfUtils.fs" />
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="TwitterConversation.fs" />
+    <Compile Include="..\Common\Utils.fs">
+      <Link>Utils.fs</Link>
+    </Compile>
+    <Compile Include="..\Common\OAuth.fs">
+      <Link>OAuth.fs</Link>
+    </Compile>
+    <Compile Include="..\Common\Status.fs">
+      <Link>Status.fs</Link>
+    </Compile>
+    <Compile Include="..\Common\StatusDb.fs">
+      <Link>StatusDb.fs</Link>
+    </Compile>
+    <Compile Include="..\Common\Twitter.fs">
+      <Link>Twitter.fs</Link>
+    </Compile>
+    <Compile Include="..\Common\StatusesReplies.fs">
+      <Link>StatusesReplies.fs</Link>
+    </Compile>
+    <Compile Include="..\Common\PreviewsState.fs">
+      <Link>PreviewsState.fs</Link>
+    </Compile>
+    <Compile Include="..\Common\ImagesSource.fs">
+      <Link>ImagesSource.fs</Link>
+    </Compile>
+    <Compile Include="..\Common\WpfUtils.fs">
+      <Link>WpfUtils.fs</Link>
+    </Compile>
+    <Compile Include="..\Common\AssemblyInfo.fs">
+      <Link>AssemblyInfo.fs</Link>
+    </Compile>
+    <Compile Include="TwitterClient.fs" />
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="TwitterConversation.xaml" />
+    <None Include="TwitterClient.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="DevDefined.OAuth">
-      <HintPath>lib\DevDefined.OAuth.dll</HintPath>
+      <HintPath>..\lib\DevDefined.OAuth.dll</HintPath>
     </Reference>
     <Reference Include="DynamicJson">
-      <HintPath>lib\DynamicJson.dll</HintPath>
+      <HintPath>..\lib\DynamicJson.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.PowerPack.Parallel.Seq">
-      <HintPath>lib\FSharp.PowerPack.Parallel.Seq.dll</HintPath>
+      <HintPath>..\lib\FSharp.PowerPack.Parallel.Seq.dll</HintPath>
     </Reference>
     <Reference Include="log4net">
-      <HintPath>lib\log4net.dll</HintPath>
+      <HintPath>..\lib\log4net.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core" />
@@ -78,7 +97,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.SQLite">
-      <HintPath>lib\System.Data.SQLite.dll</HintPath>
+      <HintPath>..\lib\System.Data.SQLite.dll</HintPath>
     </Reference>
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Serialization" />

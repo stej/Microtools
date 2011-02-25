@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TwitterConversation", "TwitterConversation.fsproj", "{AE4C0E5A-9C16-4454-ACB4-BBC9ECEC39C6}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TwitterConversation", "TwitterConversation\TwitterConversation.fsproj", "{AE4C0E5A-9C16-4454-ACB4-BBC9ECEC39C6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7AEE97CC-9D24-4757-B88C-B7F43442052C}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TwitterClient", "TwitterClient.fsproj", "{19B1E3BD-D2D4-4F06-B047-9343615982EF}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TwitterClient", "TwitterClient\TwitterClient.fsproj", "{19B1E3BD-D2D4-4F06-B047-9343615982EF}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Twipy", "Twipy.fsproj", "{6FD0C85B-2768-4904-8F50-669961FF0D90}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Twipy", "Twipy\Twipy.fsproj", "{6FD0C85B-2768-4904-8F50-669961FF0D90}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
