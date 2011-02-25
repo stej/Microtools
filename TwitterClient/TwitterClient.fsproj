@@ -69,6 +69,9 @@
     <Compile Include="..\Common\AssemblyInfo.fs">
       <Link>AssemblyInfo.fs</Link>
     </Compile>
+    <Compile Include="..\Common\Updates.fs">
+      <Link>Updates.fs</Link>
+    </Compile>
     <Compile Include="TwitterClient.fs" />
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

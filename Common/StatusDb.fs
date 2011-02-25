@@ -38,7 +38,7 @@ let private readStatus (rd:SQLiteDataReader) =
       //CopyId             = 0
      }
 
-let private useDb useFce = 
+let useDb useFce = 
     use conn = new System.Data.SQLite.SQLiteConnection()
     conn.ConnectionString <- sprintf "Data Source=\"%s\"" fileName
     conn.Open()
@@ -46,21 +46,24 @@ let private useDb useFce =
     conn.Close()
     result
     
-let private addCmdParameter (cmd:SQLiteCommand) (name:string) value = 
+let addCmdParameter (cmd:SQLiteCommand) (name:string) value = 
     cmd.Parameters.Add(new SQLiteParameter(name, (value :> System.Object))) |> ignore
 
-let private executeSelectStatuses (cmd:SQLiteCommand) = 
+let executeSelect readFce (cmd:SQLiteCommand) = 
     use rd = cmd.ExecuteReader()
-    let rec getStatuses (rd:SQLiteDataReader) index =
+    let rec read (rd:SQLiteDataReader) =
         seq {
         if rd.Read() then
-            yield readStatus rd
+            yield readFce rd
             printf "."
-            yield! getStatuses rd (index+1)
+            yield! read rd
         }
-    let statuses = getStatuses rd 0 |> Seq.toList
+    let result = read rd |> Seq.toList
     rd.Close()
-    statuses
+    result
+
+let executeSelectStatuses (cmd:SQLiteCommand) = 
+    executeSelect readStatus cmd
 
 type StatusesDbMessages =
 | LoadStatuses of AsyncReplyChannel<status seq>
@@ -202,8 +205,8 @@ type StatusesDbState() =
                 let s = status
                 use cmd = conn.CreateCommand()
                 cmd.CommandText <- "INSERT INTO Status(
-                    Id, StatusId, App, Account, Text, Date, UserName, UserId, UserProfileImage, ReplyTo, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Hidden, Source
-                    ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21)"
+                    Id, StatusId, App, Account, Text, Date, UserName, UserId, UserProfileImage, ReplyTo, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Hidden, Source, Inserted
+                    ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22)"
                 addCmdParameter cmd "@p1" (sprintf "%s-%d" s.App s.StatusId)
                 addCmdParameter cmd "@p2" s.StatusId
                 addCmdParameter cmd "@p3" s.App
@@ -225,6 +228,7 @@ type StatusesDbState() =
                 addCmdParameter cmd "@p19" s.UserIsFollowing
                 addCmdParameter cmd "@p20" s.Hidden
                 addCmdParameter cmd "@p21" (StatusSource2Int source)
+                addCmdParameter cmd "@p22" DateTime.Now.Ticks
                 cmd.ExecuteNonQuery() |> ignore
 
             for status in statuses do 

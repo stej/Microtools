@@ -124,4 +124,7 @@ switcher.Click.Add(fun _ ->
 
 [<System.STAThread>]
 do
+    let ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version
+    printfn "%i-%i-%i-%i" ver.Major ver.Minor ver.Build ver.Revision
+    Updates.update()
     (new Application()).Run(window) |> ignore
