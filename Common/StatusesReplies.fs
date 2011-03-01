@@ -125,7 +125,7 @@ let loadNewPersonalStatuses() =
     printf "Max statusId is %d. Loading from that" max
     let newStatuses = 
         let friends = loadNewFriendsStatuses max
-        let friendsset = friends |> List.map (fun s -> s.StatusId) |> Set.ofList
+        let friendsset = Set.ofList [for s in friends -> s.StatusId]
         // mentions that aren't also in friends list
         let filteredMentions = loadNewMentionsStatuses max |> List.filter (fun s -> not (friendsset.Contains(s.StatusId)))
         

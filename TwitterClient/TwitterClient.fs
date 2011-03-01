@@ -33,7 +33,6 @@ filterCtl.Text <- Utils.Settings.Filter
 let fillPictures statuses =
     wrap.Children.Clear()
     statuses 
-      |> Flatten 
       |> Seq.sortBy (fun status -> status.StatusId)
       |> Seq.map (fun status -> WpfUtils.createLittlePicture status) 
       |> Seq.iter (fun pic -> wrap.Children.Add(pic) |> ignore)
