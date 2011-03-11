@@ -187,6 +187,16 @@ window.Loaded.Add(fun _ ->
     updateTwitterLimit |> Async.Start
 )
 
+let addJustFoundStatuses() =
+    // add statuses, that were not visible, because they hadn't any children, but now, they got new children through 
+    // all the searches
+    readStatuses() 
+            |> Seq.filter (fun status -> not (ConversationState.conversationsState.ContainsStatus(status.StatusId)))
+            |> Seq.map ImagesSource.ensureStatusImage
+            |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.Beginning
+                                                |> StatusesReplies.loadSavedReplyTree
+                                                |> ConversationState.conversationsState.AddConversation
+                                                |> setNewConversationContent)
 let mutable (cts:CancellationTokenSource) = null
 let mutable (paused:bool) = false
 let updateAllStarted() =
@@ -220,6 +230,7 @@ let updateAllContinue() =
 cancelUpdate.Click.Add(fun _ ->
     if cts <> null then cts.Cancel()
     else log Error "Cancellation token is null"
+    addJustFoundStatuses()
 )
 pauseUpdate.Click.Add(fun _ ->
     updateAllPaused()
@@ -257,15 +268,7 @@ updateAll.Click.Add(fun _ ->
         for id in ids do showConversationWillBeProcessed (controlsCache.[id].Wrapper)
         do! update ids
 
-        // add statuses, that were not visible, because they hadn't any children, but now, they got new children through 
-        // all the searches
-        readStatuses() 
-                |> Seq.filter (fun status -> not (ConversationState.conversationsState.ContainsStatus(status.StatusId)))
-                |> Seq.map ImagesSource.ensureStatusImage
-                |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.Beginning
-                                                  |> StatusesReplies.loadSavedReplyTree
-                                                  |> ConversationState.conversationsState.AddConversation
-                                                  |> setNewConversationContent)
+        addJustFoundStatuses()
         updateAllFinished()
     }
     let compCanc = Async.TryCancelled(compute, (fun _ -> updateAllCancelled()))
