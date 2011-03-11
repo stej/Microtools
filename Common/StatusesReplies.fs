@@ -104,7 +104,10 @@ let rootConversations baseStatuses (statuses: status list) =
                              log Debug (sprintf "Subtree %s %d found parent %s %d" currentSubtree.UserName currentSubtree.StatusId p.UserName p.StatusId)
                              p.Children.Add(currentSubtree)
                              resStatuses // return unchanged resStatuses
-            append currStatus
+            match GetStatusFromConversations currStatus.StatusId resStatuses with
+            |None    -> append currStatus
+            |Some(_) -> log Debug (sprintf "Status %s %d already added. Skipping" currStatus.UserName currStatus.StatusId)
+                        resStatuses
     statuses |> List.fold addStatusOrRootConversation baseStatuses
 
 
