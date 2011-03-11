@@ -162,7 +162,7 @@ let getStatus source (id:Int64) =
         | Some(rateInfo) when rateInfo.remainingHits < Settings.MinRateLimit -> 
             None
         | Some(rateInfo) -> 
-            log Info (sprintf "Downloading %d" id)
+            log Info (sprintf "Downloading %d" id) // todo: store status in db!
             let formatter = sprintf "http://api.twitter.com/1/statuses/show/%d.json"
             match OAuth.requestTwitter (formatter id) with
              | Some(text, response) -> let xml = text |> convertJsonToXml
@@ -233,5 +233,22 @@ let publicStatuses() =
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
      | None -> xml.LoadXml("<statuses type=\"array\"></statuses>")
+     | Some(text, response)  -> xml.LoadXml(text)
+    xml
+    
+let currentUser() =
+    let url = "http://api.twitter.com/1/account/verify_credentials.xml"
+    let xml = new XmlDocument()
+    match OAuth.requestTwitter url with
+     | None -> failwith "Unable to get info for current user"
+     | Some(text, response)  -> xml.LoadXml(text)
+    xml
+    
+let twitterLists() = 
+    let user = xpathValue "/user/screen_name" (currentUser())
+    let url = sprintf "http://api.twitter.com/1/%s/lists.xml" user
+    let xml = new XmlDocument()
+    match OAuth.requestTwitter url with
+     | None -> xml.LoadXml("<lists_list><lists type=\"array\"/></lists_list>")
      | Some(text, response)  -> xml.LoadXml(text)
     xml

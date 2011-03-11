@@ -43,6 +43,8 @@ let updateTo_0_1() =
     printfn "update to 0.1"
     execNonquery "ALTER TABLE Status ADD Inserted integer NOT NULL default -1"
     execNonquery "UPDATE Status SET Inserted = [Date]"
+    //execNonquery "CREATE TABLE List (Id integer primary key, UserName varchar(64) not null, Name varchar(64) not null)"
+    //execNonquery "CREATE TABLE UsersInList (Id integer primary key, ListId integer, UserName varchar(64) not null)"
     printfn "update to 1.0 done"
 
 let update() =
