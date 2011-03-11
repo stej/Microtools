@@ -30,6 +30,11 @@ let filterCtl = window.FindName("filter") :?> TextBox
 
 filterCtl.Text <- Utils.Settings.Filter
 
+// status downloaded from Twitter
+Twitter.NewStatusDownloaded 
+    |> Event.add (fun (source,status) -> StatusDb.statusesDb.SaveStatus(source, status)
+                                         printf "s")
+
 let fillPictures statuses =
     wrap.Children.Clear()
     statuses 
