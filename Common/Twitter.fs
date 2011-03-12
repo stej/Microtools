@@ -252,3 +252,39 @@ let twitterLists() =
      | None -> xml.LoadXml("<lists_list><lists type=\"array\"/></lists_list>")
      | Some(text, response)  -> xml.LoadXml(text)
     xml
+       
+let private extractStatuses xpath statusesXml =
+    statusesXml
+       |> xpathNodes xpath
+       |> Seq.cast<XmlNode> 
+       |> Seq.map xml2Status
+let private loadNewFriendsStatuses maxId =
+    friendsStatuses maxId |> extractStatuses "//statuses/status"  |> Seq.toList
+let private loadNewMentionsStatuses maxId =
+    mentionsStatuses maxId |> extractStatuses "//statuses/status" |> Seq.toList
+    
+let loadNewPersonalStatuses() =
+    log Info "Loading new personal statuses"
+    let max = StatusDb.statusesDb.GetLastTwitterStatusId()
+    printf "Max statusId is %d. Loading from that" max
+    let newStatuses = 
+        let friends = loadNewFriendsStatuses max
+        let friendsset = Set.ofList [for s in friends -> s.StatusId]
+        // mentions that aren't also in friends list
+        let filteredMentions = loadNewMentionsStatuses max |> List.filter (fun s -> not (friendsset.Contains(s.StatusId)))
+        
+        friends @ filteredMentions |> List.sortBy (fun status -> status.Date)
+
+    StatusDb.statusesDb.SaveStatuses(Status.Timeline, newStatuses)
+    if newStatuses.Length > 0 then
+        newStatuses |> List.maxBy (fun status -> status.StatusId) |> StatusDb.statusesDb.UpdateLastTwitterStatusId
+    newStatuses
+    
+let loadPublicStatuses() =
+    let newStatuses = 
+      publicStatuses() 
+       |> extractStatuses "//statuses/status"
+       |> Seq.toList
+       |> List.sortBy (fun status -> status.Date)
+    newStatuses |> List.iter (fun s -> StatusDb.statusesDb.SaveStatus(Status.Public, s))
+    newStatuses

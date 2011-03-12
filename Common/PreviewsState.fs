@@ -3,6 +3,12 @@ module PreviewsState
 open System
 open Status
 
+/// Takes new statuses and adds them to current list + tree
+/// @currStatuses - list of already added statuses
+/// @currStatusesWithRoots - @currStatuses that are rooted; If a status is a reply, its parent is found and
+///   the status is added as its child. If the parent is reply itself, the loop continues, until we find a
+///   conversation root that is added to collection @currStatusesWithRoots
+///   - if any two statuses share the same parent, they are added to the parent's collection; there is no duplication
 let addAndRootStatuses currStatuses currStatusesWithRoots toAdd =
     /// todo - make map
     let flattened = Flatten currStatusesWithRoots

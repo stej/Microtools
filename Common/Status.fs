@@ -27,6 +27,7 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                 UserStatusesCount : int
                 UserIsFollowing : bool
                 Hidden : bool
+                Inserted : DateTime
                 Children : ResizeArray<status>
                 //CopyId : int
               }
@@ -88,6 +89,7 @@ let xml2Status (xml:XmlNode) =
       UserStatusesCount    = getValue "user/statuses_count" |> IntOrDefault
       UserIsFollowing      = getValue "user/following" |> BoolOrDefault false
       Hidden               = false                                      // change?
+      Inserted             = DateTime.Now
       Children             = new ResizeArray<status>()
       //CopyId               = 0
     }
@@ -113,6 +115,7 @@ let getEmptyStatus() =
       UserStatusesCount = -1
       UserIsFollowing = false
       Hidden = false
+      Inserted = DateTime.Now
       Children = new ResizeArray<status>()
     }
 
@@ -186,3 +189,6 @@ let Flatten (statuses:status list) =
                 yield! (flatten s.Children)
         }
     flatten statuses
+
+let getId status =
+    status.StatusId

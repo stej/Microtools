@@ -34,6 +34,7 @@ let private readStatus (rd:SQLiteDataReader) =
       UserStatusesCount  = intt "UserStatusesCount"
       UserIsFollowing    = bol "UserIsFollowing"
       Hidden             = bol "Hidden"
+      Inserted           = date "Inserted"
       Children           = new ResizeArray<status>()
       //CopyId             = 0
      }

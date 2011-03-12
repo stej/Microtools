@@ -65,7 +65,7 @@ window.Loaded.Add(
         async {
           let rec asyncloop() = 
             setAppState "Loading.."
-            StatusesReplies.loadNewPersonalStatuses()    // or StatusesReplies.loadPublicStatuses
+            Twitter.loadNewPersonalStatuses()    // or StatusesReplies.loadPublicStatuses
                 |> ImagesSource.ensureStatusesImages
                 |> PreviewsState.userStatusesState.AddStatuses
             WpfUtils.dispatchMessage wrap (fun _ -> let list,tree = PreviewsState.userStatusesState.GetStatuses()

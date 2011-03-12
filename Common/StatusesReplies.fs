@@ -7,6 +7,41 @@ open Status
 open Utils
 open Twitter
 
+type NewlyFoundRepliesMessages =
+| AddStatus of status
+| GetNewReplies of int64 * int64 seq * AsyncReplyChannel<status seq>
+| Clear
+
+type NewlyFoundReplies() =
+    let mbox = 
+        MailboxProcessor.Start(fun mbox ->
+            let rec loop replies = async {
+                let! msg = mbox.Receive()
+                Utils.log Utils.Debug (sprintf "Newly found replies, message: %A" msg)
+                match msg with
+                | Clear ->
+                    return! loop []
+                | AddStatus(toAdd) ->
+                    if replies |> List.exists (fun s -> s.StatusId = toAdd.StatusId) then
+                        return! loop replies
+                    else
+                        printfn "Added. Count of replies collected: %d" (replies.Length+1)
+                        return! loop (toAdd::replies)
+                | GetNewReplies(status, withoutChildrenIds, chnl) ->
+                    chnl.Reply([])
+                    return! loop replies
+            }
+            Utils.log Utils.Debug "Starting NewlyFoundReplies"
+            loop []
+        )
+    member x.AddStatus(s) = mbox.Post(AddStatus(s)); s
+    member x.GetNewReplies(status, withoutIds) = mbox.PostAndReply(fun reply -> GetNewReplies(status, withoutIds, reply))
+    member x.Clear() = mbox.Post(Clear)
+    //    member x.AsyncGetStatuses() = mbox.PostAndAsyncReply(GetStatuses)
+    //    member x.AsyncGetFirstStatusId() = mbox.PostAndAsyncReply(GetFirstStatusId)
+
+let newlyAddedStatusesState = new NewlyFoundReplies()
+
 let private statusAdded = new Event<status>()
 let StatusAdded = statusAdded.Publish
 let private someChildrenLoaded = new Event<status>()
@@ -17,7 +52,6 @@ let LoadingStatusReplyTree = loadingStatusReplyTree.Publish
 let loadSavedReplyTree initialStatus = 
     let rec addReplies status = 
         let replies = StatusDb.statusesDb.ReadStatusReplies status.StatusId
-        //if sleep then System.Threading.Thread.Sleep(300)
         replies |> Seq.iter (fun reply -> status.Children.Add(reply)
                                           statusAdded.Trigger(reply))
         someChildrenLoaded.Trigger(initialStatus)
@@ -47,6 +81,7 @@ let findReplies initialStatus =
             |> Seq.toList                                                                   //create list back
             |> List.filter (fun status -> status.IsSome)                                     //filter non-null
             |> List.map (fun status -> status.Value)                                         //extract status
+            |> List.map newlyAddedStatusesState.AddStatus
         foundMentions |> List.iter (fun status -> Utils.padSpaces depth; printfn "Mention %s - %d" status.UserName status.StatusId)
         let statuses = 
             foundMentions
@@ -109,41 +144,3 @@ let rootConversations baseStatuses (statuses: status list) =
             |Some(_) -> log Debug (sprintf "Status %s %d already added. Skipping" currStatus.UserName currStatus.StatusId)
                         resStatuses
     statuses |> List.fold addStatusOrRootConversation baseStatuses
-
-
-let private extractStatuses xpath statusesXml =
-    statusesXml
-       |> xpathNodes xpath
-       |> Seq.cast<XmlNode> 
-       |> Seq.map xml2Status
-       
-let private loadNewFriendsStatuses maxId =
-    friendsStatuses maxId |> extractStatuses "//statuses/status"  |> Seq.toList
-let private loadNewMentionsStatuses maxId =
-    mentionsStatuses maxId |> extractStatuses "//statuses/status" |> Seq.toList
-    
-let loadNewPersonalStatuses() =
-    log Info "Loading new personal statuses"
-    let max = StatusDb.statusesDb.GetLastTwitterStatusId()
-    printf "Max statusId is %d. Loading from that" max
-    let newStatuses = 
-        let friends = loadNewFriendsStatuses max
-        let friendsset = Set.ofList [for s in friends -> s.StatusId]
-        // mentions that aren't also in friends list
-        let filteredMentions = loadNewMentionsStatuses max |> List.filter (fun s -> not (friendsset.Contains(s.StatusId)))
-        
-        friends @ filteredMentions |> List.sortBy (fun status -> status.Date)
-
-    StatusDb.statusesDb.SaveStatuses(Status.Timeline, newStatuses)
-    if newStatuses.Length > 0 then
-        newStatuses |> List.maxBy (fun status -> status.StatusId) |> StatusDb.statusesDb.UpdateLastTwitterStatusId
-    newStatuses
-    
-let loadPublicStatuses() =
-    let newStatuses = 
-      publicStatuses() 
-       |> extractStatuses "//statuses/status"
-       |> Seq.toList
-       |> List.sortBy (fun status -> status.Date)
-    newStatuses |> List.iter (fun s -> StatusDb.statusesDb.SaveStatus(Status.Public, s))
-    newStatuses

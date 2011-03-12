@@ -176,10 +176,7 @@ window.Loaded.Add(fun _ ->
             |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.End
                                               |> StatusesReplies.loadSavedReplyTree
                                               |> ConversationState.conversationsState.AddConversation
-                                              |> setNewConversationContent 
-                                              //|> StatusesReplies.findReplies
-                                              //|> ConversationState.conversationsState.UpdateConversation
-                                              //|> refreshContent
+                                              |> setNewConversationContent
                )
         setState "Done.."
     } |> Async.Start
@@ -187,9 +184,9 @@ window.Loaded.Add(fun _ ->
     updateTwitterLimit |> Async.Start
 )
 
-let addJustFoundStatuses() =
-    // add statuses, that were not visible, because they hadn't any children, but now, they got new children through 
-    // all the searches
+// add statuses, that were not visible, because they hadn't any children, but now, they got new children through 
+// all the searches
+let addNewlyFoundConversations() =
     readStatuses() 
             |> Seq.filter (fun status -> not (ConversationState.conversationsState.ContainsStatus(status.StatusId)))
             |> Seq.map ImagesSource.ensureStatusImage
@@ -197,12 +194,37 @@ let addJustFoundStatuses() =
                                                 |> StatusesReplies.loadSavedReplyTree
                                                 |> ConversationState.conversationsState.AddConversation
                                                 |> setNewConversationContent)
+let addNewlyFoundStatuses() =
+    let checkConversationForNewChildren root =
+        // newly added status; global for all the conversation
+        let news = new ResizeArray<status>()
+
+        // check and adds new children for given status
+        let rec checkStatusForNewChildren status =
+            StatusesReplies.newlyAddedStatusesState.GetNewReplies (status.StatusId, (status.Children|>Seq.map Status.getId))
+            |> Seq.map (doAndRet news.Add)
+            |> Seq.iter status.Children.Add
+            status.Children.Sort(fun s1 s2 -> s1.StatusId.CompareTo(s2.StatusId))
+            status.Children
+            |> Seq.iter checkStatusForNewChildren
+        checkStatusForNewChildren root
+        (root, news)
+      
+    ()  
+//    ConversationState.conversationsState.GetConversations()
+//    |> List.filter (fun root newstats -> newstats.Count > 0)
+//    |> List.iter (fun root newstats -> )
+    
+    
 let mutable (cts:CancellationTokenSource) = null
 let mutable (paused:bool) = false
+let mutable (lastUpdateall:DateTime) = DateTime.MinValue
 let updateAllStarted() =
     WpfUtils.dispatchMessage window (fun _ ->
         updateAll.Visibility <- Visibility.Collapsed; pauseUpdate.Visibility <- Visibility.Visible; cancelUpdate.Visibility <- Visibility.Visible)
     paused <- false
+    StatusesReplies.newlyAddedStatusesState.Clear()
+    lastUpdateall <- DateTime.Now
 let updateAllFinished() =
     setState "Update finished ..."
     WpfUtils.dispatchMessage window (fun _ ->
@@ -230,7 +252,10 @@ let updateAllContinue() =
 cancelUpdate.Click.Add(fun _ ->
     if cts <> null then cts.Cancel()
     else log Error "Cancellation token is null"
-    addJustFoundStatuses()
+    async {
+        addNewlyFoundConversations()
+        addNewlyFoundStatuses()
+    } |> Async.Start
 )
 pauseUpdate.Click.Add(fun _ ->
     updateAllPaused()
@@ -268,7 +293,8 @@ updateAll.Click.Add(fun _ ->
         for id in ids do showConversationWillBeProcessed (controlsCache.[id].Wrapper)
         do! update ids
 
-        addJustFoundStatuses()
+        addNewlyFoundConversations()
+        addNewlyFoundStatuses()
         updateAllFinished()
     }
     let compCanc = Async.TryCancelled(compute, (fun _ -> updateAllCancelled()))
