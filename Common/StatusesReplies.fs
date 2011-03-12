@@ -9,7 +9,7 @@ open Twitter
 
 type NewlyFoundRepliesMessages =
 | AddStatus of status
-| GetNewReplies of int64 * int64 seq * AsyncReplyChannel<status seq>
+| GetNewReplies of status * int64 seq * AsyncReplyChannel<status seq>
 | Clear
 
 type NewlyFoundReplies() =
@@ -27,8 +27,12 @@ type NewlyFoundReplies() =
                     else
                         printfn "Added. Count of replies collected: %d" (replies.Length+1)
                         return! loop (toAdd::replies)
-                | GetNewReplies(status, withoutChildrenIds, chnl) ->
-                    chnl.Reply([])
+                | GetNewReplies(parent, withoutChildrenIds, chnl) ->
+                    let childrenSet = withoutChildrenIds |> Set.ofSeq
+                    let ret = replies 
+                              |> List.filter (isParentOf parent)                            // filter by parent
+                              |> List.filter (getStatusId >> childrenSet.Contains >> not)   // filter out those from childrenSet
+                    chnl.Reply(ret)
                     return! loop replies
             }
             Utils.log Utils.Debug "Starting NewlyFoundReplies"

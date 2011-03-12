@@ -37,6 +37,8 @@ let pauseUpdate = window.FindName("pause") :?> Button
 let continueUpdate = window.FindName("continue") :?> Button
 let cancelUpdate = window.FindName("cancel") :?> Button
 
+let mutable (lastUpdateall:DateTime) = DateTime.MinValue
+
 let setState text = 
     WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- text)
     printfn "%s" text
@@ -69,17 +71,10 @@ let readStatuses() =
     else
         seq { yield readSingleStatus() }
 
-let private statusUpdated = new Event<WpfUtils.conversationControls * status * status>()
+let private statusUpdated = new Event<WpfUtils.conversationControls * status>()
 let StatusUpdated = statusUpdated.Publish
 
 let controlsCache = new System.Collections.Concurrent.ConcurrentDictionary<Int64, WpfUtils.conversationControls>()
-
-(*
-let showConversationIsUpdating wrapperCtl =
-    WpfUtils.dispatchMessage wrapperCtl (fun _ -> wrapperCtl.Background <- panelWorkingBrush)
-let showConversationIsReady wrapperCtl =
-    WpfUtils.dispatchMessage wrapperCtl (fun _ -> wrapperCtl.Background <- Brushes.White)
-*)
     
 let (showConversationIsUpdating, showConversationIsReady, showConversationWillBeProcessed) =
     let updateBackground (wrapperCtl:StackPanel) brush = 
@@ -100,7 +95,7 @@ let getAsyncConversationUpdate (controls:WpfUtils.conversationControls) rootStat
             |> ConversationState.conversationsState.UpdateConversation 
             |> ignore
         let updatedStatus = ConversationState.conversationsState.GetConversation rootStatus.StatusId
-        statusUpdated.Trigger(controls, currentStatus, updatedStatus)
+        statusUpdated.Trigger(controls, updatedStatus)
         showConversationIsReady wrapper
     }
 
@@ -133,12 +128,11 @@ let addConversationCtls addTo rootStatus =
                                               )
     rootStatus
 
-let refreshOneConversation originalRootStatusBeforeUpdate rootStatus =
+let refreshOneConversation rootStatus =
     let controls = controlsCache.[rootStatus.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
-        WpfUtils.updateConversation controls rootStatus
-        |> Seq.iter (fun detailCtl -> //conversationNodeControlsInfo
-            if not (containsInChildren originalRootStatusBeforeUpdate detailCtl.Status) then detailCtl.Detail.Background <- Brushes.Yellow)
+        for detailCtl in WpfUtils.updateConversation controls rootStatus do
+            if detailCtl.Status.Inserted >= lastUpdateall then detailCtl.Detail.Background <- Brushes.Yellow
     )
 
 let setNewConversationContent rootStatus =
@@ -147,9 +141,9 @@ let setNewConversationContent rootStatus =
         WpfUtils.setNewConversation controls rootStatus |> ignore
     )
 
-StatusUpdated.Add(fun (controls, originalStatus, updatedStatus) ->
+StatusUpdated.Add(fun (controls, updatedStatus) ->
     WpfUtils.dispatchMessage controls.Statuses (fun _ ->
-        refreshOneConversation originalStatus updatedStatus //controls
+        refreshOneConversation updatedStatus
     )
 )
 
@@ -201,7 +195,7 @@ let addNewlyFoundStatuses() =
 
         // check and adds new children for given status
         let rec checkStatusForNewChildren status =
-            StatusesReplies.newlyAddedStatusesState.GetNewReplies (status.StatusId, (status.Children|>Seq.map Status.getId))
+            StatusesReplies.newlyAddedStatusesState.GetNewReplies (status, (status.Children|>Seq.map Status.getId))
             |> Seq.map (doAndRet news.Add)
             |> Seq.iter status.Children.Add
             status.Children.Sort(fun s1 s2 -> s1.StatusId.CompareTo(s2.StatusId))
@@ -209,16 +203,15 @@ let addNewlyFoundStatuses() =
             |> Seq.iter checkStatusForNewChildren
         checkStatusForNewChildren root
         (root, news)
-      
-    ()  
-//    ConversationState.conversationsState.GetConversations()
-//    |> List.filter (fun root newstats -> newstats.Count > 0)
-//    |> List.iter (fun root newstats -> )
+        
+    ConversationState.conversationsState.GetConversations()
+    |> List.map checkConversationForNewChildren
+    |> List.filter (fun (root,newstats) -> newstats.Count > 0)
+    |> List.iter (fst >> refreshOneConversation)
     
     
 let mutable (cts:CancellationTokenSource) = null
 let mutable (paused:bool) = false
-let mutable (lastUpdateall:DateTime) = DateTime.MinValue
 let updateAllStarted() =
     WpfUtils.dispatchMessage window (fun _ ->
         updateAll.Visibility <- Visibility.Collapsed; pauseUpdate.Visibility <- Visibility.Visible; cancelUpdate.Visibility <- Visibility.Visible)

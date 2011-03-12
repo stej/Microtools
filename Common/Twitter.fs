@@ -288,3 +288,10 @@ let loadPublicStatuses() =
        |> List.sortBy (fun status -> status.Date)
     newStatuses |> List.iter (fun s -> StatusDb.statusesDb.SaveStatus(Status.Public, s))
     newStatuses
+
+let getStatusId status =
+    status.StatusId
+let sameId status1 status2 =
+    status1.StatusId = status2.StatusId
+let isParentOf parent status =
+    parent.StatusId = status.ReplyTo
