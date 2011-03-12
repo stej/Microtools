@@ -127,13 +127,21 @@ let addConversationCtls addTo rootStatus =
                                               //bindDelete controls rootStatus
                                               )
     rootStatus
-
-let refreshOneConversation rootStatus =
+    
+let freshStatusColorer = (fun status -> status.Inserted >= lastUpdateall), Brushes.Yellow
+/// refreshes the status (all the conversation)
+/// @fnShouldColor = function that returns true if @color should be applied
+let refreshOneConversationEx (colorers:((status->bool)*SolidColorBrush) list) rootStatus =
     let controls = controlsCache.[rootStatus.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
         for detailCtl in WpfUtils.updateConversation controls rootStatus do
-            if detailCtl.Status.Inserted >= lastUpdateall then detailCtl.Detail.Background <- Brushes.Yellow
+            let color = colorers |> List.tryPick (fun (fn,color) -> if fn detailCtl.Status then Some(color) else None)
+            match color with
+            | None -> ()
+            | Some(c) -> detailCtl.Detail.Background <- c
     )
+let refreshOneConversation rootStatus =
+    refreshOneConversationEx [freshStatusColorer] rootStatus
 
 let setNewConversationContent rootStatus =
     let controls = controlsCache.[rootStatus.StatusId]
@@ -203,11 +211,15 @@ let addNewlyFoundStatuses() =
             |> Seq.iter checkStatusForNewChildren
         checkStatusForNewChildren root
         (root, news)
-        
+
+    let statusInNews news status =                                          // returns true if passed status is news list
+        news |> Seq.exists (fun child -> child.StatusId = status.StatusId)
+    let newlyAddedStatusColorer news = 
+        statusInNews news, Brushes.Red                                      // fn that takes one param - news and returns tuple; frst is fn taking status
     ConversationState.conversationsState.GetConversations()
     |> List.map checkConversationForNewChildren
     |> List.filter (fun (root,newstats) -> newstats.Count > 0)
-    |> List.iter (fst >> refreshOneConversation)
+    |> List.iter (fun (root,newstats) -> refreshOneConversationEx [newlyAddedStatusColorer newstats; freshStatusColorer] root)
     
     
 let mutable (cts:CancellationTokenSource) = null
