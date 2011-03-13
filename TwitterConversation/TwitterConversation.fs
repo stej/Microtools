@@ -197,6 +197,7 @@ let addNewlyFoundConversations() =
                                                 |> ConversationState.conversationsState.AddConversation
                                                 |> setNewConversationContent)
 let addNewlyFoundStatuses() =
+    Utils.log Utils.Info "Looking for newly found statuses"
     let checkConversationForNewChildren root =
         // newly added status; global for all the conversation
         let news = new ResizeArray<status>()
@@ -215,10 +216,11 @@ let addNewlyFoundStatuses() =
     let statusInNews news status =                                          // returns true if passed status is news list
         news |> Seq.exists (fun child -> child.StatusId = status.StatusId)
     let newlyAddedStatusColorer news = 
-        statusInNews news, Brushes.Red                                      // fn that takes one param - news and returns tuple; frst is fn taking status
+        statusInNews news, Brushes.LightSalmon                              // fn that takes one param - news and returns tuple; frst is fn taking status
     ConversationState.conversationsState.GetConversations()
     |> List.map checkConversationForNewChildren
     |> List.filter (fun (root,newstats) -> newstats.Count > 0)
+    |> List.map (doAndRet (fun (root,newstats) -> Utils.log Utils.Info (sprintf "%s %s has NEW STATUSES. Count: %d" root.UserName root.Text newstats.Count)))
     |> List.iter (fun (root,newstats) -> refreshOneConversationEx [newlyAddedStatusColorer newstats; freshStatusColorer] root)
     
     
