@@ -3,6 +3,7 @@
 open System
 open System.Xml
 open System.Collections.Generic
+open System.Text.RegularExpressions
 open Utils
 open OAuth
 
@@ -35,7 +36,8 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
               member x.MatchesFilter (filter:statusFilter) = 
                 let matchItem = function 
                                 | (UserName, text) -> System.String.Compare(x.UserName, text, StringComparison.InvariantCultureIgnoreCase) = 0
-                                | (Text, text) -> x.Text.IndexOf(text, StringComparison.InvariantCultureIgnoreCase) >= 0
+                                | (Text, text) -> let pattern = sprintf "%s%s%s" (if text.StartsWith("*") then "" else "\\b") (Regex.Escape(text.Replace("*",""))) (if text.EndsWith("*") then "" else "\\b")
+                                                  Regex.Match(x.Text, pattern).Success
                 let rec matchrec filter =
                     match filter with
                     | head::tail -> if matchItem head then true
