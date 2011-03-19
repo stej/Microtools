@@ -139,10 +139,11 @@ type StatusesDbState() =
                     //select distinct s.* from Status s join Status reply on s.StatusId=reply.ReplyTo and s.ReplyTo = -1 order by s.StatusId desc limit 0,@maxcount
                     cmd.CommandText <- "select s.* from Status s 
                                             where 
-                                                (s.ReplyTo = -1 and 
-                                                 s.Source = @sourceTimeline and 
-                                                 exists (select StatusId from Status s0 where s0.ReplyTo = s.StatusId))
-                                                or s.Source = @sourceConv
+                                                s.ReplyTo = -1 and 
+                                                ((s.Source = @sourceTimeline and 
+                                                  exists (select StatusId from Status s0 where s0.ReplyTo = s.StatusId))
+                                                  or 
+                                                  s.Source = @sourceConv)
                                             order by s.StatusId desc 
                                             limit 0, @maxcount"
                     addCmdParameter cmd "@maxcount" maxCount
