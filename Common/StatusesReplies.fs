@@ -116,35 +116,40 @@ let rootConversation (status:status) =
     
 // takes list of statuses
 // for each status checks if it is placed in conversation. If it is, it finds the root
-let rootConversations baseStatuses (statuses: status list) =
-    // function that processes one status and either adds it to the list (if it is not a reply)
-    // 2) or if there is no reply parent, loads reply parent (and its parent, ...) and adds it to the list
+let rootConversations baseStatuses (toRoot: status list) =
+    // function that processes one status that is reply to other status and 
+    // 2) or if there is no reply parent in resStatuses, loads reply parent (and its parent, ...) and adds it to the list
     // 3) or if there is reply parent, adds the status as a child
     // For step 2) - after several iterations when finding parent, parent might be found, so the subtree is just added to its children
-    let addStatusOrRootConversation resStatuses currStatus =
-        if currStatus.ReplyTo = -1L then 
-            log Debug (sprintf "Status %s %d is not reply" currStatus.UserName currStatus.StatusId)
-            List.append resStatuses [currStatus] // join current statuses with this one (no conversation); ugly - other way??
-        else
-            // try to append the currentSubtree somewhere to the resStatuses
-            let rec append currentSubtree =
-                if currentSubtree.ReplyTo = -1L then
-                    log Debug (sprintf "Subtree %s %d is whole branch->adding to list" currentSubtree.UserName currentSubtree.StatusId)
-                    List.append resStatuses [currentSubtree]     // the subtree is aded to the top, because we reached root of the conversation and it wasn't rooted yet anywhere else
-                else
-                    // currentSubtree is a status with some children, but the status is not be rooted yet
-                    let parent = Status.GetStatusFromConversations currentSubtree.ReplyTo resStatuses       // is somewhere in resStatuses current status?
-                    match parent with
-                    |None -> log Debug (sprintf "Parent for status %s %d not found, will be loaded" currentSubtree.UserName currentSubtree.StatusId)
-                             let newRoot = getStatusOrEmpty Status.RequestedConversation currentSubtree.ReplyTo    // there is no parent -> load it and add current as child
-                             newRoot.Children.Add(currentSubtree)
-                             append newRoot
-                    |Some(p) ->
-                             log Debug (sprintf "Subtree %s %d found parent %s %d" currentSubtree.UserName currentSubtree.StatusId p.UserName p.StatusId)
-                             p.Children.Add(currentSubtree)
-                             resStatuses // return unchanged resStatuses
-            match GetStatusFromConversations currStatus.StatusId resStatuses with
-            |None    -> append currStatus
-            |Some(_) -> log Debug (sprintf "Status %s %d already added. Skipping" currStatus.UserName currStatus.StatusId)
-                        resStatuses
-    statuses |> List.fold addStatusOrRootConversation baseStatuses
+    let rootConversation resStatuses currStatus =
+        // try to append the currentSubtree somewhere to the resStatuses
+        let rec append currentSubtree =
+            if currentSubtree.ReplyTo = -1L then
+                log Debug (sprintf "Subtree %s %d is whole branch->adding to list" currentSubtree.UserName currentSubtree.StatusId)
+                List.append resStatuses [currentSubtree]     // the subtree is aded to the top, because we reached root of the conversation and it wasn't rooted yet anywhere else
+            else
+                // currentSubtree is a status with some children, but the status is not be rooted yet
+                let parent = Status.GetStatusFromConversations currentSubtree.ReplyTo resStatuses       // is somewhere in resStatuses current status?
+                match parent with
+                |None -> log Debug (sprintf "Parent for status %s %d not found, will be loaded" currentSubtree.UserName currentSubtree.StatusId)
+                         let newRoot = getStatusOrEmpty Status.RequestedConversation currentSubtree.ReplyTo    // there is no parent -> load it and add current as child
+                         newRoot.Children.Add(currentSubtree)
+                         append newRoot
+                |Some(p) ->
+                         log Debug (sprintf "Subtree %s %d found parent %s %d" currentSubtree.UserName currentSubtree.StatusId p.UserName p.StatusId)
+                         p.Children.Add(currentSubtree)
+                         resStatuses // return unchanged resStatuses
+        match GetStatusFromConversations currStatus.StatusId resStatuses with
+        |None    -> append currStatus
+        |Some(_) -> log Debug (sprintf "Status %s %d already added. Skipping" currStatus.UserName currStatus.StatusId)
+                    resStatuses
+    // first add root statuses (statuses that aren't replies, ReplyTo is -1)
+    // thats because the algorithm is quite simple when first non-replies are added and possible replies bound later
+    let baseWithPlainStatuses =
+        toRoot
+        |> Seq.filter (fun s -> s.ReplyTo = -1L)
+        |> Seq.fold (fun currStatuses currStatus -> currStatus::currStatuses) baseStatuses
+    // and then root replies
+    toRoot 
+        |> Seq.filter (fun s -> s.ReplyTo <> -1L) 
+        |> Seq.fold rootConversation baseWithPlainStatuses
