@@ -41,7 +41,7 @@
             HorizontalScrollBarVisibility="disabled"
             HorizontalAlignment="stretch"
             VerticalAlignment="stretch">
-            <WrapPanel Height="auto" x:Name="images">
+            <WrapPanel Height="auto" x:Name="content">
             </WrapPanel>
           </ScrollViewer>
         </DockPanel>

@@ -14,10 +14,11 @@ open ipy
 open System.Windows
 open System.Windows.Controls
 open System.Windows.Data
+open System.Windows.Documents
 
 let window = WpfUtils.createXamlWindow "Twipy.xaml"
 let switcher = window.FindName("switchView") :?> Button
-let wrap = window.FindName("images") :?> WrapPanel
+let wrap = window.FindName("content") :?> WrapPanel
 let imagesHolder = window.FindName("imagesHolder") :?> UIElement
 let detailsHolder = window.FindName("detailsHolder") :?> UIElement
 let details = window.FindName("statusDetails") :?> StackPanel
@@ -50,6 +51,15 @@ type public Helpers () =
     member x.loadTree status = StatusesReplies.loadSavedReplyTree status
     member x.show statuses = 
         WpfUtils.dispatchMessage window (fun _ -> fillPictures statuses; fillDetails statuses)
+    member x.showAsText o =
+        WpfUtils.dispatchMessage window (fun _ -> 
+            wrap.Children.Clear()
+            let ret = new TextBlock(TextWrapping = TextWrapping.Wrap,
+                            Padding = new Thickness(0.),
+                            Margin = new Thickness(5., 0., 0., 5.))
+            ret.Inlines.Add(new Run(o.ToString()))
+            wrap.Children.Add(ret) |> ignore
+        )
     
 let newScope() =
     let values = new Dictionary<string, obj>()
