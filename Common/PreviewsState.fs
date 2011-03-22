@@ -10,11 +10,12 @@ open Status
 ///   conversation root that is added to collection @currStatusesWithRoots
 ///   - if any two statuses share the same parent, they are added to the parent's collection; there is no duplication
 let addAndRootStatuses currStatuses currStatusesWithRoots toAdd =
-    /// todo - make map
-    let flattened = Flatten currStatusesWithRoots
+    let currIds = Flatten currStatusesWithRoots 
+                  |> Seq.map getId 
+                  |> Set.ofSeq
     /// Seq.filter - statuses that should be added and are not contained even in conversation roots        
     let rooted = toAdd 
-                    |> Seq.filter (fun status -> not (flattened |> Seq.exists (fun s0 -> s0.StatusId = status.StatusId)))
+                    |> Seq.filter (fun status -> not (currIds.Contains(status.StatusId)))
                     |> Seq.map (fun status -> printfn "Add %d - %s" status.StatusId status.UserName; status)
                     |> Seq.toList
                     |> StatusesReplies.rootConversations currStatusesWithRoots
@@ -22,7 +23,7 @@ let addAndRootStatuses currStatuses currStatusesWithRoots toAdd =
     (plain, rooted)
   
 type PreviewStateMessages =
-| AddStatuses of status seq
+| AddStatuses of status seq * AsyncReplyChannel<unit>
 | GetStatuses of AsyncReplyChannel<status list * status list>
 | GetFirstStatusId of AsyncReplyChannel<Int64 option>
 | ClearStatuses
@@ -34,9 +35,10 @@ type UserStatusesState() =
                 let! msg = mbox.Receive()
                 Utils.log Utils.Debug (sprintf "Preview state message: %A" msg)
                 match msg with
-                | AddStatuses(toAdd) ->
+                | AddStatuses(toAdd, chnl) ->
                     let newstatuses, newStatusesWithRoots = addAndRootStatuses statuses statusesWithRoots toAdd
                     printfn "Added. Count of statuses: %d" newstatuses.Length
+                    chnl.Reply(())
                     return! loop newstatuses newStatusesWithRoots
                 | ClearStatuses ->
                     return! loop [] []
@@ -53,7 +55,7 @@ type UserStatusesState() =
             Utils.log Utils.Debug "Starting Preview state"
             loop [] []
         )
-    member x.AddStatuses(s) = mbox.Post(AddStatuses(s))
+    member x.AddStatuses(s) = mbox.PostAndReply(fun reply -> AddStatuses(s, reply))
     member x.GetStatuses() = mbox.PostAndReply(GetStatuses)
     member x.GetFirstStatusId() = mbox.PostAndReply(GetFirstStatusId)
     member x.ClearStatuses() = mbox.Post(ClearStatuses)
