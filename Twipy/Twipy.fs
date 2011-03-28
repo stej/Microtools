@@ -60,6 +60,49 @@ type public Helpers () =
             ret.Inlines.Add(new Run(o.ToString()))
             wrap.Children.Add(ret) |> ignore
         )
+    member x.exportToHtml (statuses: status seq) =
+        let file = System.IO.Path.GetTempFileName().Replace(".tmp", ".html")
+        let processText text =
+            let parts = seq { 
+                for part in WpfUtils.regexUrl.Split(text) do
+                    if WpfUtils.regexUrl.IsMatch(part) then
+                        let matchGroups = WpfUtils.regexUrl.Match(part).Groups
+                        if matchGroups.["url"].Success then yield! (sprintf "<a href=\"%s\">%s</a>" part part)
+                        else if matchGroups.["user"].Success then yield! (sprintf "<a href=\"http://twitter.com/%s\">%s</a>" (part.TrimStart('@')) part)
+                    else
+                        yield! part
+            }
+            String.Join("", parts)
+        let rec processStatus depth status =
+            let text = sprintf "
+                            <div class=\"status\" style=\"margin-left:%dem\">
+                                <img src=\"%s\" />
+                                <div class=\"body\">
+                                  <div class=\"meta\">
+                                    <a href=\"http://twitter.com/%s/status/%d\">%d</a>
+                                    %s
+                                  </div>
+                                  <span>%s</span>
+                                </div>
+                            </div>" (depth*3) status.UserProfileImage status.UserName status.StatusId status.StatusId (status.Date.ToString("yyyy-MM-dd HH:mm")) (processText status.Text)
+            System.IO.File.AppendAllText(file, text)
+            status.Children |> Seq.iter (processStatus (depth+1))
+        System.IO.File.AppendAllText(file, "<html>
+            <head>
+                <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />
+                <style>
+                    .status { font-family: Verdana; font-size: 10pt; color:#444; margin-bottom:.5em }
+                    .status img { width: 40px; height: 40px; display:inline-block; }
+                    .status .body { width: 40em; display:inline-block; vertical-align:top }
+                    .status .meta { font-size: smaller; color: #999; font-style:italic }
+                    .status .meta a { text-decoration: none }
+                </style>
+            </head>
+            <body>")
+        statuses |> Seq.iter (processStatus 0)
+        System.IO.File.AppendAllText(file, "</body>
+        </html>")
+        System.Diagnostics.Process.Start(file)
     
 let newScope() =
     let values = new Dictionary<string, obj>()

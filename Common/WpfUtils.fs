@@ -12,7 +12,7 @@ open System.Windows.Media
 open System.Diagnostics
 open Status
 
-let private regexUrl = new System.Text.RegularExpressions.Regex("(?<user>@\w+)|" + "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
+let regexUrl = new System.Text.RegularExpressions.Regex("(?<user>@\w+)|" + "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
 
 let (fontSize, pictureSize) = 
     let s = match System.Configuration.ConfigurationManager.AppSettings.["size"].ToString() with
@@ -44,10 +44,10 @@ let private BrowseHlClick (e:Navigation.RequestNavigateEventArgs) =
 
 let private linkFromText text =
     let matchGroups = regexUrl.Match(text).Groups
-    let url = if matchGroups.["url"].Success then text
-              else if matchGroups.["user"].Success then (sprintf "http://twitter.com/#!/%s" text)
-              else failwith "unknown regex group"
-    let hl = new Hyperlink(new Run(text),
+    let url, txt = if matchGroups.["url"].Success then text,text
+                   else if matchGroups.["user"].Success then (sprintf "http://twitter.com/%s" (text.TrimStart('@')), text)
+                   else failwith "unknown regex group"
+    let hl = new Hyperlink(new Run(txt),
                            NavigateUri = new Uri(url))
     hl.RequestNavigate.Add(BrowseHlClick)
     hl

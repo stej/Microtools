@@ -83,3 +83,13 @@ import Microsoft.FSharp.Collections
 list = Microsoft.FSharp.Collections.ListModule.OfSeq[Status+status]([st[0]])
 a = Microsoft.FSharp.Collections.FSharpList[Status+status](10, list)
 print a.GetType()
+####################
+st = db.GetRootStatusesHavingReplies(2)
+for status in st:
+  helper.loadTree(status)
+helper.exportToHtml(st)
+###################
+st = db.GetStatusesFromSql("select * from Status where UserName like 'AugiCZ' where ReplyTo=-1")
+for status in st:
+  helper.loadTree(status)
+helper.exportToHtml(st)
