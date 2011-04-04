@@ -11,7 +11,19 @@ type NewlyFoundRepliesMessages =
 | AddStatus of status
 | GetNewReplies of status * int64 seq * AsyncReplyChannel<status seq>
 | Clear
-
+/// Storage with new unexpected replies.
+/// Unexpected means that when checking a conversation, all current replies are found. However, later when checking other conversation,
+/// new replies to the previous one may be found. It is because the application doesn't search for replies, but for mentions. 
+/// Example: consider this conversation tree
+/// Bart -- Jane -- Paul
+///      |- Kr   -- ...
+/// Matt -- Paul -- James
+///      |- ...
+/// When downloading replies (~mentions) for conversation with root Bart, all current replies are found. Then suppose that immediatelly 
+/// after that someone replies to Paul and then application starts checking for replies to Matt. Because app searches for mentions, reply to
+/// Paul from first conversation is found as well. So it is stored later and will be added to first conversation.
+/// Why later and not immediatelly? In case that when checking first conversation even Jane didn't respond, so there is only Kr responding, then it 
+/// is not obvious that Paul is responding to Bart's conversation. it could be found (downloading parent until possible), but we would ran out of limits very soon)
 type NewlyFoundReplies() =
     let mbox = 
         MailboxProcessor.Start(fun mbox ->

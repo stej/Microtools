@@ -44,6 +44,8 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                                     else matchrec tail
                     | [] -> false
                 matchrec filter
+              member x.ChildrenIds () =
+                x.Children |> Seq.map (fun s -> s.StatusId)
 
 /// parses filter text to objects
 let parseFilter (text:string) = 

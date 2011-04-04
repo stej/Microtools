@@ -199,12 +199,12 @@ let addNewlyFoundConversations() =
 let addNewlyFoundStatuses() =
     Utils.log Utils.Info "Looking for newly found statuses"
     let checkConversationForNewChildren root =
-        // newly added status; global for all the conversation
+        // newly added statuses; global for all the conversation
         let news = new ResizeArray<status>()
 
-        // check and adds new children for given status
+        // checks and adds new children for given status to @news list
         let rec checkStatusForNewChildren status =
-            StatusesReplies.newlyAddedStatusesState.GetNewReplies (status, (status.Children|>Seq.map Status.getId))
+            StatusesReplies.newlyAddedStatusesState.GetNewReplies (status, status.ChildrenIds())
             |> Seq.map (doAndRet news.Add)
             |> Seq.iter status.Children.Add
             status.Children.Sort(fun s1 s2 -> s1.StatusId.CompareTo(s2.StatusId))

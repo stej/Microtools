@@ -47,8 +47,10 @@ let fillDetails statuses =
         let controls = WpfUtils.createConversationControls WpfUtils.End details
         WpfUtils.setNewConversation controls rootStatus
         |> Seq.iter (fun detailCtl ->   //conversationNodeControlsInfo
+                        if detailCtl.Status.StatusId < PreviewsState.userStatusesState.GetFirstStatusId().Value then
+                            detailCtl.Detail.Opacity <- 0.4
                         if detailCtl.Status.MatchesFilter(filter) then
-                            detailCtl.Detail.Opacity <- 0.3
+                            detailCtl.Detail.Opacity <- 0.2
                      )
     details.Children.Clear()
     statuses 
