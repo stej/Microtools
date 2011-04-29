@@ -210,7 +210,8 @@ let search name (sinceId:Int64) =
 
 let friendsStatuses (fromStatusId:Int64) = 
     log Info (sprintf "Get friends from %d" fromStatusId)
-    let url = sprintf "http://api.twitter.com/1/statuses/friends_timeline.xml?since_id=%d&count=3200" fromStatusId
+    let from = if fromStatusId < 1000L then 1000L else fromStatusId
+    let url = sprintf "http://api.twitter.com/1/statuses/friends_timeline.xml?since_id=%d&count=3200" from
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
      | None -> xml.LoadXml("<statuses type=\"array\"></statuses>")
@@ -220,7 +221,8 @@ let friendsStatuses (fromStatusId:Int64) =
     
 let mentionsStatuses (fromStatusId:Int64) = 
     log Info (sprintf "Get mentions from %d" fromStatusId)
-    let url = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d" fromStatusId
+    let from = if fromStatusId < 1000L then 1000L else fromStatusId
+    let url = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d" from
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
      | None -> xml.LoadXml("<statuses type=\"array\"></statuses>")

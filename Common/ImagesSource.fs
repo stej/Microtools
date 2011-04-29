@@ -38,7 +38,7 @@ let ensureStatusImage (status: Status.status) =
 let ensureStatusImageNoRet (status: Status.status) =
     ensureStatusImage status |> ignore
 let ensureStatusesImages (statuses: Status.status list) =
-    statuses |>  List.map ensureStatusImage
+    statuses |> List.map ensureStatusImage
     
 printfn "Images directory is %s" directory
 if not (Directory.Exists(directory)) then 

@@ -1,4 +1,5 @@
 module Updates
+(*
 open System
 open System.Data.SQLite
 
@@ -27,7 +28,7 @@ let getDbVersion() =
              Minor = Convert.ToInt32(r.["Minor"])
              Updated = new DateTime(Convert.ToInt64(r.["Updated"]))
            }
-       | _ -> failwith "unexpected: DbVesion doesn't exist"
+       | _ -> failwith "unexpected: DbVersion doesn't exist"
     )
 
 let execNonquery text =
@@ -61,3 +62,4 @@ let update() =
           updateTo_0_1()
         
     updateDbVersion ver.Major ver.Minor
+*)

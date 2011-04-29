@@ -28,12 +28,16 @@ let limitCtl = window.FindName("limit") :?> TextBlock
 let appStateCtl = window.FindName("appState") :?> TextBlock
 let filterCtl = window.FindName("filter") :?> TextBox
 
+let setAppState state = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
+let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1))
+let setAppState2 (format:string) p1 p2 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1, p2))
+
 filterCtl.Text <- Utils.Settings.Filter
 
 // status downloaded from Twitter
 Twitter.NewStatusDownloaded 
     |> Event.add (fun (source,status) -> StatusDb.statusesDb.SaveStatus(source, status)
-                                         printf "s")
+                                         setAppState2 "Saving status {0} - {1}" status.UserName status.StatusId)
 
 let fillPictures statuses =
     wrap.Children.Clear()
@@ -57,9 +61,6 @@ let fillDetails statuses =
       |> Seq.sortBy (fun status -> status |> Status.GetStatusIdsForNode |> Seq.sortBy (fun statusid -> -statusid) |> Seq.nth 0)
       |> Seq.iter (fun rootStatus -> WpfUtils.dispatchMessage window (fun f -> showStatus rootStatus))
 
-let setAppState state = 
-    WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
-
 Twitter.twitterLimits.Start()
 
 window.Loaded.Add(
@@ -68,9 +69,12 @@ window.Loaded.Add(
           let rec asyncloop() = 
             setAppState "Loading.."
             Twitter.loadNewPersonalStatuses()    // or StatusesReplies.loadPublicStatuses
-                |> ImagesSource.ensureStatusesImages
                 |> PreviewsState.userStatusesState.AddStatuses
             let list,tree = PreviewsState.userStatusesState.GetStatuses()
+            Flatten tree 
+                |> Seq.toList
+                |> ImagesSource.ensureStatusesImages
+                |> ignore
             WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
                                                     fillDetails tree)
             setAppState (sprintf "Done.. Count: %d" list.Length)
@@ -132,5 +136,5 @@ switcher.Click.Add(fun _ ->
 do
     let ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version
     printfn "%i-%i-%i-%i" ver.Major ver.Minor ver.Build ver.Revision
-    Updates.update()
+    //Updates.update()
     (new Application()).Run(window) |> ignore
