@@ -10,7 +10,10 @@ open System.Windows.Documents
 open System.Windows.Threading
 open System.Windows.Media
 open System.Diagnostics
+open System.IO
 open Status
+
+open System.Windows.Media.Imaging
 
 let regexUrl = new System.Text.RegularExpressions.Regex("(?<user>@\w+)|" + "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
 
@@ -22,12 +25,30 @@ let (fontSize, pictureSize) =
     printf "UI size is %A" s
     s
 
-let private createPicture size margin (status:status) = 
-    let source = new Imaging.BitmapImage()
+let private createPicture size margin (status:status) =
+    (* 
+    use fs = File.Open(@"d:\temp\TwitterConversation\bin\Debug\images\Twitter-JustinEtheredge-Photo_on_2011-02-21_at_17.11__3_normal.jpg", System.IO.FileMode.Open, System.IO.FileAccess.ReadWrite)
+    let decoder = BitmapDecoder.Create(fs, BitmapCreateOptions.None, BitmapCacheOption.Default);
+    // grab the bitmap frame, which contains the metadata
+    let frame = decoder.Frames.[0];
+    // get the metadata as BitmapMetadata
+    let metadata = frame.Metadata; // :> BitmapMetadata
+    // close the stream before returning
+    fs.Close()
+ 
+    // return a null array if keywords don't exist.  otherwise, return a string array
+    //if metadata != null && metadata.Keywords != null then
+        //let a =  metadata.Keywords.ToArray()
+        //printfn "%A" a
+        *)
+
+
+    let source = new Imaging.BitmapImage(CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile)
     let imagePath = ImagesSource.getImagePath status
     source.BeginInit();
-    source.UriSource <- new Uri(imagePath, System.UriKind.Relative);
+    source.UriSource <- new Uri(imagePath, System.UriKind.RelativeOrAbsolute);
     source.DecodePixelWidth <- int pictureSize
+    source.CacheOption <- BitmapCacheOption.OnLoad
     source.EndInit()
     new Image(Source = source,
               Name = "image",
@@ -37,6 +58,26 @@ let private createPicture size margin (status:status) =
               ToolTip = new ToolTip(Content = (sprintf "%s %A\n%s" status.UserName status.Date status.Text)),
               VerticalAlignment = VerticalAlignment.Top)
               //Stretch <- Media.Stretch.Uniform
+          
+    (*let source = new Imaging.BitmapImage() //CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile
+    let imagePath = ImagesSource.getImagePath status
+    source.BeginInit();
+    source.UriSource <- new Uri(imagePath, System.UriKind.RelativeOrAbsolute);
+    source.StreamSource <- System.IO.File.OpenRead(imagePath)
+    source.DecodePixelWidth <- int pictureSize
+    source.EndInit()
+    let imageData = Array.create (int source.StreamSource.Length) 0uy
+    source.StreamSource.Seek(0L, System.IO.SeekOrigin.Begin) |> ignore
+    source.StreamSource.Read(imageData, 0, imageData.Length) |> ignore
+
+    new Image(Source = source,
+              Name = "image",
+              Margin = margin,
+              Width = pictureSize,
+              Height = pictureSize,
+              ToolTip = new ToolTip(Content = (sprintf "%s %A\n%s" status.UserName status.Date status.Text)),
+              VerticalAlignment = VerticalAlignment.Top)
+              //Stretch <- Media.Stretch.Uniform*)
 
 let private BrowseHlClick (e:Navigation.RequestNavigateEventArgs) =
     Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)) |> ignore
