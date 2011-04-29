@@ -2,6 +2,7 @@
 * reply to a status
 * mark as favorite
 * (bug) when updating conversations - not all new responses are shown
-  -> store date of conversation and date when tweet was added; all added tweets should be displayed
+  OK
 1/2 filter 
 OK topmost
+* retweets

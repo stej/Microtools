@@ -6,6 +6,7 @@ open Utils
 open OAuth
 open Status
 open System.Windows.Threading
+open System.Linq
 
 OAuth.checkAccessTokenFile()
 
@@ -93,12 +94,17 @@ window.Loaded.Add(
             asyncLoop()
         } |> Async.Start
 )
-/// fires immediatelly refresh of the content are; would be better to use Rx to wait for some time before refresh (500ms)
-filterCtl.TextChanged.Add(fun _ ->
-    let list,tree = PreviewsState.userStatusesState.GetStatuses()
-    fillPictures list
-    fillDetails tree
-)
+
+// react on changes in filter; what is this cast? http://stackoverflow.com/questions/5131372/how-to-convert-a-wpf-button-click-event-into-observable-using-rx-and-f
+(filterCtl.TextChanged :> IObservable<_>)
+    .Throttle(TimeSpan.FromMilliseconds(800.))
+    .DistinctUntilChanged()
+    .Subscribe(fun _ -> 
+        let list,tree = PreviewsState.userStatusesState.GetStatuses()
+        WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
+                                                fillDetails tree)
+    ) |> ignore
+
 up.Click.Add(fun _ -> 
     async {
         let firstStatusId:Int64 = 
