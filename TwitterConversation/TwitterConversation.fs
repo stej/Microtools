@@ -173,14 +173,15 @@ window.Loaded.Add(fun _ ->
 
     async {
         setState "Reading.."
-        readStatuses()
+        let statuses = readStatuses()
+        statuses
             |> Seq.map ImagesSource.ensureStatusImage
             |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.End
                                               |> StatusesReplies.loadSavedReplyTree
                                               |> ConversationState.conversationsState.AddConversation
                                               |> setNewConversationContent
                )
-        setState "Done.."
+        setState (sprintf "Done.. Count: %d" (Seq.length statuses))
     } |> Async.Start
 
     updateTwitterLimit |> Async.Start

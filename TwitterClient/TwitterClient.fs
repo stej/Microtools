@@ -70,10 +70,10 @@ window.Loaded.Add(
             Twitter.loadNewPersonalStatuses()    // or StatusesReplies.loadPublicStatuses
                 |> ImagesSource.ensureStatusesImages
                 |> PreviewsState.userStatusesState.AddStatuses
-            WpfUtils.dispatchMessage wrap (fun _ -> let list,tree = PreviewsState.userStatusesState.GetStatuses()
-                                                    fillPictures list
+            let list,tree = PreviewsState.userStatusesState.GetStatuses()
+            WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
                                                     fillDetails tree)
-            setAppState "Done.."
+            setAppState (sprintf "Done.. Count: %d" list.Length)
             async { do! Async.Sleep(1000*60*5) } |> Async.RunSynchronously
             asyncloop()
           asyncloop()
