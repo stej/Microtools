@@ -63,8 +63,11 @@ let requestTwitter url =
         let req = getNewSession().Request(getAccessToken())
         req.Context.RequestMethod <- "GET"
         req.Context.RawUri <- new System.Uri(url)
+        let req0 = req.ToWebRequest()
+        req0.Timeout <- 1000 * 30 // 30 sec
         try 
-            let response = req.ToWebResponse()
+            //let response = req.ToWebResponse()
+            let response = req0.GetResponse() :?> System.Net.HttpWebResponse    // by reflector
             Some(DevDefined.OAuth.Utility.StreamExtensions.ReadToEnd(response), response)
         with
           | :? System.Net.WebException as ex -> Some("", ex.Response :?> System.Net.HttpWebResponse)

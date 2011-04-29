@@ -40,7 +40,7 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                                                   let mid  = Regex.Escape(text.Replace("*",""))
                                                   let right = if text.EndsWith("*") then "" else "\\b"
                                                   let pattern = sprintf "%s%s%s" left mid right
-                                                  Regex.Match(x.Text, pattern).Success
+                                                  Regex.Match(x.Text, pattern, RegexOptions.IgnoreCase).Success
                 let rec matchrec filter =
                     match filter with
                     | head::tail -> if matchItem head then true

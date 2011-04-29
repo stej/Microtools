@@ -26,7 +26,7 @@ let private createPicture size margin (status:status) =
     let source = new Imaging.BitmapImage()
     let imagePath = ImagesSource.getImagePath status
     source.BeginInit();
-    source.UriSource <- new Uri(imagePath, System.UriKind.RelativeOrAbsolute);
+    source.UriSource <- new Uri(imagePath, System.UriKind.Relative);
     source.DecodePixelWidth <- int pictureSize
     source.EndInit()
     new Image(Source = source,
