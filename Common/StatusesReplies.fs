@@ -29,7 +29,7 @@ type NewlyFoundReplies() =
         MailboxProcessor.Start(fun mbox ->
             let rec loop replies = async {
                 let! msg = mbox.Receive()
-                Utils.log Utils.Debug (sprintf "Newly found replies, message: %A" msg)
+                ldbgp "Newly found replies, message: {0}" msg
                 match msg with
                 | Clear ->
                     return! loop []
@@ -47,7 +47,7 @@ type NewlyFoundReplies() =
                     chnl.Reply(ret)
                     return! loop replies
             }
-            Utils.log Utils.Debug "Starting NewlyFoundReplies"
+            ldbg "Starting NewlyFoundReplies"
             loop []
         )
     do
@@ -81,7 +81,7 @@ let loadSavedReplyTree initialStatus =
 let findReplies initialStatus =
     let rec findRepliesIn depth status =
         let getStatusIdFromNode node =
-            log Debug "status from node"
+            ldbg "status from node"
             node |> xpathValue "id" |> Int64OrDefault 
 
         Utils.padSpaces depth
@@ -139,23 +139,23 @@ let rootConversations baseStatuses (toRoot: status list) =
         // try to append the currentSubtree somewhere to the resStatuses
         let rec append currentSubtree =
             if currentSubtree.ReplyTo = -1L then
-                log Debug (sprintf "Subtree %s %d is whole branch->adding to list" currentSubtree.UserName currentSubtree.StatusId)
+                ldbgp2 "Subtree {0} {1} is whole branch->adding to list" currentSubtree.UserName currentSubtree.StatusId
                 List.append resStatuses [currentSubtree]     // the subtree is aded to the top, because we reached root of the conversation and it wasn't rooted yet anywhere else
             else
                 // currentSubtree is a status with some children, but the status is not be rooted yet
                 let parent = Status.GetStatusFromConversations currentSubtree.ReplyTo resStatuses       // is somewhere in resStatuses current status?
                 match parent with
-                |None -> log Debug (sprintf "Parent for status %s %d not found, will be loaded" currentSubtree.UserName currentSubtree.StatusId)
+                |None -> ldbgp2 "Parent for status {0} {1} not found, will be loaded" currentSubtree.UserName currentSubtree.StatusId
                          let newRoot = getStatusOrEmpty Status.RequestedConversation currentSubtree.ReplyTo    // there is no parent -> load it and add current as child
                          newRoot.Children.Add(currentSubtree)
                          append newRoot
                 |Some(p) ->
-                         log Debug (sprintf "Subtree %s %d found parent %s %d" currentSubtree.UserName currentSubtree.StatusId p.UserName p.StatusId)
+                         ldbg (sprintf "Subtree %s %d found parent %s %d" currentSubtree.UserName currentSubtree.StatusId p.UserName p.StatusId)
                          p.Children.Add(currentSubtree)
                          resStatuses // return unchanged resStatuses
         match GetStatusFromConversations currStatus.StatusId resStatuses with
         |None    -> append currStatus
-        |Some(_) -> log Debug (sprintf "Status %s %d already added. Skipping" currStatus.UserName currStatus.StatusId)
+        |Some(_) -> ldbgp2 "Status {0} {1} already added. Skipping" currStatus.UserName currStatus.StatusId
                     resStatuses
     // first add root statuses (statuses that aren't replies, ReplyTo is -1)
     // thats because the algorithm is quite simple when first non-replies are added and possible replies bound later

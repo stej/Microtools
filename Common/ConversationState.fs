@@ -43,7 +43,7 @@ type ConversationsState() =
                     let conversationRoot = statuses |> List.find (fun status -> status.StatusId = id)
                     chnl.Reply(conversationRoot)
                     return! loop(statuses) }
-            Utils.log Utils.Debug "Starting Conversation state"
+            ldbg "Starting Conversation state"
             loop([])
         )
     do

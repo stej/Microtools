@@ -150,10 +150,10 @@ let private newStatusDownloaded = new Event<StatusSource*status>()
 let NewStatusDownloaded = newStatusDownloaded.Publish
 
 let getStatus source (id:Int64) =
-    log Info (sprintf "Get status %d" id)
+    linfop "Get status {0}" id
     match StatusDb.statusesDb.ReadStatusWithId(id) with
      | Some(status) -> 
-        log Info (sprintf "Status %d from db" id)
+        linfop "Status {0} from db" id
         Some(status)
      | None -> 
         let limits = async { return! twitterLimits.AsyncGetLimits() } |> Async.RunSynchronously
@@ -163,7 +163,7 @@ let getStatus source (id:Int64) =
         | Some(rateInfo) when rateInfo.remainingHits < Settings.MinRateLimit -> 
             None
         | Some(rateInfo) -> 
-            log Info (sprintf "Downloading %d" id) // todo: store status in db!
+            linfop "Downloading {0}" id // todo: store status in db!
             let formatter = sprintf "http://api.twitter.com/1/statuses/show/%d.json"
             match OAuth.requestTwitter (formatter id) with
              | Some(text, response) -> let xml = text |> convertJsonToXml
@@ -172,7 +172,7 @@ let getStatus source (id:Int64) =
                                                 None
                                        |node -> let status = xml2Status node
                                                 newStatusDownloaded.Trigger(source, status)
-                                                log Info (sprintf "Downloaded %d" id)
+                                                linfop "Downloaded {0}" id
                                                 Some(status)
              | None -> None
 let getStatusOrEmpty source (id:Int64) =
@@ -181,7 +181,7 @@ let getStatusOrEmpty source (id:Int64) =
     |None -> Status.getEmptyStatus()
 
 let search name (sinceId:Int64) =
-    log Info (sprintf "searching from %d" sinceId)
+    linfop "searching from {0}" sinceId
     let emptyResult() =
         let xml = new XmlDocument()
         xml.LoadXml("<results></results>")
@@ -205,12 +205,11 @@ let search name (sinceId:Int64) =
         ldbgp2 "Search limit is below. {0} > {1}" date DateTime.Now
         search_()
     | Some(date) -> 
-        log Info (sprintf "Search limit reached. Stopped."); 
-        linfo "search ---- stopped"
+        linfo "Search limit reached. Stopped..."
         emptyResult()
 
 let friendsStatuses (fromStatusId:Int64) = 
-    log Info (sprintf "Get friends from %d" fromStatusId)
+    linfop "Get friends from {0}" fromStatusId
     let from = if fromStatusId < 1000L then 1000L else fromStatusId
     let url = sprintf "http://api.twitter.com/1/statuses/friends_timeline.xml?since_id=%d&count=3200" from
     let xml = new XmlDocument()
@@ -221,7 +220,7 @@ let friendsStatuses (fromStatusId:Int64) =
     xml
     
 let mentionsStatuses (fromStatusId:Int64) = 
-    log Info (sprintf "Get mentions from %d" fromStatusId)
+    linfop "Get mentions from {0}" fromStatusId
     let from = if fromStatusId < 1000L then 1000L else fromStatusId
     let url = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d" from
     let xml = new XmlDocument()
@@ -267,7 +266,7 @@ let private loadNewMentionsStatuses maxId =
     mentionsStatuses maxId |> extractStatuses "//statuses/status" |> Seq.toList
     
 let loadNewPersonalStatuses() =
-    log Info "Loading new personal statuses"
+    linfo "Loading new personal statuses"
     let max = StatusDb.statusesDb.GetLastTwitterStatusId()
     linfop "Max statusId is {0}. Loading from that" max
     let newStatuses = 

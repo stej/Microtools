@@ -34,7 +34,7 @@ type UserStatusesState() =
         MailboxProcessor.Start(fun mbox ->
             let rec loop statuses statusesWithRoots = async {
                 let! msg = mbox.Receive()
-                Utils.log Utils.Debug (sprintf "Preview state message: %A" msg)
+                ldbgp "Preview state message: {0}" msg
                 match msg with
                 | AddStatuses(toAdd, chnl) ->
                     let newstatuses, newStatusesWithRoots = addAndRootStatuses statuses statusesWithRoots toAdd
@@ -53,7 +53,7 @@ type UserStatusesState() =
                              else None
                     chnl.Reply(id)
                     return! loop statuses statusesWithRoots }
-            Utils.log Utils.Debug "Starting Preview state"
+            ldbg "Starting Preview state"
             loop [] []
         )
     do

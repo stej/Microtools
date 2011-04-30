@@ -93,7 +93,7 @@ type StatusesDbState() =
 
     let getLastTwitterStatusId() = 
         useDb (fun conn ->
-            Utils.log Utils.Debug "Getting last twitter id"
+            ldbg "Getting last twitter id"
             //use cmd = conn.CreateCommand(CommandText = "Select max(StatusId) from Status")
             use cmd = conn.CreateCommand(CommandText = "select TwitterStatusId from AppState")
             let ret = Convert.ToInt64(cmd.ExecuteScalar())
@@ -262,7 +262,7 @@ type StatusesDbState() =
         MailboxProcessor.Start(fun mbox ->
             let rec loop() = async {
                 let! msg = mbox.Receive()
-                Utils.log Utils.Debug (sprintf "Status db message: %A" msg)
+                ldbgp "Status db message: {0}" msg
                 match msg with
                 | SaveStatus(source, status) -> 
                     saveStatuses source [status]
@@ -297,7 +297,7 @@ type StatusesDbState() =
                 | GetStatusesFromSql(sql, chnl) ->
                     chnl.Reply(getStatusesFromSql(sql))
                     return! loop()}
-            Utils.log Utils.Debug "Starting status db"
+            ldbg "Starting status db"
             loop()
         )
     do

@@ -53,7 +53,7 @@ let private linkFromText text =
     hl.RequestNavigate.Add(BrowseHlClick)
     hl
 let private textToTextblock (text:string) = 
-    Utils.log Utils.Debug (sprintf "Parsing %s" text)
+    ldbgp "Parsing {0}" text
     let parts = regexUrl.Split(System.Web.HttpUtility.HtmlDecode(text))
 
     let ret = new TextBlock(TextWrapping = TextWrapping.Wrap,
@@ -62,12 +62,11 @@ let private textToTextblock (text:string) =
                             FontSize = fontSize)
     for part in parts do
         if regexUrl.IsMatch(part) then
-            Utils.log Utils.Debug (sprintf "Parsed url: %s" part)
+            ldbgp "Parsed url: {0}" part
             try
                 let hl = linkFromText part
                 ret.Inlines.Add(hl)
             with ex ->
-                Utils.log Utils.Error (sprintf "Wrong parsed url: %s" part)
                 lerrp "Url {0} parsed incorrectly" part
                 ret.Inlines.Add(new Run(part))
         else

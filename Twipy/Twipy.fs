@@ -118,7 +118,7 @@ clearScope.Click.Add(fun _ ->
 runCommand.Click.Add(fun _ -> 
     let text = ref ""
     WpfUtils.dispatchMessage commandText (fun _ -> text := commandText.Text)
-    log Info (sprintf "Running script %s" (!text))
+    linfop "Running script {0}" (!text)
     
     async { 
         try 
