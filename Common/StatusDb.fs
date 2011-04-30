@@ -204,7 +204,7 @@ type StatusesDbState() =
                     Convert.ToInt32(cmd.ExecuteScalar()) > 0*)
               
             let addStatus status = 
-                Utils.log Utils.Debug (sprintf "Save status %d - %s - %s" status.StatusId status.UserName status.Text)
+                ldbg (sprintf "Save status %d - %s - %s" status.StatusId status.UserName status.Text)
                 let s = status
                 use cmd = conn.CreateCommand()
                 cmd.CommandText <- "INSERT INTO Status(

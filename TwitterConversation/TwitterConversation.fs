@@ -161,8 +161,8 @@ window.Loaded.Add(fun _ ->
     // status added to tree
     StatusesReplies.StatusAdded |> Event.add ImagesSource.ensureStatusImageNoRet
     // show what status is loaded
-    StatusesReplies.LoadingStatusReplyTree 
-        |> Event.add (fun status -> setState (sprintf "Loading %s - %d" status.UserName status.StatusId))
+    //StatusesReplies.LoadingStatusReplyTree 
+    //    |> Event.add (fun status -> setState (sprintf "Loading %s - %d" status.UserName status.StatusId))
     // status downloaded from Twitter
     Twitter.NewStatusDownloaded 
         |> Event.add (fun (source,status) -> StatusDb.statusesDb.SaveStatus(source, status)
@@ -176,11 +176,12 @@ window.Loaded.Add(fun _ ->
         let statuses = readStatuses()
         statuses
             |> Seq.map ImagesSource.ensureStatusImage
-            |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.End
-                                              |> StatusesReplies.loadSavedReplyTree
-                                              |> ConversationState.conversationsState.AddConversation
-                                              |> setNewConversationContent
-               )
+            |> Seq.iteri (fun i status -> setState (sprintf "Reading status %i" i)
+                                          status |> addConversationCtls WpfUtils.End
+                                                 |> StatusesReplies.loadSavedReplyTree
+                                                 |> ConversationState.conversationsState.AddConversation
+                                                 |> setNewConversationContent
+            )
         setState (sprintf "Done.. Count: %d" (Seq.length statuses))
     } |> Async.Start
 
@@ -198,7 +199,7 @@ let addNewlyFoundConversations() =
                                                 |> ConversationState.conversationsState.AddConversation
                                                 |> setNewConversationContent)
 let addNewlyFoundStatuses() =
-    Utils.log Utils.Info "Looking for newly found statuses"
+    linfo "Looking for newly found statuses"
     let checkConversationForNewChildren root =
         // newly added statuses; global for all the conversation
         let news = new ResizeArray<status>()
@@ -221,7 +222,7 @@ let addNewlyFoundStatuses() =
     ConversationState.conversationsState.GetConversations()
     |> List.map checkConversationForNewChildren
     |> List.filter (fun (root,newstats) -> newstats.Count > 0)
-    |> List.map (doAndRet (fun (root,newstats) -> Utils.log Utils.Info (sprintf "%s %s has NEW STATUSES. Count: %d" root.UserName root.Text newstats.Count)))
+    |> List.map (doAndRet (fun (root,newstats) -> linfo (sprintf "%s %s has NEW STATUSES. Count: %d" root.UserName root.Text newstats.Count)))
     |> List.iter (fun (root,newstats) -> refreshOneConversationEx [newlyAddedStatusColorer newstats; freshStatusColorer] root)
     
     
@@ -259,7 +260,7 @@ let updateAllContinue() =
     pauseUpdate.Visibility <- Visibility.Visible; continueUpdate.Visibility <- Visibility.Collapsed
 cancelUpdate.Click.Add(fun _ ->
     if cts <> null then cts.Cancel()
-    else log Error "Cancellation token is null"
+    else lerr "Cancellation token is null"
     async {
         addNewlyFoundConversations()
         addNewlyFoundStatuses()

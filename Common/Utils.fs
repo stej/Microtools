@@ -21,14 +21,14 @@ let log level str =
         logger.Error(str)
         printf "%s" str
 let ldbg str = log Debug str
-let ldbgp format p1 = log Debug (String.Format(format, [p1]))
-let ldbgp2 format p1 p2 = log Debug (String.Format(format, [p1, p2]))
+let ldbgp format (p1:obj) = log Debug (String.Format(format, [p1]))
+let ldbgp2 format (p1:obj) (p2:obj) = log Debug (String.Format(format, p1, p2))
 let linfo str = log Info str
-let linfop format p1 = log Info (String.Format(format, [p1]))
-let linfop2 format p1 p2 = log Info (String.Format(format, [p1, p2]))
-let lerr str = log Error  str
-let lerrp format p1 = log Error (String.Format(format, [p1]))
-let lerrp2 format p1 p2 = log Error (String.Format(format, [p1, p2]))
+let linfop format (p1:obj) = log Info (String.Format(format, [p1]))
+let linfop2 format (p1:obj) (p2:obj) = log Info (String.Format(format, p1, p2))
+let lerr str = log Error str
+let lerrp format (p1:obj) = log Error (String.Format(format, [p1]))
+let lerrp2 format (p1:obj) (p2:obj) = log Error (String.Format(format, p1, p2))
 
 let convertJsonToXml (json:string) = 
   match json with

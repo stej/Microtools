@@ -89,7 +89,7 @@ for status in st:
   helper.loadTree(status)
 helper.exportToHtml(st)
 ###################
-st = db.GetStatusesFromSql("select * from Status where UserName like 'AugiCZ' where ReplyTo=-1")
+st = db.GetStatusesFromSql("select * from Status where UserName like 'AugiCZ' and ReplyTo=-1")
 for status in st:
   helper.loadTree(status)
 helper.exportToHtml(st)
