@@ -37,7 +37,7 @@ type NewlyFoundReplies() =
                     if replies |> List.exists (fun s -> s.StatusId = toAdd.StatusId) then
                         return! loop replies
                     else
-                        printfn "Added. Count of replies collected: %d" (replies.Length+1)
+                        ldbgp "Added. Count of replies collected: {0}" (replies.Length+1)
                         return! loop (toAdd::replies)
                 | GetNewReplies(parent, withoutChildrenIds, chnl) ->
                     let childrenSet = withoutChildrenIds |> Set.ofSeq
@@ -50,6 +50,8 @@ type NewlyFoundReplies() =
             Utils.log Utils.Debug "Starting NewlyFoundReplies"
             loop []
         )
+    do
+        mbox.Error.Add(fun exn -> lerrp "{0}" exn)
     member x.AddStatus(s) = mbox.Post(AddStatus(s)); s
     member x.GetNewReplies(status, withoutIds) = mbox.PostAndReply(fun reply -> GetNewReplies(status, withoutIds, reply))
     member x.Clear() = mbox.Post(Clear)
@@ -83,7 +85,7 @@ let findReplies initialStatus =
             node |> xpathValue "id" |> Int64OrDefault 
 
         Utils.padSpaces depth
-        printfn "Find repl %d, children: %d" status.StatusId status.Children.Count
+        linfop2 "Find repl {0}, children: {1}" status.StatusId status.Children.Count
         let (name, id) = status.UserName, status.StatusId
         let foundMentions =
             search name id
@@ -98,18 +100,18 @@ let findReplies initialStatus =
             |> List.filter (fun status -> status.IsSome)                                     //filter non-null
             |> List.map (fun status -> status.Value)                                         //extract status
             |> List.map newlyAddedStatusesState.AddStatus
-        foundMentions |> List.iter (fun status -> Utils.padSpaces depth; printfn "Mention %s - %d" status.UserName status.StatusId)
+        foundMentions |> List.iter (fun status -> Utils.padSpaces depth; ldbgp2 "Mention {0} - {1}" status.UserName status.StatusId)
         let statuses = 
             foundMentions
             |> List.filter (fun status -> status.ReplyTo = id)                               //get only reply to current status
         let countBefore = status.Children.Count
         statuses |> List.iter (fun s -> if status.Children.Exists(fun s0 -> s0.StatusId = s.StatusId) then
-                                           printfn "ERROR: exists %d %s" s.StatusId s.Text
-                                        printfn "Add %d" s.StatusId
+                                           lerrp2 "ERROR: exists {0} {1}" s.StatusId s.Text
+                                        ldbgp "Add {0}" s.StatusId
                                         status.Children.Add(s)
                                         statusAdded.Trigger(s))
         someChildrenLoaded.Trigger(initialStatus)
-        status.Children |> Seq.iter (fun s -> printfn "Call fn %d" s.StatusId
+        status.Children |> Seq.iter (fun s -> ldbgp "Call fn {0}" s.StatusId
                                               findRepliesIn (depth+1) s)
 
     findRepliesIn 0 initialStatus

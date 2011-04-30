@@ -11,6 +11,7 @@ open System.Windows.Threading
 open System.Windows.Media
 open System.Diagnostics
 open Status
+open Utils
 
 let regexUrl = new System.Text.RegularExpressions.Regex("(?<user>@\w+)|" + "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
 
@@ -19,7 +20,7 @@ let (fontSize, pictureSize) =
             | "big" -> (14., 48.)
             | "medium" -> (13., 40.)
             | _ -> (12., 30.)
-    printf "UI size is %A" s
+    linfop "UI size is {0}" s
     s
 
 let private createPicture size margin (status:status) = 
@@ -67,7 +68,7 @@ let private textToTextblock (text:string) =
                 ret.Inlines.Add(hl)
             with ex ->
                 Utils.log Utils.Error (sprintf "Wrong parsed url: %s" part)
-                printfn "Url %s parsed incorrectly" part
+                lerrp "Url {0} parsed incorrectly" part
                 ret.Inlines.Add(new Run(part))
         else
             ret.Inlines.Add(new Run(part))

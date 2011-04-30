@@ -2,6 +2,7 @@ module Updates
 (*
 open System
 open System.Data.SQLite
+open Utils
 
 type dbVersion = {
     Major: int
@@ -12,7 +13,7 @@ type dbVersion = {
 let checkDbVersionTable() =
     StatusDb.useDb (fun conn ->
         match conn.GetSchema("Tables").Select("Table_Name = 'DbVersion'") with
-        | [||] -> printfn "Creating table DbVersion"
+        | [||] -> linfo "Creating table DbVersion"
                   use cmd = conn.CreateCommand(CommandText = "CREATE TABLE DbVersion (Major integer not null, Minor integer not null, Updated integer not null)")
                   cmd.ExecuteNonQuery() |> ignore
                   cmd.CommandText <- (sprintf "INSERT INTO DbVersion(Major, Minor, Updated) VALUES(%d, %d, %d)" 0 0 System.DateTime.MinValue.Ticks)
@@ -41,12 +42,12 @@ let updateDbVersion major minor =
     execNonquery (sprintf "UPDATE DbVersion SET Major=%d, Minor=%d, Updated=%d" major minor System.DateTime.Now.Ticks)
 
 let updateTo_0_1() =
-    printfn "update to 0.1"
+    linfo "update to 0.1"
     execNonquery "ALTER TABLE Status ADD Inserted integer NOT NULL default -1"
     execNonquery "UPDATE Status SET Inserted = [Date]"
     //execNonquery "CREATE TABLE List (Id integer primary key, UserName varchar(64) not null, Name varchar(64) not null)"
     //execNonquery "CREATE TABLE UsersInList (Id integer primary key, ListId integer, UserName varchar(64) not null)"
-    printfn "update to 1.0 done"
+    linfo "update to 1.0 done"
 
 let update() =
     checkDbVersionTable()
@@ -54,10 +55,10 @@ let update() =
     let versionIsBelow major minor =
         dbVer.Major < major || (dbVer.Major = major && dbVer.Minor < minor)
     let ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version
-    printfn "Version: %i-%i-%i-%i" ver.Major ver.Minor ver.Build ver.Revision
+    linfo (sprintf "Version: %i-%i-%i-%i" ver.Major ver.Minor ver.Build ver.Revision)
     
     if dbVer.Major <> ver.Major || dbVer.Minor <> ver.Minor then
-        printfn "Should be updated"
+        linfo "Should be updated"
         if versionIsBelow 0 1 then
           updateTo_0_1()
         

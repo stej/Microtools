@@ -2,6 +2,7 @@ module ImagesSource
 
 open System.IO
 open System
+open Utils
 
 let private directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "images")
 
@@ -20,8 +21,8 @@ let downloadImage (url:string) user =
       let imagePath = getImagePathFromUrl url user
       File.WriteAllBytes(imagePath, wc.DownloadData(url))
     with ex -> 
-      printfn "Unable to download image  %s" url
-      printfn "%A" ex
+      lerrp "Unable to download image {0}" url
+      lerrp "{0}" ex
     
 let getImagePathByParams url user =
     getImagePathFromUrl url user
@@ -40,7 +41,7 @@ let ensureStatusImageNoRet (status: Status.status) =
 let ensureStatusesImages (statuses: Status.status list) =
     statuses |> List.map ensureStatusImage
     
-printfn "Images directory is %s" directory
+linfop "Images directory is {0}" directory
 if not (Directory.Exists(directory)) then 
-    printfn "Creating %s" directory
+    linfop "Creating {0}" directory
     Directory.CreateDirectory(directory) |> ignore

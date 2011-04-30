@@ -4,6 +4,32 @@ open System
 open System.Threading
 open System.Xml
 
+log4net.Config.XmlConfigurator.Configure()
+let private logger =  log4net.LogManager.GetLogger("loggerdefault");
+type LogLevel =
+    | Debug
+    | Info
+    | Error
+let log level str =
+    //ILog logger = LogManager.GetLogger("notes");
+    if level = Debug && logger.IsDebugEnabled then 
+        logger.Debug(str)
+    if level = Info  && logger.IsInfoEnabled  then 
+        logger.Info(str)
+        printf "%s" str
+    if level = Error && logger.IsErrorEnabled then 
+        logger.Error(str)
+        printf "%s" str
+let ldbg str = log Debug str
+let ldbgp format p1 = log Debug (String.Format(format, [p1]))
+let ldbgp2 format p1 p2 = log Debug (String.Format(format, [p1, p2]))
+let linfo str = log Info str
+let linfop format p1 = log Info (String.Format(format, [p1]))
+let linfop2 format p1 p2 = log Info (String.Format(format, [p1, p2]))
+let lerr str = log Error  str
+let lerrp format p1 = log Error (String.Format(format, [p1]))
+let lerrp2 format p1 p2 = log Error (String.Format(format, [p1, p2]))
+
 let convertJsonToXml (json:string) = 
   match json with
     | null -> failwith "null not expected"
@@ -39,7 +65,7 @@ let TwitterDateOrDefault (value:string) =
     let r = new System.Text.RegularExpressions.Regex("^(?<dayInWeek>\w+)\s(?<month>\w+)\s(?<day>\d+)\s(?<h>\d+):(?<m>\d+):(?<s>\d+)\s\+(\d+)\s(?<year>\d+)$")
     let mtch  = r.Match(value)
     if not mtch.Success then 
-      printf "Value %s is not valid date" value
+      lerrp "Value {0} is not valid date" value
       System.DateTime.MinValue
     else 
       let groups = mtch.Groups
@@ -68,24 +94,17 @@ let triggerEvent fce (syncContext:SynchronizationContext) =
     
 let padSpaces count = 
     System.Console.Write("{0," + (count * 3).ToString() + "}", "")
-    
-log4net.Config.XmlConfigurator.Configure()
-let private logger =  log4net.LogManager.GetLogger("loggerdefault");
-type LogLevel =
-    | Debug
-    | Info
-    | Error
-let log level str =
-    //ILog logger = LogManager.GetLogger("notes");
-    if level = Debug && logger.IsDebugEnabled then 
-        logger.Debug(str)
-    if level = Info  && logger.IsInfoEnabled  then 
-        logger.Info(str)
-        printf "%s" str
-    if level = Error && logger.IsErrorEnabled then 
-        logger.Error(str)
-        printf "%s" str
+
+type Settings =
+    static member private settings = System.Configuration.ConfigurationManager.AppSettings;
+    static member Filter = match Settings.settings.["filter"] with | null -> "" | filter -> filter
+    static member MinRateLimit = match Settings.settings.["minRateLimit"] with | null -> 0 | filter -> int filter
+
+let doAndRet fce item = 
+    fce item |> ignore
+    item
         
+(*
 // by Tomas Petricek
 let synchronize f = 
   let ctx = System.Threading.SynchronizationContext.Current 
@@ -116,12 +135,4 @@ type Microsoft.FSharp.Control.Async with
         and remover1 : IDisposable  = ev1.Subscribe(callback1) 
         and remover2 : IDisposable  = ev2.Subscribe(callback2) 
         () )))
-        
-type Settings =
-    static member private settings = System.Configuration.ConfigurationManager.AppSettings;
-    static member Filter = match Settings.settings.["filter"] with | null -> "" | filter -> filter
-    static member MinRateLimit = match Settings.settings.["minRateLimit"] with | null -> 0 | filter -> int filter
-
-let doAndRet fce item = 
-    fce item |> ignore
-    item
+*)

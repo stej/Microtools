@@ -39,14 +39,14 @@ type TwitterLimits() =
              | Some(text, _)  -> xml.LoadXml(text)
             Some(xml2rateInfo xml)
         with ex ->
-            printfn "%A" ex
+            lerrp "{0}" ex
             None
 
     let mbox = 
         MailboxProcessor.Start(fun mbox ->
             let rec asyncUpdateLoop() =
                 async { do! Async.Sleep(5000) } |> Async.RunSynchronously
-                printf "Sulimit"
+                ldbg "Sulimit"
                 mbox.Post(UpdateLimit)
                 asyncUpdateLoop()
 
@@ -54,8 +54,7 @@ type TwitterLimits() =
                 // first try to process GetLimits messages
                  let! res = mbox.TryScan((function
                     | GetLimits(chnl) -> Some(async {
-                             printf "G-"
-                             log Debug (sprintf "Twitter mailbox - GetLimits %d" mbox.CurrentQueueLength)
+                             ldbgp "Twitter mailbox - GetLimits {0}" mbox.CurrentQueueLength
                              chnl.Reply(limits)
                              return limits })
                     | _ -> None
@@ -65,9 +64,9 @@ type TwitterLimits() =
                 | Some limits -> 
                     return! loop limits
                 | None -> 
-                    log Debug (sprintf "Twitter mailbox - after GetLimits %d" mbox.CurrentQueueLength)
+                    ldbgp "Twitter mailbox - after GetLimits {0}" mbox.CurrentQueueLength
                     let! msg = mbox.Receive()
-                    log Debug (sprintf "Twitter mailbox message: %A" msg)
+                    ldbgp "Twitter mailbox message: {0}" msg
                     match msg with
                     | UpdateLimit ->
                         return! loop( { limits with StandardRequest = getRateLimit() })
@@ -75,22 +74,22 @@ type TwitterLimits() =
                         let status = searchResponse.StatusCode |> int
                         try 
                             if (status <> 420) then
-                                log Debug (sprintf "Status code of search response is %A" status)
+                                ldbgp "Status code of search response is {0}" status
                                 return! loop { limits with SearchLimit = None }
                             else
                                 let retryAfter = searchResponse.Headers.["Retry-After"] |> Double.TryParse
                                 match retryAfter with
                                 |(true, num) -> 
-                                    log Error (sprintf "Search rate limit reached. Retry-After is %f" num)
+                                    lerrp "Search rate limit reached. Retry-After is {0}" num
                                     return! loop { limits with SearchLimit = Some(DateTime.Now.AddSeconds(num)) }
                                 | _ -> 
-                                    log Error (sprintf "Unable to parse response Retry-After %s" (searchResponse.Headers.ToString()))
+                                    lerrp "Unable to parse response Retry-After {0}" (searchResponse.Headers.ToString())
                                     return! loop limits
                         with ex ->
-                            log Error (sprintf "Excepting when parsing search limit %A" ex)
+                            lerrp "Excepting when parsing search limit {0}" ex
                             return! loop(limits)
                     | GetLimits(chnl) ->
-                        printf "G2-"
+                        ldbg "Get limits"
                         chnl.Reply(limits)
                         return! loop(limits)
                     | StartLimitChecking ->
@@ -116,6 +115,8 @@ type TwitterLimits() =
             | Some(date) -> "search disabled until: " + date.ToShortTimeString()
             | _  -> "search ok"
         standard + search
+    do
+        mbox.Error.Add(fun exn -> lerrp "{0}" exn)
     member x.Start() = mbox.Post(StartLimitChecking)
     member x.UpdateLimit() = mbox.Post(UpdateLimit)
     member x.UpdateSearchLimit(response) = mbox.Post(UpdateSearchLimit(response))
@@ -195,17 +196,17 @@ let search name (sinceId:Int64) =
          | None -> emptyResult()
 
     let limits = async { return! twitterLimits.AsyncGetLimits() } |> Async.RunSynchronously
-    log Debug (sprintf "Current limits are %A" limits)
+    ldbgp "Current limits are {0}" limits
     match limits.SearchLimit with
     | None -> 
-        log Debug "No search limit"; 
+        ldbg "No search limit"
         search_()
     | Some(date) when date < DateTime.Now -> 
-        log Debug (sprintf "Search limit is below. %A > %A" date DateTime.Now); 
+        ldbgp2 "Search limit is below. {0} > {1}" date DateTime.Now
         search_()
     | Some(date) -> 
         log Info (sprintf "Search limit reached. Stopped."); 
-        printfn "search ---- stopped"
+        linfo "search ---- stopped"
         emptyResult()
 
 let friendsStatuses (fromStatusId:Int64) = 
@@ -268,7 +269,7 @@ let private loadNewMentionsStatuses maxId =
 let loadNewPersonalStatuses() =
     log Info "Loading new personal statuses"
     let max = StatusDb.statusesDb.GetLastTwitterStatusId()
-    printf "Max statusId is %d. Loading from that" max
+    linfop "Max statusId is {0}. Loading from that" max
     let newStatuses = 
         let friends = loadNewFriendsStatuses max
         let friendsset = Set.ofList [for s in friends -> s.StatusId]

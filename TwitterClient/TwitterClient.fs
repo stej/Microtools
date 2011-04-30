@@ -87,7 +87,7 @@ window.Loaded.Add(
         async {
             let rec asyncLoop() =
                 let limits = Twitter.twitterLimits.GetLimitsString()
-                printfn "limits: %s" limits
+                ldbgp "limits: {0}" limits
                 WpfUtils.dispatchMessage limitCtl (fun r -> limitCtl.Text <- limits)
                 async { do! Async.Sleep(2500) } |> Async.RunSynchronously
                 asyncLoop()
@@ -109,9 +109,9 @@ up.Click.Add(fun _ ->
     async {
         let firstStatusId:Int64 = 
             match PreviewsState.userStatusesState.GetFirstStatusId() with
-            | None     -> printf "unknown first status"
+            | None     -> linfo "unknown first status"
                           Int64.MaxValue
-            | Some(id) -> printf "first status id is %d" id
+            | Some(id) -> linfop "first status id is {0}" id
                           id
         StatusDb.statusesDb.GetTimelineStatusesBefore(50,firstStatusId)
             |> Seq.toList
@@ -141,6 +141,6 @@ switcher.Click.Add(fun _ ->
 [<System.STAThread>]
 do
     let ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version
-    printfn "%i-%i-%i-%i" ver.Major ver.Minor ver.Build ver.Revision
+    linfo (sprintf "%i-%i-%i-%i" ver.Major ver.Minor ver.Build ver.Revision)
     //Updates.update()
     (new Application()).Run(window) |> ignore

@@ -134,7 +134,7 @@ let getEmptyStatus() =
 let printStatus root =
     let rec printStatus depth (status:status) =
         Utils.padSpaces depth
-        printfn "%s - %d, children: %d " status.UserName status.StatusId status.Children.Count
+        linfo (sprintf "%s - %d, children: %d " status.UserName status.StatusId status.Children.Count)
         status.Children |> Seq.iter (fun s -> printStatus (depth+1) s)
     printStatus 0 root
     

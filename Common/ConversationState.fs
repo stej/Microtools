@@ -2,6 +2,7 @@
 
 open System
 open Status
+open Utils
   
 type ConversationStateMessages =
 | AddConversation of status
@@ -16,13 +17,13 @@ type ConversationsState() =
         MailboxProcessor.Start(fun mbox ->
             let rec loop statuses = async {
                 let! msg = mbox.Receive()
-                Utils.log Utils.Debug (sprintf "Conversation state message: %A" msg)
+                ldbgp "Conversation state message: {0}" msg
                 match msg with
                 | AddConversation(conversationRoot) ->
-                    printfn "Added conversation with root %d" conversationRoot.StatusId
+                    ldbgp "Added conversation with root {0}" conversationRoot.StatusId
                     return! loop(statuses @ [conversationRoot])
                 | UpdateConversation(conversationRoot) ->
-                    printfn "Updating conversation of root %d" conversationRoot.StatusId
+                    ldbgp "Updating conversation of root {0}" conversationRoot.StatusId
                     let newList = 
                         statuses |> List.map (fun status -> if status.StatusId = conversationRoot.StatusId 
                                                             then conversationRoot
@@ -45,6 +46,12 @@ type ConversationsState() =
             Utils.log Utils.Debug "Starting Conversation state"
             loop([])
         )
+    do
+        mbox.Error.Add(fun exn ->
+            (*match exn with
+            | :? System.TimeoutException as exn -> ...
+            | _ -> printfn "Unknown exception.")*)
+            lerrp "{0}" exn)
     member x.AddConversation(s) = mbox.Post(AddConversation(s)); s
     member x.UpdateConversation(s) = mbox.Post(UpdateConversation(s)); s
     member x.RemoveConversation(s) = mbox.Post(RemoveConversation(s))

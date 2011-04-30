@@ -3,6 +3,7 @@
 open System
 open Status
 open System.Data.SQLite
+open Utils
 
 let mutable fileName = "statuses.db"
 let private doNothingHandler _ = ()
@@ -56,7 +57,7 @@ let executeSelect readFce (cmd:SQLiteCommand) =
         seq {
         if rd.Read() then
             yield readFce rd
-            printf "."
+            ldbg "reading status"
             yield! read rd
         }
     let result = read rd |> Seq.toList
@@ -96,7 +97,7 @@ type StatusesDbState() =
             //use cmd = conn.CreateCommand(CommandText = "Select max(StatusId) from Status")
             use cmd = conn.CreateCommand(CommandText = "select TwitterStatusId from AppState")
             let ret = Convert.ToInt64(cmd.ExecuteScalar())
-            Utils.log Utils.Info (sprintf "Last twitter id is %d" ret)
+            linfop "Last twitter id is {0}" ret
             ret
         )
 
@@ -133,7 +134,7 @@ type StatusesDbState() =
         )
 
     let getRootStatusesHavingReplies(maxCount) = 
-        printfn "Getting conversation roots, count %d" maxCount
+        ldbgp "Getting conversation roots, count {0}" maxCount
         let res = useDb (fun conn ->
                     use cmd = conn.CreateCommand()
                     //select distinct s.* from Status s join Status reply on s.StatusId=reply.ReplyTo and s.ReplyTo = -1 order by s.StatusId desc limit 0,@maxcount
@@ -151,11 +152,11 @@ type StatusesDbState() =
                     addCmdParameter cmd "@sourceConv" (StatusSource2Int Status.RequestedConversation)
                     executeSelectStatuses cmd
                 )
-        printfn "Getting conversation roots done, count %d" maxCount
+        ldbgp "Getting conversation roots done, count {0}" maxCount
         res
     
     let getTimelineStatusesBefore count (statusId:Int64) = 
-       Utils.log Utils.Debug (sprintf "getTimelineStatusesBefore %d" statusId)
+       ldbgp "getTimelineStatusesBefore {0}" statusId
        useDb (fun conn ->
             use cmd = conn.CreateCommand()
             cmd.CommandText <- "Select * from Status where StatusId < @p1 and source = @p2 order by StatusId desc limit 0, @p3"
@@ -165,7 +166,7 @@ type StatusesDbState() =
             executeSelectStatuses cmd
         )
     let getStatusesFromSql sql = 
-        Utils.log Utils.Debug (sprintf "getStatusesFromSql %s" sql)
+        ldbgp "getStatusesFromSql {0}" sql
         useDb (fun conn ->
             use cmd = conn.CreateCommand()
             cmd.CommandText <- sql
@@ -180,19 +181,19 @@ type StatusesDbState() =
         )
         
     let readStatusSource (conn:SQLiteConnection) statusId =
-        Utils.log Utils.Debug (sprintf "Get source for %d" statusId)
+        ldbgp "Get source for {0}" statusId
         use cmd = conn.CreateCommand(CommandText = "select Source as s from Status where StatusId = @statusid")
         addCmdParameter cmd "@statusid" statusId
         try
             use rd = cmd.ExecuteReader()
             if rd.Read() then 
                 let res = rd.["s"] |> Convert.ToInt32 |> Int2StatusSource
-                printfn "Source of %d is %A" statusId res
+                ldbgp2 "Source of {0} is {1}" statusId res
                 Some(res)
             else
                 None
         with ex -> 
-            printfn "Unable to read source of %d %A" statusId ex
+            lerrp2 "Unable to read source of {0} {1}" statusId ex
             None
         
     let saveStatuses source (statuses: status seq) = 
@@ -236,20 +237,20 @@ type StatusesDbState() =
             for status in statuses do 
                 match readStatusSource conn status.StatusId with
                 // kdyz je status ulozeny, je timelinovy a byl ulozeny nejak jinak, pak mu to nastavim - timeline je nejvyssi priorita
-                | Some(src) -> printfn "Found source %A, request source is %A" src source
+                | Some(src) -> ldbgp2 "Found source {0}, request source is {1}" src source
                                if source = Status.Timeline && src <> Status.Timeline then
-                                    printfn "Stored with other source %s - %d" status.UserName status.StatusId
+                                    linfop2 "Stored with other source {0} - {1}" status.UserName status.StatusId
                                     updateStatusSource source status
                                else
-                                    printfn "Already stored %s - %d" status.UserName status.StatusId
-                | None -> printfn "Storing status %s - %d" status.UserName status.StatusId
+                                    linfop2 "Already stored {0} - {1}" status.UserName status.StatusId
+                | None -> linfop2 "Storing status {0} - {1}" status.UserName status.StatusId
                           try addStatus status
-                          with ex -> printfn "%A" ex
+                          with ex -> lerrp "{0}" ex
                       
         )
 
     let deleteStatus (status: status) = 
-        printfn "Deleting db status %s - %d" status.UserName status.StatusId
+        linfop2 "Deleting db status {0} - {1}" status.UserName status.StatusId
         useDb (fun conn ->
             use cmd = conn.CreateCommand()
             cmd.CommandText <- "delete from Status where StatusId = @p0"
@@ -299,6 +300,8 @@ type StatusesDbState() =
             Utils.log Utils.Debug "Starting status db"
             loop()
         )
+    do
+        mbox.Error.Add(fun exn -> lerrp "{0}" exn)
     member x.SaveStatus(source, status) = mbox.Post(SaveStatus(source, status))
     member x.SaveStatuses(source, statuses) = mbox.Post(SaveStatuses(source, statuses))
     member x.DeleteStatus(status) = mbox.Post(DeleteStatus(status))

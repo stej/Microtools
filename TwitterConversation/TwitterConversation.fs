@@ -41,13 +41,13 @@ let mutable (lastUpdateall:DateTime) = DateTime.MinValue
 
 let setState text = 
     WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- text)
-    printfn "%s" text
+    linfo text
    
 let updateTwitterLimit = 
     async {
         let rec asyncLoop() =
             let limits = Twitter.twitterLimits.GetLimitsString()
-            printfn "limits: %s" limits
+            ldbgp "limits: {0}" limits
             WpfUtils.dispatchMessage limitCtl (fun r -> limitCtl.Text <- limits)
             async { do! Async.Sleep(5000) } |> Async.RunSynchronously
             asyncLoop()
@@ -58,10 +58,10 @@ let readSingleStatus() =
     match Twitter.getStatus Status.RequestedConversation statusId with
      | Some(s) -> match StatusesReplies.rootConversation s with
                     | Some(r) -> r
-                    | None -> printfn "Unable to find conversation root from %d" statusId
+                    | None -> lerrp "Unable to find conversation root from {0}" statusId
                               Environment.Exit(0)
                               failwith ""
-     | None -> printfn "Unable to load status with id %d" statusId
+     | None -> lerrp "Unable to load status with id {0}" statusId
                Environment.Exit(0)
                failwith ""
 let readStatuses() =
@@ -166,7 +166,7 @@ window.Loaded.Add(fun _ ->
     // status downloaded from Twitter
     Twitter.NewStatusDownloaded 
         |> Event.add (fun (source,status) -> StatusDb.statusesDb.SaveStatus(source, status)
-                                             printf "s")
+                                             linfop "Status downloaded {0}" status)
     // some children loaded
     StatusesReplies.SomeChildrenLoaded 
         |> Event.add (fun rootStatus -> setNewConversationContent rootStatus)
@@ -238,15 +238,15 @@ let updateAllFinished() =
     WpfUtils.dispatchMessage window (fun _ ->
         updateAll.Visibility <- Visibility.Visible; pauseUpdate.Visibility <- Visibility.Collapsed; cancelUpdate.Visibility <- Visibility.Collapsed)
     MessageBox.Show("Conversations updated") |> ignore
-    printfn "\n\n------------Update all done-------\n\n"
+    linfo "------------Update all done-------"
     cts.Dispose()
     cts <- null
 let updateAllCancelled() =
     setState "Cancelled ..."
     WpfUtils.dispatchMessage window (fun _ ->
         updateAll.Visibility <- Visibility.Visible; pauseUpdate.Visibility <- Visibility.Collapsed; cancelUpdate.Visibility <- Visibility.Collapsed; continueUpdate.Visibility <- Visibility.Collapsed)
-    printfn "\n\n------------Update all done-------"
-    printfn "-- Cancelled --\n\n"
+    linfo "------------Update all done-------"
+    linfo "-- Cancelled --"
     cts.Dispose()
     cts <- null
 let updateAllPaused() =
@@ -313,6 +313,6 @@ updateAll.Click.Add(fun _ ->
 [<assembly: System.Runtime.InteropServices.Guid("2d58c139-c06e-42e5-bd91-2ff7c0c01c543")>]
 ()
 
-printfn "starting app"
+linfo "starting app"
 [<System.STAThread>]
 (new Application()).Run(window) |> ignore

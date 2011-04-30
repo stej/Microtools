@@ -3,6 +3,7 @@
 open System
 open System.IO
 open DevDefined.OAuth
+open Utils
 
 let consumerKey = "8Zb9ZmCKaLAJ3dqsArStA" 
 let consumerSecret = "PfqnoKucLZZO8jX8ghVIHeLsjOvs5uZhrmdsTtZAOss"
@@ -17,7 +18,7 @@ let createToken consumerKey realm token tokenSecret =
                             TokenSecret = tokenSecret)
 
 let readToken path =
-    printf "reading.."
+    linfo "reading token.."
     if File.Exists(path) then
         match File.ReadAllLines(path) with
         | [|ck; realm; token; tokensecret|] -> createToken ck realm token tokensecret
@@ -26,7 +27,7 @@ let readToken path =
         failwith (sprintf "File %s doesn't exist." path)
 
 let saveToken (path:string) token =
-    printf "saving.."
+    linfo "saving token.."
     use file = new StreamWriter(path)
     file.WriteLine(accessToken.ConsumerKey)
     file.WriteLine(accessToken.Realm)
@@ -72,7 +73,7 @@ let requestTwitter url =
         with
           | :? System.Net.WebException as ex -> Some("", ex.Response :?> System.Net.HttpWebResponse)
     with 
-        ex -> printfn "%s" ex.Message
+        ex -> lerrp "{0}" ex
               None
 
 let registerOnTwitter() =

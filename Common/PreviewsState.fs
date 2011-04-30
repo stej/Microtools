@@ -2,6 +2,7 @@ module PreviewsState
 
 open System
 open Status
+open Utils
 
 /// Takes new statuses and adds them to current list + tree
 /// @currStatuses - list of already added statuses
@@ -16,7 +17,7 @@ let addAndRootStatuses currStatuses currStatusesWithRoots toAdd =
     /// Seq.filter - statuses that should be added and are not contained even in conversation roots        
     let rooted = toAdd 
                     |> Seq.filter (fun status -> not (currIds.Contains(status.StatusId)))
-                    |> Seq.map (fun status -> printfn "Add %d - %s" status.StatusId status.UserName; status)
+                    |> Seq.map (fun status -> ldbgp2 "Add {0} - {1}" status.StatusId status.UserName; status)
                     |> Seq.toList
                     |> StatusesReplies.rootConversations currStatusesWithRoots
     let plain = currStatuses @ (Seq.toList toAdd)
@@ -37,7 +38,7 @@ type UserStatusesState() =
                 match msg with
                 | AddStatuses(toAdd, chnl) ->
                     let newstatuses, newStatusesWithRoots = addAndRootStatuses statuses statusesWithRoots toAdd
-                    printfn "Added. Count of statuses: %d" newstatuses.Length
+                    ldbgp "Added. Count of statuses: {0}" newstatuses.Length
                     chnl.Reply(())
                     return! loop newstatuses newStatusesWithRoots
                 | ClearStatuses ->
@@ -55,6 +56,8 @@ type UserStatusesState() =
             Utils.log Utils.Debug "Starting Preview state"
             loop [] []
         )
+    do
+        mbox.Error.Add(fun exn -> lerrp "{0}" exn)
     member x.AddStatuses(s) = mbox.PostAndReply(fun reply -> AddStatuses(s, reply))
     member x.GetStatuses() = mbox.PostAndReply(GetStatuses)
     member x.GetFirstStatusId() = mbox.PostAndReply(GetFirstStatusId)
