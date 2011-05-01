@@ -69,9 +69,10 @@ let requestTwitter url =
         try 
             //let response = req.ToWebResponse()
             let response = req0.GetResponse() :?> System.Net.HttpWebResponse    // by reflector
-            Some(DevDefined.OAuth.Utility.StreamExtensions.ReadToEnd(response), response)
+            Some(DevDefined.OAuth.Utility.StreamExtensions.ReadToEnd(response), response.StatusCode, response.Headers)
         with
-          | :? System.Net.WebException as ex -> Some("", ex.Response :?> System.Net.HttpWebResponse)
+          | :? System.Net.WebException as ex -> let response = ex.Response :?> System.Net.HttpWebResponse
+                                                Some("", response.StatusCode, response.Headers)
     with 
         ex -> lerrp "{0}" ex
               None

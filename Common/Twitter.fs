@@ -25,7 +25,7 @@ type LimitState = {
 type TwitterLimitsMessages =
 | StartLimitChecking
 | UpdateLimit
-| UpdateSearchLimit of Net.HttpWebResponse
+| UpdateSearchLimit of Net.HttpStatusCode * Net.WebHeaderCollection
 | GetLimits of AsyncReplyChannel<LimitState>
 
 
@@ -36,7 +36,7 @@ type TwitterLimits() =
             let xml = new XmlDocument()
             match OAuth.requestTwitter url with
              | None -> xml.LoadXml("")
-             | Some(text, _)  -> xml.LoadXml(text)
+             | Some(text, _, _)  -> xml.LoadXml(text)
             Some(xml2rateInfo xml)
         with ex ->
             lerrp "{0}" ex
@@ -70,20 +70,20 @@ type TwitterLimits() =
                     match msg with
                     | UpdateLimit ->
                         return! loop( { limits with StandardRequest = getRateLimit() })
-                    | UpdateSearchLimit(searchResponse) ->
-                        let status = searchResponse.StatusCode |> int
+                    | UpdateSearchLimit(statusCode, headers) ->
+                        let status = statusCode |> int
                         try 
                             if (status <> 420) then
                                 ldbgp "Status code of search response is {0}" status
                                 return! loop { limits with SearchLimit = None }
                             else
-                                let retryAfter = searchResponse.Headers.["Retry-After"] |> Double.TryParse
+                                let retryAfter = headers.["Retry-After"] |> Double.TryParse
                                 match retryAfter with
                                 |(true, num) -> 
                                     lerrp "Search rate limit reached. Retry-After is {0}" num
                                     return! loop { limits with SearchLimit = Some(DateTime.Now.AddSeconds(num)) }
                                 | _ -> 
-                                    lerrp "Unable to parse response Retry-After {0}" (searchResponse.Headers.ToString())
+                                    lerrp "Unable to parse response Retry-After {0}" headers
                                     return! loop limits
                         with ex ->
                             lerrp "Excepting when parsing search limit {0}" ex
@@ -119,7 +119,7 @@ type TwitterLimits() =
         mbox.Error.Add(fun exn -> lerrp "{0}" exn)
     member x.Start() = mbox.Post(StartLimitChecking)
     member x.UpdateLimit() = mbox.Post(UpdateLimit)
-    member x.UpdateSearchLimit(response) = mbox.Post(UpdateSearchLimit(response))
+    member x.UpdateSearchLimit(statusCode, headers) = mbox.Post(UpdateSearchLimit(statusCode, headers))
     member x.GetLimits() = mbox.PostAndReply(GetLimits)
     member x.GetLimitsString() = mbox.PostAndReply(GetLimits) |> limits2str
     member x.IsSafeToQueryTwitter() = 
@@ -166,14 +166,14 @@ let getStatus source (id:Int64) =
             linfop "Downloading {0}" id // todo: store status in db!
             let formatter = sprintf "http://api.twitter.com/1/statuses/show/%d.json"
             match OAuth.requestTwitter (formatter id) with
-             | Some(text, response) -> let xml = text |> convertJsonToXml
-                                       match xml.SelectSingleNode("/root") with
-                                       |null -> log Error (sprintf "status for %d is empty!" id)
-                                                None
-                                       |node -> let status = xml2Status node
-                                                newStatusDownloaded.Trigger(source, status)
-                                                linfop "Downloaded {0}" id
-                                                Some(status)
+             | Some(text, _, _) -> let xml = text |> convertJsonToXml
+                                   match xml.SelectSingleNode("/root") with
+                                   |null -> log Error (sprintf "status for %d is empty!" id)
+                                            None
+                                   |node -> let status = xml2Status node
+                                            newStatusDownloaded.Trigger(source, status)
+                                            linfop "Downloaded {0}" id
+                                            Some(status)
              | None -> None
 let getStatusOrEmpty source (id:Int64) =
     match getStatus source id with
@@ -191,8 +191,8 @@ let search name (sinceId:Int64) =
         //let url = sprintf "http://search.twitter.com/search.json?to=%s&since_id=%d&rpp=100&result_type=recent" name sinceId
         let url = sprintf "http://search.twitter.com/search.json?q=%%40%s&since_id=%d&rpp=100&result_type=recent" name sinceId
         match OAuth.requestTwitter url with
-         | Some(text, response) -> twitterLimits.UpdateSearchLimit(response)
-                                   convertJsonToXml text
+         | Some(text, statusCode, headers) -> twitterLimits.UpdateSearchLimit(statusCode, headers)
+                                              convertJsonToXml text
          | None -> emptyResult()
 
     let limits = async { return! twitterLimits.AsyncGetLimits() } |> Async.RunSynchronously
@@ -215,8 +215,8 @@ let friendsStatuses (fromStatusId:Int64) =
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
      | None -> xml.LoadXml("<statuses type=\"array\"></statuses>")
-     | Some("", response) -> xml.LoadXml("<statuses type=\"array\"></statuses>")
-     | Some(text, response) -> xml.LoadXml(text)
+     | Some("", _, _) -> xml.LoadXml("<statuses type=\"array\"></statuses>")
+     | Some(text, _, _) -> xml.LoadXml(text)
     xml
     
 let mentionsStatuses (fromStatusId:Int64) = 
@@ -226,8 +226,8 @@ let mentionsStatuses (fromStatusId:Int64) =
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
      | None -> xml.LoadXml("<statuses type=\"array\"></statuses>")
-     | Some("", response) -> xml.LoadXml("<statuses type=\"array\"></statuses>")
-     | Some(text, response)  -> xml.LoadXml(text)
+     | Some("", _, _) -> xml.LoadXml("<statuses type=\"array\"></statuses>")
+     | Some(text, _, _)  -> xml.LoadXml(text)
     xml
 
 let publicStatuses() = 
@@ -235,7 +235,7 @@ let publicStatuses() =
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
      | None -> xml.LoadXml("<statuses type=\"array\"></statuses>")
-     | Some(text, response)  -> xml.LoadXml(text)
+     | Some(text, _, _)  -> xml.LoadXml(text)
     xml
     
 let currentUser() =
@@ -243,7 +243,7 @@ let currentUser() =
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
      | None -> failwith "Unable to get info for current user"
-     | Some(text, response)  -> xml.LoadXml(text)
+     | Some(text, _, _)  -> xml.LoadXml(text)
     xml
     
 let twitterLists() = 
@@ -252,7 +252,7 @@ let twitterLists() =
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
      | None -> xml.LoadXml("<lists_list><lists type=\"array\"/></lists_list>")
-     | Some(text, response)  -> xml.LoadXml(text)
+     | Some(text, _, _)  -> xml.LoadXml(text)
     xml
        
 let private extractStatuses xpath statusesXml =

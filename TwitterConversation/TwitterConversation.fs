@@ -224,7 +224,7 @@ let addNewlyFoundStatuses() =
     |> List.filter (fun (root,newstats) -> newstats.Count > 0)
     |> List.map (doAndRet (fun (root,newstats) -> linfo (sprintf "%s %s has NEW STATUSES. Count: %d" root.UserName root.Text newstats.Count)))
     |> List.iter (fun (root,newstats) -> refreshOneConversationEx [newlyAddedStatusColorer newstats; freshStatusColorer] root)
-    
+    linfo "Looking for newly found statuses.. Done"    
     
 let mutable (cts:CancellationTokenSource) = null
 let mutable (paused:bool) = false
