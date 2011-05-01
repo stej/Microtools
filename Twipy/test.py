@@ -93,3 +93,9 @@ st = db.GetStatusesFromSql("select * from Status where UserName like 'AugiCZ' an
 for status in st:
   helper.loadTree(status)
 helper.exportToHtml(st)
+###################
+st = db.GetRootStatusesHavingReplies(100000)
+for status in st:
+    helper.loadTree(status)
+    print status.Text
+helper.exportToHtml(st)
