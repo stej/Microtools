@@ -11,6 +11,24 @@ type filterType =
     | UserName
     | Text
 type statusFilter = (filterType * string) list 
+type retweetInfo = { 
+      Id : string
+      RetweetId : Int64
+      Date     : DateTime
+      UserName : string
+      UserId   : string
+      UserProfileImage     : string
+      UserProtected        : bool
+      UserFollowersCount   : int
+      UserFriendsCount     : int
+      UserCreationDate     : DateTime
+      UserFavoritesCount   : int
+      UserOffset           : int
+      UserUrl              : string
+      UserStatusesCount    : int
+      UserIsFollowing      : bool
+      Inserted             : DateTime
+}
 type status = { Id : string; StatusId : Int64; App : string; Account : string
                 Text : string
                 Date : DateTime
@@ -30,7 +48,7 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                 Hidden : bool
                 Inserted : DateTime
                 Children : ResizeArray<status>
-                //CopyId : int
+                RetweetInfo : retweetInfo option
               }
               // returns info about if the status matches the filter
               member x.MatchesFilter (filter:statusFilter) = 
@@ -49,6 +67,10 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                 matchrec filter
               member x.ChildrenIds () =
                 x.Children |> Seq.map (fun s -> s.StatusId)
+              member x.IsRetweet () =
+                match x.RetweetInfo with
+                | None -> false
+                | _ -> true
 
 /// parses filter text to objects
 let parseFilter (text:string) = 
@@ -98,7 +120,52 @@ let xml2Status (xml:XmlNode) =
       Hidden               = false                                      // change?
       Inserted             = DateTime.Now
       Children             = new ResizeArray<status>()
-      //CopyId               = 0
+      RetweetInfo          = None
+    }
+let xml2Retweet (xml:XmlNode) = 
+    let xml2RetweetInfo (xml:XmlNode) =
+        let getValue xpath = xpathValue xpath xml
+        { Id = null
+          RetweetId = getValue "id" |> Int64OrDefault
+          Date     = getValue "created_at" |> TwitterDateOrDefault
+          UserName = getValue "user/screen_name"
+          UserId   = getValue "user/name"
+          UserProfileImage     = getValue "user/profile_image_url"
+          UserProtected        = getValue "user/protected" |> BoolOrDefault false
+          UserFollowersCount   = getValue "user/followers_count" |> IntOrDefault
+          UserFriendsCount     = getValue "user/friends_count" |> IntOrDefault
+          UserCreationDate     = getValue "user/created_at" |> TwitterDateOrDefault
+          UserFavoritesCount   = getValue "user/favourites_count" |> IntOrDefault
+          UserOffset           = getValue "user/utc_offset" |> IntOrDefault
+          UserUrl              = getValue "user/url"
+          UserStatusesCount    = getValue "user/statuses_count" |> IntOrDefault
+          UserIsFollowing      = getValue "user/following" |> BoolOrDefault false
+          Inserted             = DateTime.Now
+        }
+    let getValue xpath = xpathValue xpath xml
+    { Id = null
+      StatusId = getValue "retweeted_status/id" |> Int64OrDefault
+      App      = "Twitter"                                           //change?
+      Account  = "stejcz"                                            // change?
+      Text     = getValue "retweeted_status/text"
+      Date     = getValue "retweeted_status/created_at" |> TwitterDateOrDefault
+      UserName = getValue "retweeted_status/user/screen_name"
+      UserId   = getValue "retweeted_status/user/name"
+      UserProfileImage     = getValue "retweeted_status/user/profile_image_url"
+      ReplyTo              = getValue "retweeted_status/in_reply_to_status_id" |> Int64OrDefault
+      UserProtected        = getValue "retweeted_status/user/protected" |> BoolOrDefault false
+      UserFollowersCount   = getValue "retweeted_status/user/followers_count" |> IntOrDefault
+      UserFriendsCount     = getValue "retweeted_status/user/friends_count" |> IntOrDefault
+      UserCreationDate     = getValue "retweeted_status/user/created_at" |> TwitterDateOrDefault
+      UserFavoritesCount   = getValue "retweeted_status/user/favourites_count" |> IntOrDefault
+      UserOffset           = getValue "retweeted_status/user/utc_offset" |> IntOrDefault
+      UserUrl              = getValue "retweeted_status/user/url"
+      UserStatusesCount    = getValue "retweeted_status/user/statuses_count" |> IntOrDefault
+      UserIsFollowing      = getValue "retweeted_status/user/following" |> BoolOrDefault false
+      Hidden               = false                                      // change?
+      Inserted             = DateTime.Now
+      Children             = new ResizeArray<status>()
+      RetweetInfo          = Some(xml2RetweetInfo xml)
     }
     
 let getEmptyStatus() =
@@ -124,6 +191,7 @@ let getEmptyStatus() =
       Hidden = false
       Inserted = DateTime.Now
       Children = new ResizeArray<status>()
+      RetweetInfo = None
     }
 
 //let mutable statusesCache = new Dictionary<Int64, status>()

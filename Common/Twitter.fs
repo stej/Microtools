@@ -214,7 +214,7 @@ let friendsStatuses (fromStatusId:Int64) =
     let url = sprintf "http://api.twitter.com/1/statuses/friends_timeline.xml?since_id=%d&count=3200" from
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
-     | None -> xml.LoadXml("<statuses type=\"array\"></statuses>")
+     | None
      | Some("", _, _) -> xml.LoadXml("<statuses type=\"array\"></statuses>")
      | Some(text, _, _) -> xml.LoadXml(text)
     xml
@@ -225,7 +225,18 @@ let mentionsStatuses (fromStatusId:Int64) =
     let url = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d" from
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
-     | None -> xml.LoadXml("<statuses type=\"array\"></statuses>")
+     | None
+     | Some("", _, _) -> xml.LoadXml("<statuses type=\"array\"></statuses>")
+     | Some(text, _, _)  -> xml.LoadXml(text)
+    xml
+    
+let retweets (fromStatusId:Int64) =
+    linfop "Get retweets from {0}" fromStatusId
+    let from = if fromStatusId < 1000L then 1000L else fromStatusId
+    let url = sprintf "http://api.twitter.com/1/statuses/retweeted_to_me.xml?since_id=%d&count=100" from
+    let xml = new XmlDocument()
+    match OAuth.requestTwitter url with
+     | None
      | Some("", _, _) -> xml.LoadXml("<statuses type=\"array\"></statuses>")
      | Some(text, _, _)  -> xml.LoadXml(text)
     xml
@@ -260,10 +271,17 @@ let private extractStatuses xpath statusesXml =
        |> xpathNodes xpath
        |> Seq.cast<XmlNode> 
        |> Seq.map xml2Status
+let extractRetweets xpath retweetsXml =
+    retweetsXml
+       |> xpathNodes xpath
+       |> Seq.cast<XmlNode> 
+       |> Seq.map xml2Retweet
 let private loadNewFriendsStatuses maxId =
     friendsStatuses maxId |> extractStatuses "//statuses/status"  |> Seq.toList
 let private loadNewMentionsStatuses maxId =
     mentionsStatuses maxId |> extractStatuses "//statuses/status" |> Seq.toList
+let loadNewRetweets maxId =
+    retweets maxId |> extractRetweets "//statuses/status" |> Seq.toList
     
 let loadNewPersonalStatuses() =
     linfo "Loading new personal statuses"

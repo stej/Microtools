@@ -9,35 +9,53 @@ let mutable fileName = "statuses.db"
 let private doNothingHandler _ = ()
 let private doNothingHandler2 _ _ = ()
 
+let str (rd:SQLiteDataReader) (id:string)  = rd.[id].ToString()
+let long (rd:SQLiteDataReader) (id:string) = Convert.ToInt64(rd.[id])
+let intt (rd:SQLiteDataReader) (id:string) = Convert.ToInt32(rd.[id])
+let date (rd:SQLiteDataReader) (id:string) = new DateTime(long rd id)
+let bol (rd:SQLiteDataReader) (id:string)  = Convert.ToBoolean(rd.[id])
+let private readRetweetInfo (rd:SQLiteDataReader) =
+    { Id                 = str rd "Id"
+      RetweetId          = long rd "StatusId"
+      Date               = date rd "Date"
+      UserName           = str rd "UserName"
+      UserId             = str rd "UserId"
+      UserProfileImage   = str rd "UserProfileImage"
+      UserProtected      = bol rd "UserProtected"
+      UserFollowersCount = intt rd "UserFollowersCount"
+      UserFriendsCount   = intt rd "UserFriendsCount"
+      UserCreationDate   = date rd "UserCreationDate"
+      UserFavoritesCount = intt rd "UserFavoritesCount"
+      UserOffset         = intt rd "UserOffset"
+      UserUrl            = str rd "UserUrl"
+      UserStatusesCount  = intt rd "UserStatusesCount"
+      UserIsFollowing    = bol rd "UserIsFollowing"
+      Inserted           = date rd "Inserted"
+    }
 let private readStatus (rd:SQLiteDataReader) =
-    let str (id:string)  = rd.[id].ToString()
-    let long (id:string) = Convert.ToInt64(rd.[id])
-    let intt (id:string) = Convert.ToInt32(rd.[id])
-    let date (id:string) = new DateTime(long id)
-    let bol (id:string)  = Convert.ToBoolean(rd.[id])
-    { Id                 = str "Id"
-      StatusId           = long "StatusId"
-      App                = str "App"
-      Account            = str "Account"
-      Text               = str "Text"
-      Date               = date "Date"
-      UserName           = str "UserName"
-      UserId             = str "UserId"
-      UserProfileImage   = str "UserProfileImage"
-      ReplyTo            = long "ReplyTo"
-      UserProtected      = bol "UserProtected"
-      UserFollowersCount = intt "UserFollowersCount"
-      UserFriendsCount   = intt "UserFriendsCount"
-      UserCreationDate   = date "UserCreationDate"
-      UserFavoritesCount = intt "UserFavoritesCount"
-      UserOffset         = intt "UserOffset"
-      UserUrl            = str "UserUrl"
-      UserStatusesCount  = intt "UserStatusesCount"
-      UserIsFollowing    = bol "UserIsFollowing"
-      Hidden             = bol "Hidden"
-      Inserted           = date "Inserted"
+    { Id                 = str rd "Id"
+      StatusId           = long rd "StatusId"
+      App                = str rd "App"
+      Account            = str rd "Account"
+      Text               = str rd "Text"
+      Date               = date rd "Date"
+      UserName           = str rd "UserName"
+      UserId             = str rd "UserId"
+      UserProfileImage   = str rd "UserProfileImage"
+      ReplyTo            = long rd "ReplyTo"
+      UserProtected      = bol rd "UserProtected"
+      UserFollowersCount = intt rd "UserFollowersCount"
+      UserFriendsCount   = intt rd "UserFriendsCount"
+      UserCreationDate   = date rd "UserCreationDate"
+      UserFavoritesCount = intt rd "UserFavoritesCount"
+      UserOffset         = intt rd "UserOffset"
+      UserUrl            = str rd "UserUrl"
+      UserStatusesCount  = intt rd "UserStatusesCount"
+      UserIsFollowing    = bol rd "UserIsFollowing"
+      Hidden             = bol rd "Hidden"
+      Inserted           = date rd "Inserted"
       Children           = new ResizeArray<status>()
-      //CopyId             = 0
+      RetweetInfo        = None
      }
 
 let useDb useFce = 
@@ -202,14 +220,45 @@ type StatusesDbState() =
                     use cmd = conn.CreateCommand()
                     cmd.CommandText <- (sprintf "Select count(Id) from Status where Id = '%s-%d'" status.App status.StatusId)
                     Convert.ToInt32(cmd.ExecuteScalar()) > 0*)
-              
+            let addRetweetInfo info =
+                //alter table Status add Column RetweetInfoId varchar default null
+                //http://dev.twitter.com/doc/get/statuses/retweeted_to_me
+                ldbg (sprintf "Save retweet info %d - %s" info.RetweetId info.UserName)
+                let r = info
+                let recordId = sprintf "TwitteRT-%d" r.RetweetId
+                use cmd = conn.CreateCommand()
+                cmd.CommandText <- "INSERT INTO Status(
+                    Id, RetweetId, Date, UserName, UserId, UserProfileImage, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Inserted
+                    ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16)"
+                addCmdParameter cmd "@p1" recordId
+                addCmdParameter cmd "@p2" r.RetweetId
+                addCmdParameter cmd "@p3" r.Date.Ticks
+                addCmdParameter cmd "@p4" r.UserName
+                addCmdParameter cmd "@p5" r.UserId
+                addCmdParameter cmd "@p6" r.UserProfileImage
+                addCmdParameter cmd "@p7" r.UserProtected
+                addCmdParameter cmd "@p8" r.UserFollowersCount
+                addCmdParameter cmd "@p9" r.UserFriendsCount
+                addCmdParameter cmd "@p10" r.UserCreationDate.Ticks
+                addCmdParameter cmd "@p11" r.UserFavoritesCount
+                addCmdParameter cmd "@p12" r.UserOffset
+                addCmdParameter cmd "@p13" r.UserUrl
+                addCmdParameter cmd "@p14" r.UserStatusesCount
+                addCmdParameter cmd "@p15" r.UserIsFollowing
+                addCmdParameter cmd "@p26" DateTime.Now.Ticks
+                cmd.ExecuteNonQuery() |> ignore
+                recordId
             let addStatus status = 
                 ldbg (sprintf "Save status %d - %s - %s" status.StatusId status.UserName status.Text)
                 let s = status
+                let retweetInfoId = 
+                    match s.RetweetInfo with
+                    |Some(r) -> addRetweetInfo r
+                    | None -> null
                 use cmd = conn.CreateCommand()
                 cmd.CommandText <- "INSERT INTO Status(
-                    Id, StatusId, App, Account, Text, Date, UserName, UserId, UserProfileImage, ReplyTo, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Hidden, Source, Inserted
-                    ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22)"
+                    Id, StatusId, App, Account, Text, Date, UserName, UserId, UserProfileImage, ReplyTo, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Hidden, Source, Inserted, RetweetInfoId
+                    ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23)"
                 addCmdParameter cmd "@p1" (sprintf "%s-%d" s.App s.StatusId)
                 addCmdParameter cmd "@p2" s.StatusId
                 addCmdParameter cmd "@p3" s.App
@@ -232,6 +281,7 @@ type StatusesDbState() =
                 addCmdParameter cmd "@p20" s.Hidden
                 addCmdParameter cmd "@p21" (StatusSource2Int source)
                 addCmdParameter cmd "@p22" DateTime.Now.Ticks
+                addCmdParameter cmd "@p23" retweetInfoId
                 cmd.ExecuteNonQuery() |> ignore
 
             for status in statuses do 
