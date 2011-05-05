@@ -194,6 +194,7 @@ let addNewlyFoundConversations() =
     readStatuses() 
             |> Seq.filter (fun status -> not (ConversationState.conversationsState.ContainsStatus(status.StatusId)))
             |> Seq.map ImagesSource.ensureStatusImage
+            |> Seq.sortBy (fun status -> status.StatusId)   // sort ascending, because the statuses are added to the beginning -> makes descending order
             |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.Beginning
                                                 |> StatusesReplies.loadSavedReplyTree
                                                 |> ConversationState.conversationsState.AddConversation
