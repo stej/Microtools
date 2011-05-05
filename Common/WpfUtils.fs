@@ -94,8 +94,13 @@ let createDetail (status:status) =
          new Run(" | ")           :> Inline
          hl                       :> Inline
          new Run(" | ")           :> Inline
-         new Run(sprintf "%s" (status.Date.ToString("yyyy-MM-dd HH:mm:ss"))) :> Inline]
+         new Run(sprintf "%s" (status.Date.ToString("yyyy-MM-dd HH:mm:ss"))) :> Inline
+        ]
         |> List.iter m.Inlines.Add
+        if status.RetweetInfo.IsSome then
+            [new Run(" | ")           :> Inline
+             new Run(sprintf "RT by @%s" status.RetweetInfo.Value.UserName) :> Inline]
+            |> List.iter m.Inlines.Add
         m
 
     let imgContent = createPicture pictureSize (new Thickness(5., 0., 0., 5.)) status

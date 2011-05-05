@@ -293,7 +293,8 @@ let loadNewPersonalStatuses() =
         // mentions that aren't also in friends list
         let filteredMentions = loadNewMentionsStatuses max |> List.filter (fun s -> not (friendsset.Contains(s.StatusId)))
         
-        friends @ filteredMentions |> List.sortBy (fun status -> status.Date)
+        let retweets = loadNewRetweets max
+        friends @ filteredMentions @ retweets |> List.sortBy (fun status -> status.Date)
 
     StatusDb.statusesDb.SaveStatuses(Status.Timeline, newStatuses)
     if newStatuses.Length > 0 then
