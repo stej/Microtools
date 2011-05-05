@@ -288,15 +288,21 @@ let loadNewPersonalStatuses() =
     let max = StatusDb.statusesDb.GetLastTwitterStatusId()
     linfop "Max statusId is {0}. Loading from that" max
     let newStatuses = 
-        let friends = loadNewFriendsStatuses max
-        let friendsset = Set.ofList [for s in friends -> s.StatusId]
-        // mentions that aren't also in friends list
-        let filteredMentions = loadNewMentionsStatuses max |> List.filter (fun s -> not (friendsset.Contains(s.StatusId)))
-        
-        let retweets = loadNewRetweets max
-        friends @ filteredMentions @ retweets |> List.sortBy (fun status -> status.Date)
+        let statusesCache = new System.Collections.Generic.Dictionary<Int64, status>()
+        let statusToCache status =
+            statusesCache.[status.StatusId] <- status
+
+        // store statuses i cache
+        (loadNewFriendsStatuses max) @ (loadNewMentionsStatuses max) |> List.iter statusToCache
+
+        // store retweets in cache, replace plain statuses (non-retweets) with statuses with their retweet info
+        loadNewRetweets max |> List.iter statusToCache
+
+        // publish collection without duplicates
+        statusesCache.Values |> Seq.toList |> List.sortBy (fun status -> status.Date)
 
     StatusDb.statusesDb.SaveStatuses(Status.Timeline, newStatuses)
+
     if newStatuses.Length > 0 then
         newStatuses |> List.maxBy (fun status -> status.StatusId) |> StatusDb.statusesDb.UpdateLastTwitterStatusId
     newStatuses

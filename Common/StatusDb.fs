@@ -16,6 +16,13 @@ let long (rd:SQLiteDataReader) (id:string) = Convert.ToInt64(rd.[id])
 let intt (rd:SQLiteDataReader) (id:string) = Convert.ToInt32(rd.[id])
 let date (rd:SQLiteDataReader) (id:string) = new DateTime(long rd id)
 let bol (rd:SQLiteDataReader) (id:string)  = Convert.ToBoolean(rd.[id])
+type statusFromDb = {
+    Status: status
+    RetweetInfoId: string
+    Source: StatusSource
+} 
+let extractStatusFromStatusDb statusDb =
+    statusDb.Status
 let private readRetweetInfo (rd:SQLiteDataReader) =
     { Id                 = str rd "Id"
       RetweetId          = long rd "RetweetId"
@@ -35,30 +42,33 @@ let private readRetweetInfo (rd:SQLiteDataReader) =
       Inserted           = date rd "Inserted"
     }
 let private readStatus (rd:SQLiteDataReader) =
-    ({ Id                 = str rd "Id"
-       StatusId           = long rd "StatusId"
-       App                = str rd "App"
-       Account            = str rd "Account"
-       Text               = str rd "Text"
-       Date               = date rd "Date"
-       UserName           = str rd "UserName"
-       UserId             = str rd "UserId"
-       UserProfileImage   = str rd "UserProfileImage"
-       ReplyTo            = long rd "ReplyTo"
-       UserProtected      = bol rd "UserProtected"
-       UserFollowersCount = intt rd "UserFollowersCount"
-       UserFriendsCount   = intt rd "UserFriendsCount"
-       UserCreationDate   = date rd "UserCreationDate"
-       UserFavoritesCount = intt rd "UserFavoritesCount"
-       UserOffset         = intt rd "UserOffset"
-       UserUrl            = str rd "UserUrl"
-       UserStatusesCount  = intt rd "UserStatusesCount"
-       UserIsFollowing    = bol rd "UserIsFollowing"
-       Hidden             = bol rd "Hidden"
-       Inserted           = date rd "Inserted"
-       Children           = new ResizeArray<status>()
-       RetweetInfo        = None}, 
-      str rd "RetweetInfoId")
+    { Status = {
+                Id                 = str rd "Id"
+                StatusId           = long rd "StatusId"
+                App                = str rd "App"
+                Account            = str rd "Account"
+                Text               = str rd "Text"
+                Date               = date rd "Date"
+                UserName           = str rd "UserName"
+                UserId             = str rd "UserId"
+                UserProfileImage   = str rd "UserProfileImage"
+                ReplyTo            = long rd "ReplyTo"
+                UserProtected      = bol rd "UserProtected"
+                UserFollowersCount = intt rd "UserFollowersCount"
+                UserFriendsCount   = intt rd "UserFriendsCount"
+                UserCreationDate   = date rd "UserCreationDate"
+                UserFavoritesCount = intt rd "UserFavoritesCount"
+                UserOffset         = intt rd "UserOffset"
+                UserUrl            = str rd "UserUrl"
+                UserStatusesCount  = intt rd "UserStatusesCount"
+                UserIsFollowing    = bol rd "UserIsFollowing"
+                Hidden             = bol rd "Hidden"
+                Inserted           = date rd "Inserted"
+                Children           = new ResizeArray<status>()
+                RetweetInfo        = None
+      }
+      RetweetInfoId = (str rd "RetweetInfoId")
+      Source = (intt rd "Source" |> Int2StatusSource)}
 
 let useDb useFce = 
     use conn = new System.Data.SQLite.SQLiteConnection()
@@ -97,10 +107,11 @@ let loadRetweetInfo (conn:SQLiteConnection) (retweetInfoId:string) =
             None
     rd.Close()
     ret
-let addRetweetInfo (conn:SQLiteConnection) ((status,retweetInfoId):status*string) =
-    match retweetInfoId with
-    | null -> status
-    | id -> { status with RetweetInfo = loadRetweetInfo conn retweetInfoId }
+let addRetweetInfo (conn:SQLiteConnection) (dbStatus:statusFromDb) =
+    match dbStatus.RetweetInfoId with
+    | null -> dbStatus
+    | id -> let status = { dbStatus.Status with RetweetInfo = loadRetweetInfo conn dbStatus.RetweetInfoId }
+            { dbStatus with Status = status }
 
 let executeSelectStatuses (cmd:SQLiteCommand) = 
     executeSelect readStatus cmd
@@ -148,20 +159,25 @@ type StatusesDbState() =
         )
 
     // todo - rework - use other method
+    let readStatusWithIdUseConn (conn:SQLiteConnection) (statusId:Int64) = 
+        use cmd = conn.CreateCommand()
+        cmd.CommandText <- "Select * from Status where StatusId = @p1 limit 0,1"
+        cmd.Parameters.Add(new SQLiteParameter("@p1", statusId)) |> ignore
+        let rd = cmd.ExecuteReader()
+        let ret = 
+          if rd.Read() then
+            readStatus rd |> addRetweetInfo conn |> Some
+          else
+            None
+        rd.Close()
+        ret
+
+    // todo - rework - use other method
     let readStatusWithId (statusId:Int64) = 
-        useDb (fun conn ->
-          use cmd = conn.CreateCommand()
-          cmd.CommandText <- "Select * from Status where StatusId = @p1 limit 0,1"
-          cmd.Parameters.Add(new SQLiteParameter("@p1", statusId)) |> ignore
-          let rd = cmd.ExecuteReader()
-          let ret = 
-            if rd.Read() then
-              readStatus rd |> addRetweetInfo conn |> Some
-            else
-              None
-          rd.Close()
-          ret
-        )
+        useDb (fun conn -> 
+            match readStatusWithIdUseConn conn statusId with 
+            |Some(dbStatus) -> Some(dbStatus.Status)
+            |_ -> None)
     
     let readStatusReplies (statusId:Int64) = 
         useDb (fun conn ->
@@ -169,7 +185,7 @@ type StatusesDbState() =
             cmd.CommandText <- "Select * from Status where ReplyTo = @p1"
             addCmdParameter cmd "@p1" statusId
             // todo - handler nebere count - pocitat pocet replies?
-            executeSelectStatuses cmd |> List.map (addRetweetInfo conn)
+            executeSelectStatuses cmd |> List.map (addRetweetInfo conn) |> List.map (fun dbStatus -> dbStatus.Status)
         )
 
     let getRootStatusesHavingReplies(maxCount) = 
@@ -192,7 +208,7 @@ type StatusesDbState() =
                     executeSelectStatuses cmd |> List.map (addRetweetInfo conn)
                 )
         ldbgp "Getting conversation roots done, count {0}" maxCount
-        res
+        res |> List.map extractStatusFromStatusDb
     
     let getTimelineStatusesBefore count (statusId:Int64) = 
        ldbgp "getTimelineStatusesBefore {0}" statusId
@@ -202,7 +218,7 @@ type StatusesDbState() =
             addCmdParameter cmd "@p1" statusId
             addCmdParameter cmd "@p2" (StatusSource2Int Status.Timeline)
             addCmdParameter cmd "@p3" count
-            executeSelectStatuses cmd |> List.map (addRetweetInfo conn)
+            executeSelectStatuses cmd |> List.map ((addRetweetInfo conn) >> extractStatusFromStatusDb)
         )
 //    let getStatusesFromSql sql = 
 //        ldbgp "getStatusesFromSql {0}" sql
@@ -243,27 +259,31 @@ type StatusesDbState() =
                 ldbg (sprintf "Save retweet info %d - %s" info.RetweetId info.UserName)
                 let r = info
                 let recordId = sprintf "TwRTId-%d" r.RetweetId
-                use cmd = conn.CreateCommand()
-                cmd.CommandText <- "INSERT INTO RetweetInfo(
-                    Id, RetweetId, Date, UserName, UserId, UserProfileImage, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Inserted
-                    ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16)"
-                addCmdParameter cmd "@p1" recordId
-                addCmdParameter cmd "@p2" r.RetweetId
-                addCmdParameter cmd "@p3" r.Date.Ticks
-                addCmdParameter cmd "@p4" r.UserName
-                addCmdParameter cmd "@p5" r.UserId
-                addCmdParameter cmd "@p6" r.UserProfileImage
-                addCmdParameter cmd "@p7" r.UserProtected
-                addCmdParameter cmd "@p8" r.UserFollowersCount
-                addCmdParameter cmd "@p9" r.UserFriendsCount
-                addCmdParameter cmd "@p10" r.UserCreationDate.Ticks
-                addCmdParameter cmd "@p11" r.UserFavoritesCount
-                addCmdParameter cmd "@p12" r.UserOffset
-                addCmdParameter cmd "@p13" r.UserUrl
-                addCmdParameter cmd "@p14" r.UserStatusesCount
-                addCmdParameter cmd "@p15" r.UserIsFollowing
-                addCmdParameter cmd "@p16" DateTime.Now.Ticks
-                cmd.ExecuteNonQuery() |> ignore
+                match loadRetweetInfo conn recordId with
+                | Some(_) -> 
+                    lerr (sprintf "Retweet info %d - %s already stored" info.RetweetId info.UserName)
+                | None ->
+                    use cmd = conn.CreateCommand()
+                    cmd.CommandText <- "INSERT INTO RetweetInfo(
+                        Id, RetweetId, Date, UserName, UserId, UserProfileImage, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Inserted
+                        ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16)"
+                    addCmdParameter cmd "@p1" recordId
+                    addCmdParameter cmd "@p2" r.RetweetId
+                    addCmdParameter cmd "@p3" r.Date.Ticks
+                    addCmdParameter cmd "@p4" r.UserName
+                    addCmdParameter cmd "@p5" r.UserId
+                    addCmdParameter cmd "@p6" r.UserProfileImage
+                    addCmdParameter cmd "@p7" r.UserProtected
+                    addCmdParameter cmd "@p8" r.UserFollowersCount
+                    addCmdParameter cmd "@p9" r.UserFriendsCount
+                    addCmdParameter cmd "@p10" r.UserCreationDate.Ticks
+                    addCmdParameter cmd "@p11" r.UserFavoritesCount
+                    addCmdParameter cmd "@p12" r.UserOffset
+                    addCmdParameter cmd "@p13" r.UserUrl
+                    addCmdParameter cmd "@p14" r.UserStatusesCount
+                    addCmdParameter cmd "@p15" r.UserIsFollowing
+                    addCmdParameter cmd "@p16" DateTime.Now.Ticks
+                    cmd.ExecuteNonQuery() |> ignore
                 recordId
                 
             let addStatus status = 
@@ -307,18 +327,20 @@ type StatusesDbState() =
                 cmd.ExecuteNonQuery() |> ignore
 
             for status in statuses do 
-                match readStatusSource conn status.StatusId with
-                // kdyz je status ulozeny, je timelinovy a byl ulozeny nejak jinak, pak mu to nastavim - timeline je nejvyssi priorita
-                | Some(src) -> ldbgp2 "Found source {0}, request source is {1}" src source
-                               if source = Status.Timeline && src <> Status.Timeline then
-                                    linfop2 "Stored with other source {0} - {1}" status.UserName status.StatusId
-                                    updateStatusSource source status
-                               else
-                                    linfop2 "Already stored {0} - {1}" status.UserName status.StatusId
-                | None -> linfop2 "Storing status {0} - {1}" status.UserName status.StatusId
-                          try addStatus status
-                          with ex -> lerrp "{0}" ex
-                      
+                match readStatusWithIdUseConn conn status.StatusId with
+                | Some(statusDb) ->
+                    let status = statusDb.Status
+                    // kdyz je status ulozeny, je timelinovy a byl ulozeny nejak jinak, pak mu to nastavim - timeline je nejvyssi priorita
+                    ldbgp2 "Found source {0}, request source is {1}" statusDb.Source source
+                    if source = Status.Timeline && statusDb.Source <> Status.Timeline then
+                        linfop2 "Stored with other source {0} - {1}" status.UserName status.StatusId
+                        updateStatusSource source status
+                    else
+                        linfop2 "Already stored {0} - {1}" status.UserName status.StatusId
+                | None -> 
+                    linfop2 "Storing status {0} - {1}" status.UserName status.StatusId
+                    try addStatus status
+                    with ex -> lerrp "{0}" ex
         )
 
     let deleteStatus (status: status) = 

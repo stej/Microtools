@@ -90,17 +90,18 @@ let createDetail (status:status) =
                                 NavigateUri = new Uri(sprintf "http://twitter.com/#!/%s/status/%d" status.UserName status.StatusId))
           l.RequestNavigate.Add(BrowseHlClick)
           l
-        [new Run(status.UserName) :> Inline
+        let userName = 
+            if status.RetweetInfo.IsSome then
+                sprintf "%s (RT by @%s)" status.UserName status.RetweetInfo.Value.UserName
+            else
+                status.UserName
+        [new Run(userName) :> Inline
          new Run(" | ")           :> Inline
          hl                       :> Inline
          new Run(" | ")           :> Inline
          new Run(sprintf "%s" (status.Date.ToString("yyyy-MM-dd HH:mm:ss"))) :> Inline
         ]
         |> List.iter m.Inlines.Add
-        if status.RetweetInfo.IsSome then
-            [new Run(" | ")           :> Inline
-             new Run(sprintf "RT by @%s" status.RetweetInfo.Value.UserName) :> Inline]
-            |> List.iter m.Inlines.Add
         m
 
     let imgContent = createPicture pictureSize (new Thickness(5., 0., 0., 5.)) status
