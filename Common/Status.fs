@@ -211,6 +211,7 @@ type StatusSource =
     | RequestedConversation // requested - either user wants to check conversation where the status is placed or the status is fetched to see where timeline status is rooted
     | Search   // downloaded during search
     | Public   // public statuses
+    | Retweet
 
 let StatusSource2Int source =
     match source with
@@ -218,12 +219,14 @@ let StatusSource2Int source =
      | Search -> 2
      | Public -> 3
      | RequestedConversation -> 4
+     | Retweet -> 5
 let Int2StatusSource source =
     match source with
      | 1 -> Timeline
      | 2 -> Search
      | 3 -> Public
      | 4 -> RequestedConversation
+     | 5 -> Retweet
      | _ -> failwith (sprintf "Value %A can not be converted to StatusSource" source)
      
 let GetStatusIdsForNodes (statuses:status seq) =
