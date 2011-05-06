@@ -316,6 +316,7 @@ let loadNewPersonalStatuses() =
         newStatuses 
         |> List.map (fun (status,_) -> status) 
         |> List.maxBy getStatusId 
+        |> doAndRet (fun status -> linfop "Storing last status Id: {0}" status.StatusId)
         |> StatusDb.statusesDb.UpdateLastTwitterStatusId
     newStatuses
     

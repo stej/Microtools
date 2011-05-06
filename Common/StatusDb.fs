@@ -153,8 +153,9 @@ type StatusesDbState() =
 
     let updateLastTwitterStatusId (lastStatus:Status.status) =
         useDb (fun conn ->
+            let id = match lastStatus.RetweetInfo with | Some(i) -> i.RetweetId | None -> lastStatus.StatusId
             use cmd = conn.CreateCommand(CommandText = "Update AppState set TwitterStatusId = @p1")
-            addCmdParameter cmd "@p1" lastStatus.StatusId
+            addCmdParameter cmd "@p1" id
             cmd.ExecuteNonQuery() |> ignore
         )
 
