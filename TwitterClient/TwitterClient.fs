@@ -80,7 +80,7 @@ window.Loaded.Add(
             WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
                                                     fillDetails tree)
             setAppState (sprintf "Done.. Count: %d" list.Length)
-            async { do! Async.Sleep(1000*60*5) } |> Async.RunSynchronously
+            async { do! Async.Sleep(1000*60*3) } |> Async.RunSynchronously
             asyncloop()
           asyncloop()
         } |> Async.Start
