@@ -10,6 +10,8 @@ open OAuth
 type filterType =
     | UserName
     | Text
+    | RTs
+    | TimelineStatuses
 type statusFilter = (filterType * string) list 
 type retweetInfo = { 
       Id : string
@@ -59,6 +61,8 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                                                   let right = if text.EndsWith("*") then "" else "\\b"
                                                   let pattern = sprintf "%s%s%s" left mid right
                                                   Regex.Match(x.Text, pattern, RegexOptions.IgnoreCase).Success
+                                | (RTs,_) -> x.RetweetInfo.IsSome
+                                | (TimelineStatuses, _) -> x.RetweetInfo.IsNone
                 let rec matchrec filter =
                     match filter with
                     | head::tail -> if matchItem head then true
@@ -75,8 +79,14 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
 /// parses filter text to objects
 let parseFilter (text:string) = 
     text.Split([|' '|], StringSplitOptions.RemoveEmptyEntries)
-    |> Seq.map (fun part -> if part.StartsWith("@") then (UserName, (if part.Length > 0 then part.Substring(1) else ""))
-                            else (Text, part))
+    |> Seq.map (fun part -> if part = "all-RT" then
+                                (RTs, null)
+                            else if part = "all-Timeline" then
+                                (TimelineStatuses, null)
+                            else if part.StartsWith("@") then 
+                                (UserName, (if part.Length > 0 then part.Substring(1) else ""))
+                            else 
+                                (Text, part))
     |> Seq.toList
 
 /// returns true if the initialStatus or any of its child is equal to possibleChild
