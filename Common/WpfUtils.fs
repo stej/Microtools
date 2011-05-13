@@ -23,21 +23,25 @@ let (fontSize, pictureSize) =
     linfop "UI size is {0}" s
     s
 
-let private createPicture size margin (status:status) = 
+let private createPictureX imagePath size margin = 
     let source = new Imaging.BitmapImage()
-    let imagePath = ImagesSource.getImagePath status
     source.BeginInit();
     source.UriSource <- new Uri(imagePath, System.UriKind.Relative);
-    source.DecodePixelWidth <- int pictureSize
+    source.DecodePixelWidth <- int size
     source.EndInit()
     new Image(Source = source,
               Name = "image",
               Margin = margin,
-              Width = pictureSize,
-              Height = pictureSize,
-              ToolTip = new ToolTip(Content = (sprintf "%s %A\n%s" status.UserName status.Date status.Text)),
+              Width = size,
+              Height = size,
               VerticalAlignment = VerticalAlignment.Top)
               //Stretch <- Media.Stretch.Uniform
+let private createStatusPicture size margin (status:status) = 
+    let pic = createPictureX (ImagesSource.getImagePath status) pictureSize margin
+    pic.ToolTip <- new ToolTip(Content = (sprintf "%s %A\n%s" status.UserName status.Date status.Text))
+    pic
+let private getRetweetImage () =
+    createPictureX "retweet.png" 14. (new Thickness(1.5, 5., 0., 0.))    
 
 let private BrowseHlClick (e:Navigation.RequestNavigateEventArgs) =
     Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)) |> ignore
@@ -74,7 +78,7 @@ let private textToTextblock (text:string) =
     ret
 
 let createLittlePicture status = 
-    createPicture 30. (new Thickness(2.)) status 
+    createStatusPicture 30. (new Thickness(2.)) status 
               
 let createDetail (status:status) =
     let row = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,
@@ -82,29 +86,40 @@ let createDetail (status:status) =
                              Orientation = Orientation.Horizontal,
                              Margin = new Thickness(0., 0., 0., 5.))
     let meta =
-        let m = new TextBlock(TextWrapping = TextWrapping.Wrap,
-                              Padding = new Thickness(0.),
-                              Margin = new Thickness(5., 0., 0., 5.))
-        let hl = 
-          let l = new Hyperlink(new Run(sprintf "%d" (status.StatusId)),
-                                NavigateUri = new Uri(sprintf "http://twitter.com/#!/%s/status/%d" status.UserName status.StatusId))
-          l.RequestNavigate.Add(BrowseHlClick)
-          l
-        let userName = 
-            if status.RetweetInfo.IsSome then
-                sprintf "%s (RT by @%s)" status.UserName status.RetweetInfo.Value.UserName
-            else
-                status.UserName
-        [new Run(userName) :> Inline
-         new Run(" | ")           :> Inline
-         hl                       :> Inline
-         new Run(" | ")           :> Inline
-         new Run(sprintf "%s" (status.Date.ToString("yyyy-MM-dd HH:mm:ss"))) :> Inline
-        ]
-        |> List.iter m.Inlines.Add
-        m
+        let textInformation = 
+            let m = new TextBlock(TextWrapping = TextWrapping.Wrap,
+                                  Padding = new Thickness(0.),
+                                  Margin = new Thickness(5., 0., 0., 5.))
+            let hl = 
+                  let l = new Hyperlink(new Run(sprintf "%d" (status.StatusId)),
+                                        NavigateUri = new Uri(sprintf "http://twitter.com/#!/%s/status/%d" status.UserName status.StatusId))
+                  l.RequestNavigate.Add(BrowseHlClick)
+                  l
+            let userName = 
+                  if status.RetweetInfo.IsSome then
+                      sprintf "%s (by @%s)" status.UserName status.RetweetInfo.Value.UserName
+                  else
+                      status.UserName
+            [new Run(userName) :> Inline
+             new Run(" | ")           :> Inline
+             hl                       :> Inline
+             new Run(" | ")           :> Inline
+             new Run(sprintf "%s" (status.Date.ToString("yyyy-MM-dd HH:mm:ss"))) :> Inline
+            ] |> List.iter m.Inlines.Add
+            m
+        let wrapTextInfoAndRetweetIcon () =
+            let row = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,
+                             VerticalAlignment = VerticalAlignment.Top,
+                             Orientation = Orientation.Horizontal,
+                             Margin = new Thickness(0.5, 0., 0., 0.))
+            row.Children.Add(getRetweetImage())
+            row.Children.Add(textInformation)
+            row
+        match status.RetweetInfo with
+        | None -> textInformation :> UIElement
+        | Some(info) -> wrapTextInfoAndRetweetIcon () :> UIElement
 
-    let imgContent = createPicture pictureSize (new Thickness(5., 0., 0., 5.)) status
+    let imgContent = createStatusPicture pictureSize (new Thickness(5., 0., 0., 5.)) status
     let img = new Border(BorderBrush = Brushes.LightGray,
                      BorderThickness = new Thickness(0., 0., 0., 0.),
                      CornerRadius = new CornerRadius(2.),
