@@ -112,8 +112,8 @@ let createDetail (status:status) =
                              VerticalAlignment = VerticalAlignment.Top,
                              Orientation = Orientation.Horizontal,
                              Margin = new Thickness(0.5, 0., 0., 0.))
-            row.Children.Add(getRetweetImage())
-            row.Children.Add(textInformation)
+            row.Children.Add(getRetweetImage()) |> ignore
+            row.Children.Add(textInformation) |> ignore
             row
         match status.RetweetInfo with
         | None -> textInformation :> UIElement

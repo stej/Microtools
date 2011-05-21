@@ -7,6 +7,13 @@ open System.Text.RegularExpressions
 open Utils
 open OAuth
 
+type StatusSource =
+    | Timeline  // downloaded as timeline (mentions/friends)
+    | RequestedConversation // requested - either user wants to check conversation where the status is placed or the status is fetched to see where timeline status is rooted
+    | Search   // downloaded during search
+    | Public   // public statuses
+    | Retweet
+
 type filterType =
     | UserName
     | Text
@@ -61,7 +68,7 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                                                   let right = if text.EndsWith("*") then "" else "\\b"
                                                   let pattern = sprintf "%s%s%s" left mid right
                                                   Regex.Match(x.Text, pattern, RegexOptions.IgnoreCase).Success
-                                | (RTs,_) -> x.RetweetInfo.IsSome
+                                | (RTs,_) -> x.RetweetInfo.IsSome // todo - include timeline statuses
                                 | (TimelineStatuses, _) -> x.RetweetInfo.IsNone
                 let rec matchrec filter =
                     match filter with
@@ -75,13 +82,14 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                 match x.RetweetInfo with
                 | None -> false
                 | _ -> true
+              member x.DisplayDate = if x.RetweetInfo.IsSome then x.RetweetInfo.Value.Date else x.Date
 
 /// parses filter text to objects
 let parseFilter (text:string) = 
     text.Split([|' '|], StringSplitOptions.RemoveEmptyEntries)
-    |> Seq.map (fun part -> if part = "all-RT" then
+    |> Seq.map (fun part -> if part = "allRT" then
                                 (RTs, null)
-                            else if part = "all-Timeline" then
+                            else if part = "allTimeline" then
                                 (TimelineStatuses, null)
                             else if part.StartsWith("@") then 
                                 (UserName, (if part.Length > 0 then part.Substring(1) else ""))
@@ -215,13 +223,6 @@ let printStatus root =
         linfo (sprintf "%s - %d, children: %d " status.UserName status.StatusId status.Children.Count)
         status.Children |> Seq.iter (fun s -> printStatus (depth+1) s)
     printStatus 0 root
-    
-type StatusSource =
-    | Timeline  // downloaded as timeline (mentions/friends)
-    | RequestedConversation // requested - either user wants to check conversation where the status is placed or the status is fetched to see where timeline status is rooted
-    | Search   // downloaded during search
-    | Public   // public statuses
-    | Retweet
 
 let StatusSource2Int source =
     match source with
@@ -249,8 +250,8 @@ let GetStatusIdsForNodes (statuses:status seq) =
     seq {
         for s in statuses do yield! getids s
     }
-let GetStatusIdsForNode (status:status) =
-    GetStatusIdsForNodes [status]
+//let GetStatusIdsForNode (status:status) =
+    //GetStatusIdsForNodes [status]
 
 // takes status with children and returns Some(status) with StatusId equal to statusId or None if there is no such status in the tree
 let GetStatusFromConversation statusId tree =
@@ -280,3 +281,8 @@ let Flatten (statuses:status list) =
 
 let getId status =
     status.StatusId
+
+let GetNewestDisplayDateFromConversation (status:status) =
+    Flatten [status] |> Seq.map (fun status -> status.DisplayDate)
+                     |> Seq.sortBy (fun date -> -date.Ticks) 
+                     |> Seq.nth 0

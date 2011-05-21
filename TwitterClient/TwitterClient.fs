@@ -43,7 +43,9 @@ Twitter.NewStatusDownloaded
 let fillPictures statuses =
     wrap.Children.Clear()
     statuses 
-      |> Seq.sortBy (fun status -> status.StatusId)
+      |> Seq.map (fun status -> (status, GetNewestDisplayDateFromConversation status))
+      |> Seq.sortBy (fun (status, displayDate) -> displayDate)
+      |> Seq.map fst
       |> Seq.map (fun status -> WpfUtils.createLittlePicture status) 
       |> Seq.iter (fun pic -> wrap.Children.Add(pic) |> ignore)
 let fillDetails statuses =
@@ -59,7 +61,9 @@ let fillDetails statuses =
                      )
     details.Children.Clear()
     statuses 
-      |> Seq.sortBy (fun status -> status |> Status.GetStatusIdsForNode |> Seq.sortBy (fun statusid -> -statusid) |> Seq.nth 0)
+      |> Seq.map (fun status -> (status, GetNewestDisplayDateFromConversation status))
+      |> Seq.sortBy (fun (status, displayDate) -> displayDate)
+      |> Seq.map fst
       |> Seq.iter (fun rootStatus -> WpfUtils.dispatchMessage window (fun f -> showStatus rootStatus))
 
 Twitter.twitterLimits.Start()

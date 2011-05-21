@@ -37,7 +37,9 @@ let fillPictures statuses =
 let fillDetails statuses =
     details.Children.Clear()
     statuses 
-      |> Seq.sortBy (fun status -> status |> Status.GetStatusIdsForNode |> Seq.sortBy (fun statusid -> -statusid) |> Seq.nth 0)
+      |> Seq.map (fun status -> (status, GetNewestDisplayDateFromConversation status))
+      |> Seq.sortBy (fun (status, displayDate) -> displayDate)
+      |> Seq.map fst
       |> Seq.iter (
             fun status -> WpfUtils.dispatchMessage window (fun _ -> let controls = WpfUtils.createConversationControls WpfUtils.End details
                                                                     WpfUtils.setNewConversation controls status |> ignore)
