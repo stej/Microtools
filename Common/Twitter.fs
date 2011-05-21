@@ -285,39 +285,62 @@ let loadNewRetweets maxId =
     
 let loadNewPersonalStatuses() =
     linfo "Loading new personal statuses"
-    let max = StatusDb.statusesDb.GetLastTwitterStatusId()
-    linfop "Max statusId is {0}. Loading from that" max
+
     let newStatuses = 
+        let getStatusId status =
+            match status.RetweetInfo with
+            | Some(info) -> info.RetweetId
+            | None -> status.StatusId
+        let loadSomeStatuses getLastId updateLastId (loader:Int64 -> status list) = 
+            let max = getLastId()
+            let ret = loader max
+            if ret.Length > 0 then 
+                ret |> List.maxBy getStatusId |> updateLastId
+            ret
+        let friends = loadSomeStatuses StatusDb.statusesDb.GetLastTimelineId StatusDb.statusesDb.UpdateLastTimelineId loadNewFriendsStatuses
+        let mentions = loadSomeStatuses StatusDb.statusesDb.GetLastMentionsId StatusDb.statusesDb.UpdateLastMentionsId loadNewMentionsStatuses
+        let retweets = loadSomeStatuses StatusDb.statusesDb.GetLastRetweetsId StatusDb.statusesDb.UpdateLastRetweetsId loadNewRetweets
+        // load friends and update last status
+        (*let friends = 
+            let max = StatusDb.statusesDb.GetLastTimelineId()
+            let ret = loadNewFriendsStatuses max
+            if ret.Length > 0 then 
+                ret |> List.maxBy getStatusId |> StatusDb.statusesDb.UpdateLastTimelineId
+            ret
+        // load mentions and update last status
+        let mentions = 
+            let max = StatusDb.statusesDb.GetLastMentionsId()
+            let ret = loadNewMentionsStatuses max
+            if ret.Length > 0 then 
+                ret |> List.maxBy getStatusId |> StatusDb.statusesDb.UpdateLastMentionsId
+            ret
+        // load retweets and update last status
+        let retweets = 
+            let max = StatusDb.statusesDb.GetLastRetweetsId()
+            let ret = loadNewRetweets max
+            if ret.Length > 0 then 
+                ret |> List.maxBy getStatusId |> StatusDb.statusesDb.UpdateLastRetweetsId
+            ret*)
+
         let statusesCache = new System.Collections.Generic.Dictionary<Int64, status*StatusSource>()
         let statusToCache source status =
             statusesCache.[status.StatusId] <- (status,source)
 
         // store statuses i cache
-        (loadNewFriendsStatuses max) @ (loadNewMentionsStatuses max) |> List.iter (statusToCache Status.Timeline)
+        friends @ mentions |> List.iter (statusToCache Status.Timeline)
 
         // store retweets in cache; if there is the status already contained, that means that there is the status on timeline and somebody retweeted
         // this status will be stored with source Timeline and retweet info will be appended; retweet that is not in timeline has source Retweet
-        loadNewRetweets max 
+        retweets 
         |> List.iter (fun retweet -> if statusesCache.ContainsKey(retweet.StatusId) then
                                         statusToCache Status.Timeline retweet
                                      else
                                         statusToCache Status.Retweet retweet)
 
         // publish collection without duplicates
-        statusesCache.Values |> Seq.toList |> List.sortBy (fun (status,_) -> status.Date)
+        statusesCache.Values |> Seq.toList |> List.sortBy (fun (status,_) -> status.DisplayDate)
 
     StatusDb.statusesDb.SaveStatuses(newStatuses)
-
-    if newStatuses.Length > 0 then
-        let getStatusId status =
-            match status.RetweetInfo with
-            | Some(info) -> info.RetweetId
-            | None -> status.StatusId
-        newStatuses 
-        |> List.map (fun (status,_) -> status) 
-        |> List.maxBy getStatusId 
-        |> doAndRet (fun status -> linfop "Storing last status Id: {0}" status.StatusId)
-        |> StatusDb.statusesDb.UpdateLastTwitterStatusId
     newStatuses
     
 let loadPublicStatuses() =

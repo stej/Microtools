@@ -119,8 +119,12 @@ let executeSelectStatuses (cmd:SQLiteCommand) =
 
 type StatusesDbMessages =
 //| LoadStatuses of AsyncReplyChannel<status seq>
-| GetLastTwitterStatusId of AsyncReplyChannel<Int64>
-| UpdateLastTwitterStatusId of status
+| GetLastTimelineId of AsyncReplyChannel<Int64>
+| GetLastMentionsId of AsyncReplyChannel<Int64>
+| GetLastRetweetsId of AsyncReplyChannel<Int64>
+| UpdateLastTimelineId of status
+| UpdateLastMentionsId of status
+| UpdateLastRetweetsId of status
 | ReadStatusWithId of Int64 * AsyncReplyChannel<status option>
 | ReadStatusReplies of Int64 * AsyncReplyChannel<status seq>
 | GetRootStatusesHavingReplies of int * AsyncReplyChannel<status seq>
@@ -141,23 +145,28 @@ type StatusesDbState() =
 //            executeSelectStatuses cmd |> List.map (addRetweetInfo conn)
 //        )
 
-    let getLastTwitterStatusId() = 
+    let getLastId whatType column = 
         useDb (fun conn ->
-            ldbg "Getting last twitter id"
-            //use cmd = conn.CreateCommand(CommandText = "Select max(StatusId) from Status")
-            use cmd = conn.CreateCommand(CommandText = "select TwitterStatusId from AppState")
+            ldbgp "Getting {0}" whatType
+            use cmd = conn.CreateCommand(CommandText = (sprintf "select %s from AppState" column))
             let ret = Convert.ToInt64(cmd.ExecuteScalar())
-            linfop "Last twitter id is {0}" ret
+            linfop2 "{0} is {1}" whatType ret
             ret
         )
-
-    let updateLastTwitterStatusId (lastStatus:Status.status) =
+    let updateLastId column (lastStatus:Status.status) =
         useDb (fun conn ->
             let id = match lastStatus.RetweetInfo with | Some(i) -> i.RetweetId | None -> lastStatus.StatusId
-            use cmd = conn.CreateCommand(CommandText = "Update AppState set TwitterStatusId = @p1")
+            use cmd = conn.CreateCommand(CommandText = (sprintf "Update AppState set %s = @p1" column))
             addCmdParameter cmd "@p1" id
             cmd.ExecuteNonQuery() |> ignore
         )
+    let getLastTimelineId() = getLastId "Last timeline status id" "TimelineId"
+    let getLastRetweetsId() =  getLastId "Last retweet id" "RetweetsId"
+    let getLastMentionsId() =  getLastId "Last mention id" "MentionsId"
+
+    let updateLastTimelineId (lastStatus:Status.status) = updateLastId "TimelineId" lastStatus
+    let updateLastRetweetsId (lastStatus:Status.status)  = updateLastId "RetweetsId" lastStatus
+    let updateLastMentionsId (lastStatus:Status.status)  = updateLastId "MentionsId" lastStatus
 
     // todo - rework - use other method
     let readStatusWithIdUseConn (conn:SQLiteConnection) (statusId:Int64) = 
@@ -371,11 +380,23 @@ type StatusesDbState() =
 //                | LoadStatuses(chnl) -> 
 //                    chnl.Reply(loadStatuses())
 //                    return! loop()
-                | GetLastTwitterStatusId(chnl) ->
-                    chnl.Reply(getLastTwitterStatusId())
+                | GetLastTimelineId(chnl) ->
+                    chnl.Reply(getLastTimelineId())
                     return! loop()
-                | UpdateLastTwitterStatusId(status) ->
-                    updateLastTwitterStatusId status
+                | UpdateLastTimelineId(status) ->
+                    updateLastTimelineId status
+                    return! loop()
+                | GetLastMentionsId(chnl) ->
+                    chnl.Reply(getLastMentionsId())
+                    return! loop()
+                | UpdateLastMentionsId(status) ->
+                    updateLastMentionsId status
+                    return! loop()
+                | GetLastRetweetsId(chnl) ->
+                    chnl.Reply(getLastRetweetsId())
+                    return! loop()
+                | UpdateLastRetweetsId(status) ->
+                    updateLastRetweetsId status
                     return! loop()
                 | ReadStatusWithId(id, chnl) ->
                     chnl.Reply(readStatusWithId id)
@@ -402,8 +423,12 @@ type StatusesDbState() =
     member x.SaveStatuses(statuses) = mbox.Post(SaveStatuses(statuses))
     member x.DeleteStatus(status) = mbox.Post(DeleteStatus(status))
     //member x.LoadStatuses() = mbox.PostAndReply(LoadStatuses)
-    member x.GetLastTwitterStatusId() = mbox.PostAndReply(GetLastTwitterStatusId)
-    member x.UpdateLastTwitterStatusId(status:status) = mbox.Post(UpdateLastTwitterStatusId(status))
+    member x.GetLastTimelineId() = mbox.PostAndReply(GetLastTimelineId)
+    member x.GetLastMentionsId() = mbox.PostAndReply(GetLastMentionsId)
+    member x.GetLastRetweetsId() = mbox.PostAndReply(GetLastRetweetsId)
+    member x.UpdateLastTimelineId(status:status) = mbox.Post(UpdateLastTimelineId(status))
+    member x.UpdateLastMentionsId(status:status) = mbox.Post(UpdateLastMentionsId(status))
+    member x.UpdateLastRetweetsId(status:status) = mbox.Post(UpdateLastRetweetsId(status))
     member x.ReadStatusWithId(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusWithId(id, reply))
     member x.ReadStatusReplies(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusReplies(id, reply))
     member x.GetRootStatusesHavingReplies(maxCount) = mbox.PostAndReply(fun reply -> GetRootStatusesHavingReplies(maxCount, reply))
@@ -411,7 +436,9 @@ type StatusesDbState() =
     //member x.GetStatusesFromSql(sql) = mbox.PostAndReply(fun reply -> GetStatusesFromSql(sql, reply))
 
     //member x.AsyncLoadStatuses() = mbox.PostAndAsyncReply(LoadStatuses)
-    member x.AsyncGetLastTwitterStatusId() = mbox.PostAndAsyncReply(GetLastTwitterStatusId)
+    member x.AsyncGetLastTwitterStatusId() = mbox.PostAndAsyncReply(GetLastTimelineId)
+    member x.AsyncGetLastMentionsId() = mbox.PostAndAsyncReply(GetLastMentionsId)
+    member x.AsyncGetLastRetweetsId() = mbox.PostAndAsyncReply(GetLastRetweetsId)
     member x.AsyncReadStatusWithId(id:Int64) = mbox.PostAndAsyncReply(fun reply -> ReadStatusWithId(id, reply))
     member x.AsyncReadStatusReplies(id:Int64) = mbox.PostAndAsyncReply(fun reply -> ReadStatusReplies(id, reply))
     member x.AsyncGetRootStatusesHavingReplies(maxCount) = mbox.PostAndAsyncReply(fun reply -> GetRootStatusesHavingReplies(maxCount, reply))
