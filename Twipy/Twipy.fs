@@ -30,14 +30,14 @@ let clearScope = window.FindName("clearScope") :?> Button
 let fillPictures statuses =
     wrap.Children.Clear()
     statuses 
-      |> Flatten 
+      |> StatusFunctions.Flatten 
       |> Seq.sortBy (fun status -> status.StatusId)
       |> Seq.map (fun status -> WpfUtils.createLittlePicture status) 
       |> Seq.iter (fun pic -> wrap.Children.Add(pic) |> ignore)
 let fillDetails statuses =
     details.Children.Clear()
     statuses 
-      |> Seq.map (fun status -> (status, GetNewestDisplayDateFromConversation status))
+      |> Seq.map (fun status -> (status, StatusFunctions.GetNewestDisplayDateFromConversation status))
       |> Seq.sortBy (fun (status, displayDate) -> displayDate)
       |> Seq.map fst
       |> Seq.iter (

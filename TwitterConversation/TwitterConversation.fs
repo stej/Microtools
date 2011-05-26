@@ -90,7 +90,7 @@ let getAsyncConversationUpdate (controls:WpfUtils.conversationControls) rootStat
         // todo - remove cloneStatus and make status immutable
         let currentStatus = ConversationState.conversationsState.GetConversation rootStatus.StatusId
         currentStatus
-            |> cloneStatus
+            |> StatusFunctions.cloneStatus
             |> StatusesReplies.findReplies
             |> ConversationState.conversationsState.UpdateConversation 
             |> ignore

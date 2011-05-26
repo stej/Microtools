@@ -43,25 +43,25 @@ Twitter.NewStatusDownloaded
 let fillPictures statuses =
     wrap.Children.Clear()
     statuses 
-      |> Seq.map (fun status -> (status, GetNewestDisplayDateFromConversation status))
+      |> Seq.map (fun status -> (status, StatusFunctions.GetNewestDisplayDateFromConversation status))
       |> Seq.sortBy (fun (status, displayDate) -> displayDate)
       |> Seq.map fst
       |> Seq.map (fun status -> WpfUtils.createLittlePicture status) 
       |> Seq.iter (fun pic -> wrap.Children.Add(pic) |> ignore)
 let fillDetails statuses =
-    let filter = parseFilter filterCtl.Text
+    let filter = StatusFilter.parseFilter filterCtl.Text
     let showStatus rootStatus =
         let controls = WpfUtils.createConversationControls WpfUtils.End details
         WpfUtils.setNewConversation controls rootStatus
         |> Seq.iter (fun detailCtl ->   //conversationNodeControlsInfo
                         if detailCtl.Status.StatusId < PreviewsState.userStatusesState.GetFirstStatusId().Value then
                             detailCtl.Detail.Opacity <- 0.4
-                        if detailCtl.Status.MatchesFilter(filter) then
+                        if StatusFilter.matchesFilter filter detailCtl.Status then
                             detailCtl.Detail.Opacity <- 0.2
                      )
     details.Children.Clear()
     statuses 
-      |> Seq.map (fun status -> (status, GetNewestDisplayDateFromConversation status))
+      |> Seq.map (fun status -> (status, StatusFunctions.GetNewestDisplayDateFromConversation status))
       |> Seq.sortBy (fun (status, displayDate) -> displayDate)
       |> Seq.map fst
       |> Seq.iter (fun rootStatus -> WpfUtils.dispatchMessage window (fun f -> showStatus rootStatus))
@@ -77,7 +77,7 @@ window.Loaded.Add(
                 |> List.map (fun (status,source) -> status)
                 |> PreviewsState.userStatusesState.AddStatuses
             let list,tree = PreviewsState.userStatusesState.GetStatuses()
-            Flatten tree 
+            StatusFunctions.Flatten tree 
                 |> Seq.toList
                 |> ImagesSource.ensureStatusesImages
                 |> ignore

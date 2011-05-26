@@ -39,15 +39,6 @@
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <ItemGroup>
-    <Compile Include="..\Common\Utils.fs">
-      <Link>Utils.fs</Link>
-    </Compile>
-    <Compile Include="..\Common\OAuth.fs">
-      <Link>OAuth.fs</Link>
-    </Compile>
-    <Compile Include="..\Common\Status.fs">
-      <Link>Status.fs</Link>
-    </Compile>
     <Compile Include="..\Common\StatusDb.fs">
       <Link>StatusDb.fs</Link>
     </Compile>
@@ -117,6 +108,18 @@
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MicroBase\MicroBase.csproj">
+      <Name>MicroBase</Name>
+      <Project>{491c0b75-b3f9-4a80-8302-d90befef5c12}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MicroCommon\MicroCommon.fsproj">
+      <Name>MicroCommon</Name>
+      <Project>{d8cf03d2-b37e-4407-8cbf-ef7540e0098f}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.

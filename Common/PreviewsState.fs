@@ -3,6 +3,7 @@ module PreviewsState
 open System
 open Status
 open Utils
+open StatusFunctions
 
 /// Takes new statuses and adds them to current list + tree
 /// @currStatuses - list of already added statuses

@@ -170,7 +170,7 @@ let getStatus source (id:Int64) =
                                    match xml.SelectSingleNode("/root") with
                                    |null -> log Error (sprintf "status for %d is empty!" id)
                                             None
-                                   |node -> let status = xml2Status node
+                                   |node -> let status = OAuthFunctions.xml2Status node
                                             newStatusDownloaded.Trigger(source, status)
                                             linfop "Downloaded {0}" id
                                             Some(status)
@@ -270,12 +270,12 @@ let private extractStatuses xpath statusesXml =
     statusesXml
        |> xpathNodes xpath
        |> Seq.cast<XmlNode> 
-       |> Seq.map xml2Status
+       |> Seq.map OAuthFunctions.xml2Status
 let extractRetweets xpath retweetsXml =
     retweetsXml
        |> xpathNodes xpath
        |> Seq.cast<XmlNode> 
-       |> Seq.map xml2Retweet
+       |> Seq.map OAuthFunctions.xml2Retweet
 let private loadNewFriendsStatuses maxId =
     friendsStatuses maxId |> extractStatuses "//statuses/status"  |> Seq.toList
 let private loadNewMentionsStatuses maxId =

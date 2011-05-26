@@ -4,6 +4,7 @@ open System
 open Status
 open System.Data.SQLite
 open Utils
+open StatusFunctions
 
 let mutable fileName = "statuses.db"
 let private doNothingHandler _ = ()
