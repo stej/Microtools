@@ -21,7 +21,7 @@ type statusFromDb = {
     Status: status
     RetweetInfoId: string
     Source: StatusSource
-} 
+}
 let extractStatusFromStatusDb statusDb =
     statusDb.Status
 let private readRetweetInfo (rd:SQLiteDataReader) =
@@ -130,7 +130,7 @@ type StatusesDbMessages =
 | ReadStatusReplies of Int64 * AsyncReplyChannel<status seq>
 | GetRootStatusesHavingReplies of int * AsyncReplyChannel<status seq>
 | GetTimelineStatusesBefore of int * Int64 * AsyncReplyChannel<status seq>
-//| GetStatusesFromSql of string * AsyncReplyChannel<status seq>
+| GetStatusesFromSql of string * AsyncReplyChannel<status list>
 | SaveStatus of Status.StatusSource * status
 | SaveStatuses of (status*StatusSource) list
 | DeleteStatus of status
@@ -233,13 +233,13 @@ type StatusesDbState() =
             addCmdParameter cmd "@p4" count
             executeSelectStatuses cmd |> List.map ((addRetweetInfo conn) >> extractStatusFromStatusDb)
         )
-//    let getStatusesFromSql sql = 
-//        ldbgp "getStatusesFromSql {0}" sql
-//        useDb (fun conn ->
-//            use cmd = conn.CreateCommand()
-//            cmd.CommandText <- sql
-//            executeSelectStatuses cmd |> List.map (addRetweetInfo conn)
-//        )
+    let getStatusesFromSql sql = 
+        ldbgp "getStatusesFromSql {0}" sql
+        useDb (fun conn ->
+            use cmd = conn.CreateCommand()
+            cmd.CommandText <- sql
+            executeSelectStatuses cmd |> List.map ((addRetweetInfo conn) >> extractStatusFromStatusDb)
+        )
     let updateStatusSource source (status:status) =
         useDb (fun conn ->
             use cmd = conn.CreateCommand(CommandText = "update Status set source = @p0 where StatusId = @p1")
@@ -411,9 +411,9 @@ type StatusesDbState() =
                 | GetTimelineStatusesBefore(count, fromId, chnl) ->
                     chnl.Reply(getTimelineStatusesBefore count fromId)
                     return! loop() 
-//                | GetStatusesFromSql(sql, chnl) ->
-//                    chnl.Reply(getStatusesFromSql(sql))
-//                    return! loop()
+                | GetStatusesFromSql(sql, chnl) ->
+                    chnl.Reply(getStatusesFromSql(sql))
+                    return! loop()
                  }
             ldbg "Starting status db"
             loop()
@@ -434,7 +434,7 @@ type StatusesDbState() =
     member x.ReadStatusReplies(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusReplies(id, reply))
     member x.GetRootStatusesHavingReplies(maxCount) = mbox.PostAndReply(fun reply -> GetRootStatusesHavingReplies(maxCount, reply))
     member x.GetTimelineStatusesBefore(count:int, fromId:Int64) = mbox.PostAndReply(fun reply -> GetTimelineStatusesBefore(count, fromId, reply))
-    //member x.GetStatusesFromSql(sql) = mbox.PostAndReply(fun reply -> GetStatusesFromSql(sql, reply))
+    member x.GetStatusesFromSql(sql) = mbox.PostAndReply(fun reply -> GetStatusesFromSql(sql, reply))
 
     //member x.AsyncLoadStatuses() = mbox.PostAndAsyncReply(LoadStatuses)
     member x.AsyncGetLastTwitterStatusId() = mbox.PostAndAsyncReply(GetLastTimelineId)
