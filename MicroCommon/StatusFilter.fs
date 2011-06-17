@@ -12,6 +12,15 @@ type filterType =
 
 type statusFilter = (filterType * string) list 
 
+let configFilters = 
+    let appsettings = System.Configuration.ConfigurationManager.AppSettings
+    [for k in appsettings.AllKeys do if k.StartsWith("filter-") then yield (k, appsettings.[k])]
+let defaultConfigFilter =
+    match configFilters with
+    | [] -> ""
+    | (key, filter)::a -> key
+let configFiltersMap = configFilters |> Map.ofSeq
+
 // returns info about if the status matches the filter
 let matchesFilter (filter:statusFilter) (status:status) = 
     let matchItem = function 
@@ -35,15 +44,14 @@ let matchesFilter (filter:statusFilter) (status:status) =
         | [] -> false
     matchrec filter
 
-/// parses filter text to objects
-let parseFilter (text:string) = 
-    text.Split([|' '|], StringSplitOptions.RemoveEmptyEntries)
-    |> Seq.map (fun part -> if part = "allRT" then
-                                (RTs, null)
-                            else if part = "allTimeline" then
-                                (TimelineStatuses, null)
-                            else if part.StartsWith("@") then 
-                                (UserName, (if part.Length > 0 then part.Substring(1) else ""))
-                            else 
-                                (Text, part))
-    |> Seq.toList
+// parses filter text to objects; supports also filters defined in config
+// the filters in config may reference other filters from config -> possible infinite loop :)
+let rec parseFilter (text:string) = 
+    seq { 
+        for part in text.Split([|' '|], StringSplitOptions.RemoveEmptyEntries) do
+            if configFiltersMap.ContainsKey(part) then yield! parseFilter configFiltersMap.[part]
+            else if part = "allRT" then yield (RTs, null)
+            else if part = "allTimeline" then yield (TimelineStatuses, null)
+            else if part.StartsWith("@") then  yield (UserName, (if part.Length > 0 then part.Substring(1) else ""))
+            else yield (Text, part)
+    } |> Seq.toList

@@ -33,7 +33,7 @@ let setAppState state = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateC
 let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1))
 let setAppState2 (format:string) p1 p2 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1, p2))
 
-filterCtl.Text <- Utils.Settings.Filter
+filterCtl.Text <- StatusFilter.defaultConfigFilter
 
 // status downloaded from Twitter
 Twitter.NewStatusDownloaded 
