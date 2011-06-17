@@ -15,14 +15,19 @@ type statusFilter = (filterType * string) list
 // returns info about if the status matches the filter
 let matchesFilter (filter:statusFilter) (status:status) = 
     let matchItem = function 
-                    | (UserName, text) -> System.String.Compare(status.UserName, text, StringComparison.InvariantCultureIgnoreCase) = 0
-                    | (Text, text) -> let left = if text.StartsWith("*") then "" else "\\b"
-                                      let mid  = Regex.Escape(text.Replace("*",""))
-                                      let right = if text.EndsWith("*") then "" else "\\b"
-                                      let pattern = sprintf "%s%s%s" left mid right
-                                      Regex.Match(status.Text, pattern, RegexOptions.IgnoreCase).Success
-                    | (RTs,_) -> status.RetweetInfo.IsSome // todo - include timeline statuses
-                    | (TimelineStatuses, _) -> status.RetweetInfo.IsNone
+                    | (UserName, text) ->
+                        let user = match status.RetweetInfo with | Some(r) -> r.UserName | None -> status.UserName
+                        System.String.Compare(user, text, StringComparison.InvariantCultureIgnoreCase) = 0
+                    | (Text, text) -> 
+                        let left = if text.StartsWith("*") then "" else "\\b"
+                        let mid  = Regex.Escape(text.Replace("*",""))
+                        let right = if text.EndsWith("*") then "" else "\\b"
+                        let pattern = sprintf "%s%s%s" left mid right
+                        Regex.Match(status.Text, pattern, RegexOptions.IgnoreCase).Success
+                    | (RTs,_) -> 
+                        status.RetweetInfo.IsSome // todo - include timeline statuses
+                    | (TimelineStatuses, _) -> 
+                        status.RetweetInfo.IsNone
     let rec matchrec filter =
         match filter with
         | head::tail -> if matchItem head then true
