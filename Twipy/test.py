@@ -19,10 +19,7 @@ for status in st:
     helper.loadTree(status)
 helper.show(st)
 ############
-st = db.GetStatusesFromSql("select * from Status where Text like '%ereading.cz%'")
-for status in st:
-  helper.loadTree(status)
-helper.show(st)
+helper.show(helper.find("cqrs"))
 #############3
 size = 0 
 def countSize(status):

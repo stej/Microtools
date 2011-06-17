@@ -53,6 +53,8 @@ type public Helpers () =
     member x.loadTree status = StatusesReplies.loadSavedReplyTree status
     member x.show statuses = 
         WpfUtils.dispatchMessage window (fun _ -> fillPictures statuses; fillDetails statuses)
+    member x.find text =
+        StatusDb.statusesDb.GetStatusesFromSql(sprintf "select * from Status where Text like '%%%s%%' or UserName like '%%%s%%'" text text)
     member x.showAsText o =
         WpfUtils.dispatchMessage window (fun _ -> 
             wrap.Children.Clear()
