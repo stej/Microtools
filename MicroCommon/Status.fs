@@ -59,6 +59,7 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                 | None -> false
                 | _ -> true
               member x.DisplayDate = if x.RetweetInfo.IsSome then x.RetweetInfo.Value.Date else x.Date
+              member x.LogicalStatusId = if x.RetweetInfo.IsSome then x.RetweetInfo.Value.RetweetId else x.StatusId
         
 let getEmptyStatus() =
     { Id = null; 

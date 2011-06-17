@@ -156,7 +156,7 @@ type StatusesDbState() =
         )
     let updateLastId column (lastStatus:Status.status) =
         useDb (fun conn ->
-            let id = match lastStatus.RetweetInfo with | Some(i) -> i.RetweetId | None -> lastStatus.StatusId
+            let id = lastStatus.LogicalStatusId
             use cmd = conn.CreateCommand(CommandText = (sprintf "Update AppState set %s = @p1" column))
             addCmdParameter cmd "@p1" id
             cmd.ExecuteNonQuery() |> ignore

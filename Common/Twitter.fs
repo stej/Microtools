@@ -287,10 +287,7 @@ let loadNewPersonalStatuses() =
     linfo "Loading new personal statuses"
 
     let newStatuses = 
-        let getStatusId status =
-            match status.RetweetInfo with
-            | Some(info) -> info.RetweetId
-            | None -> status.StatusId
+        let getStatusId (status:status) = status.LogicalStatusId
         let loadSomeStatuses getLastId updateLastId (loader:Int64 -> status list) = 
             let max = getLastId()
             let ret = loader max
