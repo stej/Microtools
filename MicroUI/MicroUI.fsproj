@@ -5,12 +5,12 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{d8cf03d2-b37e-4407-8cbf-ef7540e0098f}</ProjectGuid>
+    <ProjectGuid>{1330f8a4-50bf-4c2b-9e74-dc8717b3f41d}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>MicroCommon</RootNamespace>
-    <AssemblyName>MicroCommon</AssemblyName>
+    <RootNamespace>MicroUI</RootNamespace>
+    <AssemblyName>MicroUI</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <Name>MicroCommon</Name>
+    <Name>MicroUI</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -20,7 +20,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\MicroCommon.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\MicroUI.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,34 +29,31 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Release\MicroCommon.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\MicroUI.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DevDefined.OAuth">
-      <HintPath>..\lib\DevDefined.OAuth.dll</HintPath>
-    </Reference>
-    <Reference Include="log4net">
-      <HintPath>..\lib\log4net.dll</HintPath>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
-    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Utils.fs" />
-    <Compile Include="Status.fs" />
-    <Compile Include="StatusFilter.fs" />
-    <Compile Include="StatusFunctions.fs" />
-    <Compile Include="OAuth.fs" />
-    <Compile Include="OAuthFunctions.fs" />
-    <Compile Include="DbFunctions.fs" />
-    <Compile Include="Twitter.fs" />
-    <Compile Include="StatusesReplies.fs" />
+    <ProjectReference Include="..\MicroCommon\MicroCommon.fsproj">
+      <Name>MicroCommon</Name>
+      <Project>{d8cf03d2-b37e-4407-8cbf-ef7540e0098f}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ImagesSource.fs" />
+    <Compile Include="WpfUtils.fs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />

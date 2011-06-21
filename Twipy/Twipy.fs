@@ -27,6 +27,8 @@ let commandText = window.FindName("ipyCommand") :?> TextBox
 let runCommand = window.FindName("run") :?> Button
 let clearScope = window.FindName("clearScope") :?> Button
 
+DbFunctions.dbAccess <- StatusDb.statusesDb
+
 let fillPictures statuses =
     wrap.Children.Clear()
     statuses 

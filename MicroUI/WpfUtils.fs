@@ -1,7 +1,6 @@
 module WpfUtils
 
 open System
-open System.Xml
 open System.Windows
 open System.Windows.Controls
 open System.Windows.Data
@@ -16,7 +15,7 @@ open Utils
 let regexUrl = new System.Text.RegularExpressions.Regex("(?<user>@\w+)|" + "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
 
 let (fontSize, pictureSize) = 
-    let s = match System.Configuration.ConfigurationManager.AppSettings.["size"].ToString() with
+    let s = match Settings.Size with
             | "big" -> (14., 48.)
             | "medium" -> (13., 40.)
             | _ -> (12., 30.)
@@ -208,7 +207,7 @@ let updateConversation (controls:conversationControls) status =
 let setNewConversation = updateConversation
     
 let createXamlWindow (file : string) = 
-  use xmlReader = XmlReader.Create(file)
+  use xmlReader = System.Xml.XmlReader.Create(file)
   System.Windows.Markup.XamlReader.Load(xmlReader) :?> Window
   
 let dispatchMessage<'a> (dispatcherOwner:DispatcherObject) fce = 

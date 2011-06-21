@@ -6,6 +6,7 @@ open Microsoft.FSharp.Collections
 open Status
 open Utils
 open Twitter
+open DbFunctions
 
 type NewlyFoundRepliesMessages =
 | AddStatus of status
@@ -69,7 +70,7 @@ let LoadingStatusReplyTree = loadingStatusReplyTree.Publish
                 
 let loadSavedReplyTree initialStatus = 
     let rec addReplies status = 
-        let replies = StatusDb.statusesDb.ReadStatusReplies status.StatusId
+        let replies = dbAccess.ReadStatusReplies status.StatusId
         replies |> Seq.iter (fun reply -> status.Children.Add(reply)
                                           statusAdded.Trigger(reply))
         someChildrenLoaded.Trigger(initialStatus)

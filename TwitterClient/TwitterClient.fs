@@ -7,6 +7,7 @@ open OAuth
 open Status
 open System.Windows.Threading
 open System.Linq
+open DbFunctions
 
 OAuth.checkAccessTokenFile()
 
@@ -34,10 +35,11 @@ let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appS
 let setAppState2 (format:string) p1 p2 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1, p2))
 
 filterCtl.Text <- StatusFilter.defaultConfigFilter
+DbFunctions.dbAccess <- StatusDb.statusesDb
 
 // status downloaded from Twitter
 Twitter.NewStatusDownloaded 
-    |> Event.add (fun (source,status) -> StatusDb.statusesDb.SaveStatus(source, status)
+    |> Event.add (fun (source,status) -> dbAccess.SaveStatus(source, status)
                                          setAppState2 "Saving status {0} - {1}" status.UserName status.StatusId)
 
 let fillPictures statuses =

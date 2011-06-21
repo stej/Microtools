@@ -136,15 +136,6 @@ type StatusesDbMessages =
 | DeleteStatus of status
 
 type StatusesDbState() =
-//    let loadStatuses loadHandler = 
-//        useDb (fun conn ->
-//            let count = 
-//                use cmd = conn.CreateCommand(CommandText = "Select count(Id) from Status")
-//                Convert.ToInt32(cmd.ExecuteScalar())
-//            use cmd = conn.CreateCommand()
-//            cmd.CommandText <- "Select * from Status"
-//            executeSelectStatuses cmd |> List.map (addRetweetInfo conn)
-//        )
 
     let getLastId whatType column = 
         useDb (fun conn ->
@@ -420,18 +411,9 @@ type StatusesDbState() =
         )
     do
         mbox.Error.Add(fun exn -> lerrp "{0}" exn)
-    member x.SaveStatus(source, status) = mbox.Post(SaveStatus(source, status))
-    member x.SaveStatuses(statuses) = mbox.Post(SaveStatuses(statuses))
+
     member x.DeleteStatus(status) = mbox.Post(DeleteStatus(status))
     //member x.LoadStatuses() = mbox.PostAndReply(LoadStatuses)
-    member x.GetLastTimelineId() = mbox.PostAndReply(GetLastTimelineId)
-    member x.GetLastMentionsId() = mbox.PostAndReply(GetLastMentionsId)
-    member x.GetLastRetweetsId() = mbox.PostAndReply(GetLastRetweetsId)
-    member x.UpdateLastTimelineId(status:status) = mbox.Post(UpdateLastTimelineId(status))
-    member x.UpdateLastMentionsId(status:status) = mbox.Post(UpdateLastMentionsId(status))
-    member x.UpdateLastRetweetsId(status:status) = mbox.Post(UpdateLastRetweetsId(status))
-    member x.ReadStatusWithId(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusWithId(id, reply))
-    member x.ReadStatusReplies(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusReplies(id, reply))
     member x.GetRootStatusesHavingReplies(maxCount) = mbox.PostAndReply(fun reply -> GetRootStatusesHavingReplies(maxCount, reply))
     member x.GetTimelineStatusesBefore(count:int, fromId:Int64) = mbox.PostAndReply(fun reply -> GetTimelineStatusesBefore(count, fromId, reply))
     member x.GetStatusesFromSql(sql) = mbox.PostAndReply(fun reply -> GetStatusesFromSql(sql, reply))
@@ -444,5 +426,20 @@ type StatusesDbState() =
     member x.AsyncReadStatusReplies(id:Int64) = mbox.PostAndAsyncReply(fun reply -> ReadStatusReplies(id, reply))
     member x.AsyncGetRootStatusesHavingReplies(maxCount) = mbox.PostAndAsyncReply(fun reply -> GetRootStatusesHavingReplies(maxCount, reply))
     member x.AsyncGetTimelineStatusesBefore(count, fromId) = mbox.PostAndAsyncReply(fun reply -> GetTimelineStatusesBefore(count, fromId, reply))
+
+    interface DbFunctions.IStatusesDatabase with
+        member x.SaveStatus(source, status) = mbox.Post(SaveStatus(source, status))
+        member x.SaveStatuses(statuses) = mbox.Post(SaveStatuses(statuses))
+
+        member x.ReadStatusWithId(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusWithId(id, reply))
+
+        member x.GetLastTimelineId() = mbox.PostAndReply(GetLastTimelineId)
+        member x.GetLastMentionsId() = mbox.PostAndReply(GetLastMentionsId)
+        member x.GetLastRetweetsId() = mbox.PostAndReply(GetLastRetweetsId)
+        member x.UpdateLastTimelineId(status:status) = mbox.Post(UpdateLastTimelineId(status))
+        member x.UpdateLastMentionsId(status:status) = mbox.Post(UpdateLastMentionsId(status))
+        member x.UpdateLastRetweetsId(status:status) = mbox.Post(UpdateLastRetweetsId(status))
+
+        member x.ReadStatusReplies(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusReplies(id, reply))
 
 let statusesDb = new StatusesDbState()

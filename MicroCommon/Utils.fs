@@ -98,6 +98,7 @@ let padSpaces count =
 type Settings =
     static member private settings = System.Configuration.ConfigurationManager.AppSettings;
     static member MinRateLimit = match Settings.settings.["minRateLimit"] with | null -> 0 | filter -> int filter
+    static member Size = System.Configuration.ConfigurationManager.AppSettings.["size"].ToString()
 
 let doAndRet fce item = 
     fce item |> ignore

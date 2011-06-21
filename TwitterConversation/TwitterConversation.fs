@@ -7,6 +7,7 @@ open OAuth
 open Status
 open System.Windows.Threading
 open System.Threading
+open DbFunctions
 
 let args = System.Environment.GetCommandLineArgs()
 let statusId = match args with
@@ -36,6 +37,8 @@ let updateAll = window.FindName("updateAll") :?> Button
 let pauseUpdate = window.FindName("pause") :?> Button
 let continueUpdate = window.FindName("continue") :?> Button
 let cancelUpdate = window.FindName("cancel") :?> Button
+
+DbFunctions.dbAccess <- StatusDb.statusesDb
 
 let mutable (lastUpdateall:DateTime) = DateTime.MinValue
 
@@ -165,7 +168,7 @@ window.Loaded.Add(fun _ ->
     //    |> Event.add (fun status -> setState (sprintf "Loading %s - %d" status.UserName status.StatusId))
     // status downloaded from Twitter
     Twitter.NewStatusDownloaded 
-        |> Event.add (fun (source,status) -> StatusDb.statusesDb.SaveStatus(source, status)
+        |> Event.add (fun (source,status) -> dbAccess.SaveStatus(source, status)
                                              linfop "Status downloaded {0}" status)
     // some children loaded
     StatusesReplies.SomeChildrenLoaded 

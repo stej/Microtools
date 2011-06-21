@@ -40,23 +40,8 @@
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <ItemGroup>
-    <Compile Include="..\Common\StatusDb.fs">
-      <Link>StatusDb.fs</Link>
-    </Compile>
-    <Compile Include="..\Common\Twitter.fs">
-      <Link>Twitter.fs</Link>
-    </Compile>
-    <Compile Include="..\Common\StatusesReplies.fs">
-      <Link>StatusesReplies.fs</Link>
-    </Compile>
     <Compile Include="..\Common\ConversationState.fs">
       <Link>ConversationState.fs</Link>
-    </Compile>
-    <Compile Include="..\Common\ImagesSource.fs">
-      <Link>ImagesSource.fs</Link>
-    </Compile>
-    <Compile Include="..\Common\WpfUtils.fs">
-      <Link>WpfUtils.fs</Link>
     </Compile>
     <Compile Include="..\Common\AssemblyInfo.fs">
       <Link>AssemblyInfo.fs</Link>
@@ -104,6 +89,16 @@
     <ProjectReference Include="..\MicroCommon\MicroCommon.fsproj">
       <Name>MicroCommon</Name>
       <Project>{d8cf03d2-b37e-4407-8cbf-ef7540e0098f}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MicroData\MicroData.fsproj">
+      <Name>MicroData</Name>
+      <Project>{1dccf945-02e8-465a-b2d5-90f608238221}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MicroUI\MicroUI.fsproj">
+      <Name>MicroUI</Name>
+      <Project>{1330f8a4-50bf-4c2b-9e74-dc8717b3f41d}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>

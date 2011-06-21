@@ -4,6 +4,7 @@ open System
 open System.Xml
 open Status
 open Utils
+open DbFunctions
 
 type rateInfo = {
     remainingHits : int
@@ -27,7 +28,6 @@ type TwitterLimitsMessages =
 | UpdateLimit
 | UpdateSearchLimit of Net.HttpStatusCode * Net.WebHeaderCollection
 | GetLimits of AsyncReplyChannel<LimitState>
-
 
 type TwitterLimits() =
     let getRateLimit() =
@@ -151,7 +151,7 @@ let NewStatusDownloaded = newStatusDownloaded.Publish
 
 let getStatus source (id:Int64) =
     linfop "Get status {0}" id
-    match StatusDb.statusesDb.ReadStatusWithId(id) with
+    match dbAccess.ReadStatusWithId(id) with
      | Some(status) -> 
         linfop "Status {0} from db" id
         Some(status)
@@ -294,30 +294,9 @@ let loadNewPersonalStatuses() =
             if ret.Length > 0 then 
                 ret |> List.maxBy getStatusId |> updateLastId
             ret
-        let friends = loadSomeStatuses StatusDb.statusesDb.GetLastTimelineId StatusDb.statusesDb.UpdateLastTimelineId loadNewFriendsStatuses
-        let mentions = loadSomeStatuses StatusDb.statusesDb.GetLastMentionsId StatusDb.statusesDb.UpdateLastMentionsId loadNewMentionsStatuses
-        let retweets = loadSomeStatuses StatusDb.statusesDb.GetLastRetweetsId StatusDb.statusesDb.UpdateLastRetweetsId loadNewRetweets
-        // load friends and update last status
-        (*let friends = 
-            let max = StatusDb.statusesDb.GetLastTimelineId()
-            let ret = loadNewFriendsStatuses max
-            if ret.Length > 0 then 
-                ret |> List.maxBy getStatusId |> StatusDb.statusesDb.UpdateLastTimelineId
-            ret
-        // load mentions and update last status
-        let mentions = 
-            let max = StatusDb.statusesDb.GetLastMentionsId()
-            let ret = loadNewMentionsStatuses max
-            if ret.Length > 0 then 
-                ret |> List.maxBy getStatusId |> StatusDb.statusesDb.UpdateLastMentionsId
-            ret
-        // load retweets and update last status
-        let retweets = 
-            let max = StatusDb.statusesDb.GetLastRetweetsId()
-            let ret = loadNewRetweets max
-            if ret.Length > 0 then 
-                ret |> List.maxBy getStatusId |> StatusDb.statusesDb.UpdateLastRetweetsId
-            ret*)
+        let friends = loadSomeStatuses dbAccess.GetLastTimelineId dbAccess.UpdateLastTimelineId loadNewFriendsStatuses
+        let mentions = loadSomeStatuses dbAccess.GetLastMentionsId dbAccess.UpdateLastMentionsId loadNewMentionsStatuses
+        let retweets = loadSomeStatuses dbAccess.GetLastRetweetsId dbAccess.UpdateLastRetweetsId loadNewRetweets
 
         let statusesCache = new System.Collections.Generic.Dictionary<Int64, status*StatusSource>()
         let statusToCache source status =
@@ -337,7 +316,7 @@ let loadNewPersonalStatuses() =
         // publish collection without duplicates
         statusesCache.Values |> Seq.toList |> List.sortBy (fun (status,_) -> status.DisplayDate)
 
-    StatusDb.statusesDb.SaveStatuses(newStatuses)
+    dbAccess.SaveStatuses(newStatuses)
     newStatuses
     
 let loadPublicStatuses() =
@@ -346,7 +325,7 @@ let loadPublicStatuses() =
        |> extractStatuses "//statuses/status"
        |> Seq.toList
        |> List.sortBy (fun status -> status.Date)
-    newStatuses |> List.iter (fun s -> StatusDb.statusesDb.SaveStatus(Status.Public, s))
+    newStatuses |> List.iter (fun s -> dbAccess.SaveStatus(Status.Public, s))
     newStatuses
 
 let getStatusId status =
