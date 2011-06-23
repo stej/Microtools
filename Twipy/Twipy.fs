@@ -54,6 +54,7 @@ let script =
 
 if script.IsSome then
     if options.NoGui then
+         printfn "Running script %s" script.Value
          engine.Execute(script.Value, !scope) |> ignore
          exit 0
     WpfUtils.dispatchMessage commandText (fun _ -> commandText.Text <- script.Value)
@@ -65,17 +66,14 @@ Twitter.NewStatusDownloaded
                                              linfop "Status downloaded {0}" status)
 let runUserScript text =
     linfop "Running script {0}" text
-    
-    async { 
-        try 
-            setAppState "working ... "
-            engine.Execute(text, !scope) |> ignore 
-            setAppState "done"
-        with ex -> 
-            printfn "Unable to execute script  %s" text
-            printfn "%A" ex 
-            setAppState "error"
-    } |> Async.Start
+    try 
+        setAppState "working ... "
+        engine.Execute(text, !scope) |> ignore 
+        setAppState "done"
+    with ex -> 
+        printfn "Unable to execute script  %s" text
+        printfn "%A" ex 
+        setAppState "error"
 
 clearScope.Click.Add(fun _ ->
     scope := newScope()
@@ -84,7 +82,9 @@ runCommand.Click.Add(fun _ ->
     let text = ref ""
     WpfUtils.dispatchMessage commandText (fun _ -> text := commandText.Text)
     
-    runUserScript !text
+    async { 
+      runUserScript !text
+    } |> Async.Start
 )
 window.Loaded.Add(fun _ ->
     if options.Run then
