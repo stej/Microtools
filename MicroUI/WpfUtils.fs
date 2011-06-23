@@ -89,9 +89,9 @@ let createDetail (status:status) =
             let m = new TextBlock(TextWrapping = TextWrapping.Wrap,
                                   Padding = new Thickness(0.),
                                   Margin = new Thickness(5., 0., 0., 5.))
-            let hl = 
-                  let l = new Hyperlink(new Run(sprintf "%d" (status.StatusId)),
-                                        NavigateUri = new Uri(sprintf "http://twitter.com/#!/%s/status/%d" status.UserName status.StatusId))
+            let hl userName statusId = 
+                  let l = new Hyperlink(new Run(sprintf "%d" (statusId)),
+                                        NavigateUri = new Uri(sprintf "http://twitter.com/#!/%s/status/%d" userName statusId))
                   l.RequestNavigate.Add(BrowseHlClick)
                   l
             let userName = 
@@ -99,10 +99,15 @@ let createDetail (status:status) =
                       sprintf "%s (by @%s)" status.UserName status.RetweetInfo.Value.UserName
                   else
                       status.UserName
-            [new Run(userName) :> Inline
-             new Run(" | ")           :> Inline
-             hl                       :> Inline
-             new Run(" | ")           :> Inline
+            [new Run(userName)                  :> Inline
+             new Run(" | ")                     :> Inline
+             hl status.UserName status.StatusId :> Inline
+            ] |> List.iter m.Inlines.Add
+            if status.RetweetInfo.IsSome then
+                [ new Run(" / ")                     :> Inline
+                  hl status.RetweetInfo.Value.UserName status.RetweetInfo.Value.RetweetId :> Inline
+                ] |> List.iter m.Inlines.Add
+            [new Run(" | ")           :> Inline
              new Run(sprintf "%s" (status.Date.ToString("yyyy-MM-dd HH:mm:ss"))) :> Inline
             ] |> List.iter m.Inlines.Add
             m
