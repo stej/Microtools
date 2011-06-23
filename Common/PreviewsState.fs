@@ -49,7 +49,7 @@ type UserStatusesState() =
                     return! loop statuses statusesWithRoots
                 | GetFirstStatusId(chnl) ->
                     let id = if statuses.Length > 0 then 
-                                let first = Flatten statuses |> Seq.sortBy (fun s -> s.StatusId) |> Seq.nth 0
+                                let first = Flatten statuses |> Seq.sortBy (fun s -> s.LogicalStatusId) |> Seq.nth 0
                                 Some(first.StatusId)
                              else None
                     chnl.Reply(id)

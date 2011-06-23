@@ -217,7 +217,14 @@ type StatusesDbState() =
        ldbgp "getTimelineStatusesBefore {0}" statusId
        useDb (fun conn ->
             use cmd = conn.CreateCommand()
-            cmd.CommandText <- "Select * from Status where StatusId < @p1 and (source = @p2 or source = @p3) order by StatusId desc limit 0, @p4"
+            cmd.CommandText <- "Select s.*,  
+                                    case when s.RetweetInfoid is null then s.StatusId else r.RetweetId end as LogicalstatusId
+                                    from Status s 
+                                    left join REtweetInfo r on s.RetweetInfoId=r.Id 
+                                    where LogicalstatusId < @p1 and 
+                                        (source = @p2 or source = @p3) 
+                                    order by LogicalstatusId desc 
+                                    limit 0, @p4"
             addCmdParameter cmd "@p1" statusId
             addCmdParameter cmd "@p2" (StatusSource2Int Status.Timeline)
             addCmdParameter cmd "@p3" (StatusSource2Int Status.Retweet)

@@ -33,6 +33,7 @@ let filterCtl = window.FindName("filter") :?> TextBox
 let setAppState state = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
 let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1))
 let setAppState2 (format:string) p1 p2 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1, p2))
+let setAppStateCount count = setAppState (sprintf "Done.. Count: %d" count)
 
 filterCtl.Text <- StatusFilter.defaultConfigFilter
 DbFunctions.dbAccess <- StatusDb.statusesDb
@@ -52,12 +53,16 @@ let fillPictures statuses =
       |> Seq.iter (fun pic -> wrap.Children.Add(pic) |> ignore)
 let fillDetails statuses =
     let filter = StatusFilter.parseFilter filterCtl.Text
+    // status id of first status (for retweets it is status id of the retweet, not the original status)
+    let firstLogicalStatusId = match PreviewsState.userStatusesState.GetFirstStatusId() with
+                               | Some(value) -> value
+                               | None -> 0L
     let showStatus rootStatus =
         let controls = WpfUtils.createConversationControls WpfUtils.End details
         WpfUtils.setNewConversation controls rootStatus
         |> Seq.iter (fun detailCtl ->   //conversationNodeControlsInfo
-                        if detailCtl.Status.StatusId < PreviewsState.userStatusesState.GetFirstStatusId().Value then
-                            detailCtl.Detail.Opacity <- 0.4
+                        if detailCtl.Status.LogicalStatusId < firstLogicalStatusId then
+                            detailCtl.Detail.Opacity <- 0.5
                         if StatusFilter.matchesFilter filter detailCtl.Status then
                             detailCtl.Detail.Opacity <- 0.2
                      )
@@ -85,7 +90,7 @@ window.Loaded.Add(
                 |> ignore
             WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
                                                     fillDetails tree)
-            setAppState (sprintf "Done.. Count: %d" list.Length)
+            setAppStateCount list.Length
             async { do! Async.Sleep(1000*60*3) } |> Async.RunSynchronously
             asyncloop()
           asyncloop()
@@ -125,12 +130,16 @@ up.Click.Add(fun _ ->
             |> ImagesSource.ensureStatusesImages
             |> PreviewsState.userStatusesState.AddStatuses
         let list,tree =  PreviewsState.userStatusesState.GetStatuses()
-        WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list; fillDetails tree)
+        WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
+                                                fillDetails tree)
+        setAppStateCount list.Length
     } |> Async.Start
 )
 clear.Click.Add( fun _ ->
     PreviewsState.userStatusesState.ClearStatuses()
-    WpfUtils.dispatchMessage wrap (fun _ -> fillPictures []; fillDetails [])
+    WpfUtils.dispatchMessage wrap (fun _ -> fillPictures []
+                                            fillDetails [])
+    setAppStateCount 0
 )
 
 switcher.Click.Add(fun _ ->

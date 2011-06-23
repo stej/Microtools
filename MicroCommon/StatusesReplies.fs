@@ -56,8 +56,6 @@ type NewlyFoundReplies() =
     member x.AddStatus(s) = mbox.Post(AddStatus(s)); s
     member x.GetNewReplies(status, withoutIds) = mbox.PostAndReply(fun reply -> GetNewReplies(status, withoutIds, reply))
     member x.Clear() = mbox.Post(Clear)
-    //    member x.AsyncGetStatuses() = mbox.PostAndAsyncReply(GetStatuses)
-    //    member x.AsyncGetFirstStatusId() = mbox.PostAndAsyncReply(GetFirstStatusId)
 
 let newlyAddedStatusesState = new NewlyFoundReplies()
 
