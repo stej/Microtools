@@ -15,6 +15,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MicroData", "MicroData\Micr
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MicroUI", "MicroUI\MicroUI.fsproj", "{1330F8A4-50BF-4C2B-9E74-DC8717B3F41D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monooptions", "Monooptions\Monooptions.csproj", "{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +87,16 @@ Global
 		{1330F8A4-50BF-4C2B-9E74-DC8717B3F41D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{1330F8A4-50BF-4C2B-9E74-DC8717B3F41D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{1330F8A4-50BF-4C2B-9E74-DC8717B3F41D}.Release|x86.ActiveCfg = Release|Any CPU
+		{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{FA7F0FD9-E6D0-476B-8B7C-4DCB7EECCD73}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

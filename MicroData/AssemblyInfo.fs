@@ -4,7 +4,7 @@ open System.Reflection
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 
-[<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]
+[<assembly: System.Reflection.AssemblyTitle("MicroData")>]
 [<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
 [<assembly: AssemblyCompany("stej, http://www.leporelo.eu.")>]
@@ -12,7 +12,7 @@ open System.Runtime.InteropServices
 [<assembly: AssemblyCopyright("Copyright © Pepa Štefan, 2011")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: ComVisible(false)>]
-[<assembly: Guid("b607f47b-df94-4c4c-a7ff-1a182bf8d8bb3")>]
+[<assembly: Guid("85242d69-0c65-4edc-82db-c96b3a96842e4")>]
 [<assembly: System.Reflection.AssemblyVersion("0.1.*")>]
 [<assembly: System.Reflection.AssemblyFileVersion("0.1.*")>]
 ()

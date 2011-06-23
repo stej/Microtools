@@ -39,15 +39,8 @@
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <ItemGroup>
-    <Compile Include="..\Common\PreviewsState.fs">
-      <Link>PreviewsState.fs</Link>
-    </Compile>
-    <Compile Include="..\Common\AssemblyInfo.fs">
-      <Link>AssemblyInfo.fs</Link>
-    </Compile>
-    <Compile Include="..\Common\Updates.fs">
-      <Link>Updates.fs</Link>
-    </Compile>
+    <Compile Include="PreviewsState.fs" />
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="TwitterClient.fs" />
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

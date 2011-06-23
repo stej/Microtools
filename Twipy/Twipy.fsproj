@@ -24,7 +24,7 @@
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
     <DocumentationFile>bin\Debug\Twipy.XML</DocumentationFile>
-    <StartArguments>12137237630164992</StartArguments>
+    <StartArguments>-script "st = helper.find('test'); helper.show(st)" -run</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
@@ -39,15 +39,10 @@
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <ItemGroup>
-    <Compile Include="..\Common\PreviewsState.fs">
-      <Link>PreviewsState.fs</Link>
-    </Compile>
-    <Compile Include="..\Common\ipy.fs">
-      <Link>ipy.fs</Link>
-    </Compile>
-    <Compile Include="..\Common\AssemblyInfo.fs">
-      <Link>AssemblyInfo.fs</Link>
-    </Compile>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="ipy.fs" />
+    <Compile Include="Cmdline.fs" />
+    <Compile Include="ScriptingHelpers.fs" />
     <Compile Include="Twipy.fs" />
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -113,6 +108,11 @@
     <ProjectReference Include="..\MicroUI\MicroUI.fsproj">
       <Name>MicroUI</Name>
       <Project>{1330f8a4-50bf-4c2b-9e74-dc8717b3f41d}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Monooptions\Monooptions.csproj">
+      <Name>Monooptions</Name>
+      <Project>{fa7f0fd9-e6d0-476b-8b7c-4dcb7eeccd73}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>

@@ -80,7 +80,7 @@ window.Loaded.Add(
         async {
           let rec asyncloop() = 
             setAppState "Loading.."
-            Twitter.loadNewPersonalStatuses()    // or StatusesReplies.loadPublicStatuses
+            Twitter.loadAndSaveNewPersonalStatuses()    // or StatusesReplies.loadPublicStatuses
                 |> List.map (fun (status,source) -> status)
                 |> PreviewsState.userStatusesState.AddStatuses
             let list,tree = PreviewsState.userStatusesState.GetStatuses()

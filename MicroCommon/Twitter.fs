@@ -283,7 +283,7 @@ let private loadNewMentionsStatuses maxId =
 let loadNewRetweets maxId =
     retweets maxId |> extractRetweets "//statuses/status" |> Seq.toList
     
-let loadNewPersonalStatuses() =
+let loadAndSaveNewPersonalStatuses() =
     linfo "Loading new personal statuses"
 
     let newStatuses = 
