@@ -363,6 +363,7 @@ type StatusesDbState() =
 
     let mbox = 
         MailboxProcessor.Start(fun mbox ->
+            printfn "starting statuses db"
             let rec loop() = async {
                 let! msg = mbox.Receive()
                 ldbgp "Status db message: {0}" msg
@@ -417,7 +418,8 @@ type StatusesDbState() =
             loop()
         )
     do
-        mbox.Error.Add(fun exn -> lerrp "{0}" exn)
+        mbox.Error.Add(fun exn -> printfn "exception: %A" exn
+                                  lerrp "{0}" exn)
 
     member x.DeleteStatus(status) = mbox.Post(DeleteStatus(status))
     //member x.LoadStatuses() = mbox.PostAndReply(LoadStatuses)
