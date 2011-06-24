@@ -8,6 +8,7 @@ open OAuth
 open Status
 open System.Windows.Threading
 open ipy
+open TwitterLimits
 
 (**************************************)
 (* wrapPanel and scroll: http://social.msdn.microsoft.com/forums/en-US/wpf/thread/02cf717c-1191-4266-b850-91b8a2716ba6 *)
@@ -27,16 +28,24 @@ let commandText = window.FindName("ipyCommand") :?> TextBox
 let runCommand = window.FindName("run") :?> Button
 let clearScope = window.FindName("clearScope") :?> Button
 
-DbFunctions.dbAccess <- StatusDb.statusesDb
-
 let setAppState state = 
     WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
+
+DbFunctions.dbAccess <- StatusDb.statusesDb
+
+twitterLimits.Start()
+
+// events
+Twitter.NewStatusDownloaded 
+        |> Event.add (fun (source,status) -> DbFunctions.dbAccess.SaveStatus(source, status)
+                                             linfop "Status downloaded {0}" status
+                                             setAppState (sprintf "Status downloaded %A" status))
     
 let newScope() =
     let values = new Dictionary<string, obj>()
     values.["db"] <- (StatusDb.statusesDb :> obj)
-    values.["limits"] <- (Twitter.twitterLimits :> obj)
-    values.["helper"] <- (ScriptingHelpers.Helpers(window, details, wrapContent) :> obj)
+    values.["limits"] <- (twitterLimits :> obj)
+    values.["h"] <- (ScriptingHelpers.Helpers(window, details, wrapContent) :> obj)
     createScope values
 let scope = ref (newScope())
 
@@ -54,18 +63,14 @@ let script =
 
 if script.IsSome then
     if options.NoGui then
-         printfn "Running script %s" script.Value
+         printfn "Running script %s\n\n" script.Value
          engine.Execute(script.Value, !scope) |> ignore
          exit 0
     WpfUtils.dispatchMessage commandText (fun _ -> commandText.Text <- script.Value)
 (******** eof options **************)
 
-// events
-Twitter.NewStatusDownloaded 
-        |> Event.add (fun (source,status) -> DbFunctions.dbAccess.SaveStatus(source, status)
-                                             linfop "Status downloaded {0}" status)
 let runUserScript text =
-    linfop "Running script {0}" text
+    linfop "Running script {0}\n\n" text
     try 
         setAppState "working ... "
         engine.Execute(text, !scope) |> ignore 

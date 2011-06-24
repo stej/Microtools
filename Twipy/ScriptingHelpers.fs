@@ -15,39 +15,31 @@ open System.Windows.Data
 open System.Windows.Documents
 
 type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) = 
-    let fillPictures (statuses: status seq) =
-        wrapContent.Children.Clear()
-        statuses 
-          |> Seq.toList
-          |> StatusFunctions.Flatten 
-          |> Seq.sortBy (fun status -> status.StatusId)
-          |> Seq.map (fun status -> WpfUtils.createLittlePicture status) 
-          |> Seq.iter (fun pic -> wrapContent.Children.Add(pic) |> ignore)
-    let fillDetails (statuses: status seq) =
-        details.Children.Clear()
-        statuses 
-          |> Seq.map (fun status -> (status, StatusFunctions.GetNewestDisplayDateFromConversation status))
-          |> Seq.sortBy (fun (status, displayDate) -> displayDate)
-          |> Seq.map fst
-          |> Seq.iter (
-                fun status -> WpfUtils.dispatchMessage window (fun _ -> let controls = WpfUtils.createConversationControls WpfUtils.End details
-                                                                        WpfUtils.setNewConversation controls status |> ignore)
-            )
+    let fillDetails statuses = DisplayStatus.fillDetails window details "" statuses
+    let fillPictures = DisplayStatus.fillPictures wrapContent
 
     member x.loadTree status = StatusesReplies.loadSavedReplyTree status
-    member x.show statuses = 
-        WpfUtils.dispatchMessage window (fun _ -> fillPictures statuses; fillDetails statuses)
+    member x.show (statuses: status seq) = 
+        WpfUtils.dispatchMessage window (fun _ -> fillPictures statuses
+                                                  fillDetails statuses)
+
+    // print and show status together
+    member x.show (o: Object) = 
+        match o with
+        | :? status as status -> 
+            WpfUtils.dispatchMessage window (fun _ -> fillPictures [status]
+                                                      fillDetails [status])
+        | _ -> 
+            WpfUtils.dispatchMessage window (fun _ -> 
+                wrapContent.Children.Clear()
+                let ret = new TextBlock(TextWrapping = TextWrapping.Wrap,
+                                Padding = new Thickness(0.),
+                                Margin = new Thickness(5., 0., 0., 5.))
+                ret.Inlines.Add(new Run(o.ToString()))
+                wrapContent.Children.Add(ret) |> ignore
+            )
     member x.find text =
         StatusDb.statusesDb.GetStatusesFromSql(sprintf "select * from Status where Text like '%%%s%%' or UserName like '%%%s%%'" text text)
-    member x.showAsText o =
-        WpfUtils.dispatchMessage window (fun _ -> 
-            wrapContent.Children.Clear()
-            let ret = new TextBlock(TextWrapping = TextWrapping.Wrap,
-                            Padding = new Thickness(0.),
-                            Margin = new Thickness(5., 0., 0., 5.))
-            ret.Inlines.Add(new Run(o.ToString()))
-            wrapContent.Children.Add(ret) |> ignore
-        )
     member x.exportToHtml (statuses: status seq) =
         let file = System.IO.Path.GetTempFileName().Replace(".tmp", ".html")
         let processText text =
@@ -91,6 +83,10 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
         System.IO.File.AppendAllText(file, "</body>
         </html>")
         System.Diagnostics.Process.Start(file)
-    member x.DownloadAndSavePersonalStatuses() = Twitter.loadAndSaveNewPersonalStatuses()
+    member x.DownloadAndSavePersonalStatuses() = 
+        Twitter.loadAndSaveNewPersonalStatuses (Twitter.getLastStoredIds())
+            |> Twitter.saveDownloadedStatuses
+            |> fun downloaded -> downloaded.NewStatuses
+            |> List.map (fun (status,_) -> status)
     member x.LoadConversations(maxConversations) = StatusDb.statusesDb.GetRootStatusesHavingReplies(maxConversations)
     member x.LoadChildren(status) = StatusesReplies.loadSavedReplyTree(status)

@@ -8,6 +8,7 @@ open Status
 open System.Windows.Threading
 open System.Linq
 open DbFunctions
+open TwitterLimits
 
 OAuth.checkAccessTokenFile()
 
@@ -43,53 +44,27 @@ Twitter.NewStatusDownloaded
     |> Event.add (fun (source,status) -> dbAccess.SaveStatus(source, status)
                                          setAppState2 "Saving status {0} - {1}" status.UserName status.StatusId)
 
-let fillPictures statuses =
-    wrap.Children.Clear()
-    statuses 
-      |> Seq.map (fun status -> (status, StatusFunctions.GetNewestDisplayDateFromConversation status))
-      |> Seq.sortBy (fun (status, displayDate) -> displayDate)
-      |> Seq.map fst
-      |> Seq.map (fun status -> WpfUtils.createLittlePicture status) 
-      |> Seq.iter (fun pic -> wrap.Children.Add(pic) |> ignore)
-let fillDetails statuses =
-    let filter = StatusFilter.parseFilter filterCtl.Text
-    // status id of first status (for retweets it is status id of the retweet, not the original status)
-    let firstLogicalStatusId = match PreviewsState.userStatusesState.GetFirstStatusId() with
-                               | Some(value) -> value
-                               | None -> 0L
-    let showStatus rootStatus =
-        let controls = WpfUtils.createConversationControls WpfUtils.End details
-        WpfUtils.setNewConversation controls rootStatus
-        |> Seq.iter (fun detailCtl ->   //conversationNodeControlsInfo
-                        if detailCtl.Status.LogicalStatusId < firstLogicalStatusId then
-                            detailCtl.Detail.Opacity <- 0.5
-                        if StatusFilter.matchesFilter filter detailCtl.Status then
-                            detailCtl.Detail.Opacity <- 0.2
-                     )
-    details.Children.Clear()
-    statuses 
-      |> Seq.map (fun status -> (status, StatusFunctions.GetNewestDisplayDateFromConversation status))
-      |> Seq.sortBy (fun (status, displayDate) -> displayDate)
-      |> Seq.map fst
-      |> Seq.iter (fun rootStatus -> WpfUtils.dispatchMessage window (fun f -> showStatus rootStatus))
+twitterLimits.Start()
 
-Twitter.twitterLimits.Start()
+let fillDetails statuses = DisplayStatus.fillDetails window details filterCtl.Text statuses
+let fillPictures = DisplayStatus.fillPictures wrap
 
 window.Loaded.Add(
     fun _ ->
         async {
           let rec asyncloop() = 
             setAppState "Loading.."
-            Twitter.loadAndSaveNewPersonalStatuses()    // or StatusesReplies.loadPublicStatuses
+            Twitter.loadAndSaveNewPersonalStatuses (Twitter.getLastStoredIds())    // or StatusesReplies.loadPublicStatuses
+                |> Twitter.saveDownloadedStatuses
+                |> fun downloaded -> downloaded.NewStatuses
                 |> List.map (fun (status,source) -> status)
                 |> PreviewsState.userStatusesState.AddStatuses
-            let list,tree = PreviewsState.userStatusesState.GetStatuses()
-            StatusFunctions.Flatten tree 
-                |> Seq.toList
-                |> ImagesSource.ensureStatusesImages
-                |> ignore
+            let list,trees = PreviewsState.userStatusesState.GetStatuses()
+            
+            ImagesSource.ensureStatusesImages trees |> ignore
+            
             WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
-                                                    fillDetails tree)
+                                                    fillDetails trees)
             setAppStateCount list.Length
             async { do! Async.Sleep(1000*60*3) } |> Async.RunSynchronously
             asyncloop()
@@ -98,7 +73,7 @@ window.Loaded.Add(
         
         async {
             let rec asyncLoop() =
-                let limits = Twitter.twitterLimits.GetLimitsString()
+                let limits = twitterLimits.GetLimitsString()
                 ldbgp "limits: {0}" limits
                 WpfUtils.dispatchMessage limitCtl (fun r -> limitCtl.Text <- limits)
                 async { do! Async.Sleep(2500) } |> Async.RunSynchronously
@@ -126,7 +101,6 @@ up.Click.Add(fun _ ->
             | Some(id) -> linfop "first status id is {0}" id
                           id
         StatusDb.statusesDb.GetTimelineStatusesBefore(50,firstStatusId)
-            |> Seq.toList
             |> ImagesSource.ensureStatusesImages
             |> PreviewsState.userStatusesState.AddStatuses
         let list,tree =  PreviewsState.userStatusesState.GetStatuses()

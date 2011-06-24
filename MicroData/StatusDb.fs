@@ -361,8 +361,7 @@ type StatusesDbState() =
             cmd.ExecuteNonQuery() |> ignore
         )
 
-    let mbox = 
-        MailboxProcessor.Start(fun mbox ->
+    let mbox = MailboxProcessor.Start(fun mbox ->
             printfn "starting statuses db"
             let rec loop() = async {
                 let! msg = mbox.Receive()

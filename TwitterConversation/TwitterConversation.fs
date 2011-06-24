@@ -8,6 +8,7 @@ open Status
 open System.Windows.Threading
 open System.Threading
 open DbFunctions
+open TwitterLimits
 
 let args = System.Environment.GetCommandLineArgs()
 let statusId = match args with
@@ -49,7 +50,7 @@ let setState text =
 let updateTwitterLimit = 
     async {
         let rec asyncLoop() =
-            let limits = Twitter.twitterLimits.GetLimitsString()
+            let limits = twitterLimits.GetLimitsString()
             ldbgp "limits: {0}" limits
             WpfUtils.dispatchMessage limitCtl (fun r -> limitCtl.Text <- limits)
             async { do! Async.Sleep(5000) } |> Async.RunSynchronously
@@ -158,7 +159,7 @@ StatusUpdated.Add(fun (controls, updatedStatus) ->
     )
 )
 
-Twitter.twitterLimits.Start()
+twitterLimits.Start()
 
 window.Loaded.Add(fun _ ->
     // status added to tree
@@ -289,7 +290,7 @@ updateAll.Click.Add(fun _ ->
                 match statusIds with 
                 | [] -> ()
                 | statusId::rest ->
-                    let! limitSafe = Twitter.twitterLimits.AsyncIsSafeToQueryTwitter()
+                    let! limitSafe = twitterLimits.AsyncIsSafeToQueryTwitter()
                     if limitSafe then 
                         let status = ConversationState.conversationsState.GetConversation(statusId)
                         setState (sprintf "Updating status %s - %d" status.UserName status.StatusId)

@@ -33,21 +33,8 @@ let Int2StatusSource source =
      | 5 -> Retweet
      | _ -> failwith (sprintf "Value %A can not be converted to StatusSource" source)
      
-(*let GetStatusIdsForNodes (statuses:status seq) =
-    let rec getids (status:status) =
-        seq {
-            yield status.StatusId
-            for child in status.Children do
-                yield! getids child
-        }
-    seq {
-        for s in statuses do yield! getids s
-    }*)
-//let GetStatusIdsForNode (status:status) =
-    //GetStatusIdsForNodes [status]
-
 // takes status with children and returns Some(status) with StatusId equal to statusId or None if there is no such status in the tree
-let GetStatusFromConversation statusId tree =
+let FindStatusById statusId tree =
     let rec get_ currStatus =
         if currStatus.StatusId = statusId then
             Some(currStatus)
@@ -60,10 +47,10 @@ let GetStatusFromConversation statusId tree =
                             |None -> traverseChildren oth
             currStatus.Children |> Seq.toList |> traverseChildren 
     get_ tree
-let GetStatusFromConversations statusId (trees: status list) =
-    trees |> List.tryPick (GetStatusFromConversation statusId)
+let FindStatusInConversationsById statusId (trees: status list) =
+    trees |> List.tryPick (FindStatusById statusId)
     
-let Flatten (statuses:status list) =
+let Flatten (statuses:status seq) =
     let rec flatten (statuses_: status seq) =
         seq {
             for s in statuses_ do

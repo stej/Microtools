@@ -142,7 +142,7 @@ let rootConversations baseStatuses (toRoot: status list) =
                 List.append resStatuses [currentSubtree]     // the subtree is aded to the top, because we reached root of the conversation and it wasn't rooted yet anywhere else
             else
                 // currentSubtree is a status with some children, but the status is not be rooted yet
-                let parent = StatusFunctions.GetStatusFromConversations currentSubtree.ReplyTo resStatuses       // is somewhere in resStatuses current status?
+                let parent = StatusFunctions.FindStatusInConversationsById currentSubtree.ReplyTo resStatuses       // is somewhere in resStatuses current status?
                 match parent with
                 |None -> ldbgp2 "Parent for status {0} {1} not found, will be loaded" currentSubtree.UserName currentSubtree.StatusId
                          let newRoot = getStatusOrEmpty Status.RequestedConversation currentSubtree.ReplyTo    // there is no parent -> load it and add current as child
@@ -152,7 +152,7 @@ let rootConversations baseStatuses (toRoot: status list) =
                          ldbg (sprintf "Subtree %s %d found parent %s %d" currentSubtree.UserName currentSubtree.StatusId p.UserName p.StatusId)
                          p.Children.Add(currentSubtree)
                          resStatuses // return unchanged resStatuses
-        match StatusFunctions.GetStatusFromConversations currStatus.StatusId resStatuses with
+        match StatusFunctions.FindStatusInConversationsById currStatus.StatusId resStatuses with
         |None    -> append currStatus
         |Some(_) -> ldbgp2 "Status {0} {1} already added. Skipping" currStatus.UserName currStatus.StatusId
                     resStatuses

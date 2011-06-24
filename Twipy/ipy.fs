@@ -12,7 +12,8 @@ let engine = runtime.GetEngine("IronPython");
 engine.SetSearchPaths([|AppDomain.CurrentDomain.BaseDirectory
                         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Lib")
                         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\Lib")|])
-Array.ForEach(AppDomain.CurrentDomain.GetAssemblies(), (fun a -> runtime.LoadAssembly(a)))
+
+AppDomain.CurrentDomain.GetAssemblies() |> Array.iter runtime.LoadAssembly
 
 let createScope (values:Dictionary<string, obj>) =
   let scope = engine.Runtime.CreateScope()
