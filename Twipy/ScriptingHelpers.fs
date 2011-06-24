@@ -90,3 +90,4 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
             |> List.map (fun (status,_) -> status)
     member x.LoadConversations(maxConversations) = StatusDb.statusesDb.GetRootStatusesHavingReplies(maxConversations)
     member x.LoadChildren(status) = StatusesReplies.loadSavedReplyTree(status)
+    member x.LoadLastStatuses(maxStatuses) = StatusDb.statusesDb.GetTimelineStatusesBefore(maxStatuses, Int64.MaxValue)

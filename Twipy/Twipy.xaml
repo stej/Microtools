@@ -1,7 +1,7 @@
 <Window 
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-  Title="Twitter client"
+  Title="Twipy"
   Width="660"
   Height="200"
 >
