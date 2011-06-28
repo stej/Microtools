@@ -118,3 +118,20 @@ h.show(status)
 from StatusesReplies import *
 withrepl = findReplies(status)
 h.show(withrepl)
+###################
+from StatusesReplies import *
+st = db.GetRootStatusesHavingReplies(1000)
+res = []
+counter = 1
+for status in st:
+  print "\n-----",counter.ToString(),"\n", limits.GetLimitsString(), "\n"
+  h.loadTree(status)
+  print status.Text
+  h.show(status)
+  if not limits.IsSafeToQueryTwitter():
+    print 'limits -> break'
+    break
+  withrepl = findReplies(status)
+  res.append(withrepl)
+  counter = counter+1
+h.show(res)
