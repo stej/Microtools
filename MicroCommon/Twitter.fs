@@ -11,10 +11,10 @@ let private newStatusDownloaded = new Event<StatusSource*status>()
 let NewStatusDownloaded = newStatusDownloaded.Publish
 
 let getStatus source (id:Int64) =
-    linfop "Get status {0}" id
+    ldbgp "Get status {0}" id
     match dbAccess.ReadStatusWithId(id) with
      | Some(status) -> 
-        linfop "Status {0} from db" id
+        ldbgp "Status {0} from db" id
         Some(status)
      | None -> 
         let limits = async { return! twitterLimits.AsyncGetLimits() } |> Async.RunSynchronously
@@ -42,7 +42,7 @@ let getStatusOrEmpty source (id:Int64) =
     |None -> Status.getEmptyStatus()
 
 let search name (sinceId:Int64) =
-    linfop "searching from {0}" sinceId
+    ldbgp "searching from {0}" sinceId
     let emptyResult() =
         let xml = new XmlDocument()
         xml.LoadXml("<results></results>")

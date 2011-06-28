@@ -170,7 +170,7 @@ window.Loaded.Add(fun _ ->
     // status downloaded from Twitter
     Twitter.NewStatusDownloaded 
         |> Event.add (fun (source,status) -> dbAccess.SaveStatus(source, status)
-                                             linfop "Status downloaded {0}" status)
+                                             linfop2 "Status downloaded {0} {1}" status.StatusId status.Text)
     // some children loaded
     StatusesReplies.SomeChildrenLoaded 
         |> Event.add (fun rootStatus -> setNewConversationContent rootStatus)

@@ -84,7 +84,7 @@ let findReplies initialStatus =
             node |> xpathValue "id" |> Int64OrDefault 
 
         Utils.padSpaces depth
-        linfop2 "Find repl {0}, children: {1}" status.StatusId status.Children.Count
+        ldbgp2 "Find repl {0}, children: {1}" status.StatusId status.Children.Count
         let (name, id) = status.UserName, status.StatusId
         let foundMentions =
             search name id

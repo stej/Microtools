@@ -347,7 +347,7 @@ type StatusesDbState() =
                     else
                         linfop2 "Already stored {0} - {1}" status.UserName status.StatusId
                 | None -> 
-                    linfop2 "Storing status {0} - {1}" status.UserName status.StatusId
+                    ldbgp2 "Storing status {0} - {1}" status.UserName status.StatusId
                     try addStatus conn status source
                     with ex -> lerrp "{0}" ex
         )
