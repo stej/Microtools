@@ -16,10 +16,10 @@ let log level str =
         logger.Debug(str)
     if level = Info  && logger.IsInfoEnabled  then 
         logger.Info(str)
-        printf "%s" str
+        printfn "%s" str
     if level = Error && logger.IsErrorEnabled then 
         logger.Error(str)
-        printf "%s" str
+        printfn "%s" str
 let ldbg str = log Debug str
 let ldbgp format (p1:obj) = log Debug (String.Format(format, [p1]))
 let ldbgp2 format (p1:obj) (p2:obj) = log Debug (String.Format(format, p1, p2))
@@ -97,7 +97,7 @@ let padSpaces count =
 
 type Settings =
     static member private settings = System.Configuration.ConfigurationManager.AppSettings;
-    static member MinRateLimit = match Settings.settings.["minRateLimit"] with | null -> 0 | filter -> int filter
+    static member MinRateLimit = match Settings.settings.["minRateLimit"] with | null -> 20 | filter -> int filter
     static member Size = System.Configuration.ConfigurationManager.AppSettings.["size"].ToString()
 
 let doAndRet fce item = 
