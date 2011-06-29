@@ -83,7 +83,6 @@ let findReplies initialStatus =
             ldbg "status from node"
             node |> xpathValue "id" |> Int64OrDefault 
 
-        Utils.padSpaces depth
         ldbgp2 "Find repl {0}, children: {1}" status.StatusId status.Children.Count
         let (name, id) = status.UserName, status.StatusId
         let foundMentions =
@@ -99,7 +98,7 @@ let findReplies initialStatus =
             |> List.filter (fun status -> status.IsSome)                                     //filter non-null
             |> List.map (fun status -> status.Value)                                         //extract status
             |> List.map newlyAddedStatusesState.AddStatus
-        foundMentions |> List.iter (fun status -> Utils.padSpaces depth; ldbgp2 "Mention {0} - {1}" status.UserName status.StatusId)
+        foundMentions |> List.iter (fun status -> ldbgp2 "Mention {0} - {1}" status.UserName status.StatusId)
         let statuses = 
             foundMentions
             |> List.filter (fun status -> status.ReplyTo = id)                               //get only reply to current status

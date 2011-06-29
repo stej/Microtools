@@ -38,7 +38,7 @@ twitterLimits.Start()
 // events
 Twitter.NewStatusDownloaded 
         |> Event.add (fun (source,status) -> DbFunctions.dbAccess.SaveStatus(source, status)
-                                             linfop "Status downloaded {0}" status
+                                             linfop "Downloaded {0}" status
                                              setAppState (sprintf "Status downloaded %A" status))
     
 let newScope() =

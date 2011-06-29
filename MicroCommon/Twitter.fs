@@ -24,7 +24,7 @@ let getStatus source (id:Int64) =
         | Some(rateInfo) when rateInfo.remainingHits < Settings.MinRateLimit -> 
             None
         | Some(rateInfo) -> 
-            linfop "Downloading {0}" id // todo: store status in db!
+            ldbgp "Downloading {0}" id // todo: store status in db!
             let formatter = sprintf "http://api.twitter.com/1/statuses/show/%d.json"
             match OAuth.requestTwitter (formatter id) with
              | Some(text, _, _) -> let xml = text |> convertJsonToXml
@@ -33,7 +33,7 @@ let getStatus source (id:Int64) =
                                             None
                                    |node -> let status = OAuthFunctions.xml2Status node
                                             newStatusDownloaded.Trigger(source, status)
-                                            linfop "Downloaded {0}" id
+                                            ldbgp "Downloaded {0}" id
                                             Some(status)
              | None -> None
 let getStatusOrEmpty source (id:Int64) =

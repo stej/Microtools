@@ -52,6 +52,13 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                 Children : ResizeArray<status>
                 RetweetInfo : retweetInfo option
               }
+              override x.ToString() =
+                String.Format("{0}{1}({2}) [{3}]", 
+                    x.StatusId, 
+                    (if x.RetweetInfo.IsSome then "(RT)" else ""),
+                    x.UserName,
+                    (if x.Text.Length < 40 then x.Text else (x.Text.Substring(0, 40) + "..."))
+                )
               member x.ChildrenIds () =
                 x.Children |> Seq.map (fun s -> s.StatusId)
               member x.IsRetweet () =

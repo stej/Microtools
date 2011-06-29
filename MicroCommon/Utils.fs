@@ -92,8 +92,9 @@ let getSyncContext() =
 let triggerEvent fce (syncContext:SynchronizationContext) =
     syncContext.Post(SendOrPostCallback(fce), state=null)
     
-let padSpaces count = 
+(*let padSpaces count = 
     System.Console.Write("{0," + (count * 3).ToString() + "}", "")
+*)
 
 type Settings =
     static member private settings = System.Configuration.ConfigurationManager.AppSettings;
