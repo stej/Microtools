@@ -345,7 +345,7 @@ type StatusesDbState() =
                         linfop2 "Stored with other source {0} - {1}. Updating.." status.UserName status.StatusId
                         updateStatusSource source status
                     else
-                        linfop2 "Already stored {0} - {1}" status.UserName status.StatusId
+                        linfop "Already stored {0}" (status.ToString())
                 | None -> 
                     ldbgp2 "Storing status {0} - {1}" status.UserName status.StatusId
                     try addStatus conn status source

@@ -84,7 +84,8 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
         </html>")
         System.Diagnostics.Process.Start(file)
     member x.DownloadAndSavePersonalStatuses() = 
-        Twitter.loadAndSaveNewPersonalStatuses (Twitter.getLastStoredIds())
+        Twitter.getLastStoredIds()
+            |> Twitter.loadAndSaveNewPersonalStatuses
             |> Twitter.saveDownloadedStatuses
             |> fun downloaded -> downloaded.NewStatuses
             |> List.map (fun (status,_) -> status)

@@ -102,12 +102,7 @@ let createDetail (status:status) =
             [new Run(userName)                  :> Inline
              new Run(" | ")                     :> Inline
              hl status.UserName status.StatusId :> Inline
-            ] |> List.iter m.Inlines.Add
-            if status.RetweetInfo.IsSome then
-                [ new Run(" / ")                     :> Inline
-                  hl status.RetweetInfo.Value.UserName status.RetweetInfo.Value.RetweetId :> Inline
-                ] |> List.iter m.Inlines.Add
-            [new Run(" | ")           :> Inline
+             new Run(" | ")           :> Inline
              new Run(sprintf "%s" (status.Date.ToString("yyyy-MM-dd HH:mm:ss"))) :> Inline
             ] |> List.iter m.Inlines.Add
             m
