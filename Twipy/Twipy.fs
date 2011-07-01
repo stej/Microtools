@@ -63,9 +63,10 @@ let script =
 
 if script.IsSome then
     if options.NoGui then
-         printfn "Running script %s\n\n" script.Value
-         engine.Execute(script.Value, !scope) |> ignore
-         exit 0
+        if options.OutputScript then
+            printfn "Running script %s\n\n" script.Value
+        engine.Execute(script.Value, !scope) |> ignore
+        exit 0
     WpfUtils.dispatchMessage commandText (fun _ -> commandText.Text <- script.Value)
 (******** eof options **************)
 
