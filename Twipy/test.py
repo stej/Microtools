@@ -75,8 +75,8 @@ f.Bar([k for k in sizes.keys()], [sizes[k] for k in sizes.keys()])
 ####################
 # I have statuses in st, then display some of them:
 import Microsoft.FSharp.Collections
-list = Microsoft.FSharp.Collections.ListModule.OfSeq[Status+status]([st[0]])
-a = Microsoft.FSharp.Collections.FSharpList[Status+status](10, list)
+list = Microsoft.FSharp.Collections.ListModule.OfSeq[Status.status]([st[0]])
+a = Microsoft.FSharp.Collections.FSharpList[Status.status](10, list)
 print a.GetType()
 ####################
 st = db.GetRootStatusesHavingReplies(2)
@@ -118,20 +118,24 @@ h.show(status)
 from StatusesReplies import *
 withrepl = findReplies(status)
 h.show(withrepl)
-###################
+####################
+# take last 300 statuses and try to root them - find conversations
+from Microsoft.FSharp.Collections import *
+import System.Collections.Generic
 from StatusesReplies import *
-st = db.GetRootStatusesHavingReplies(1000)
-res = []
-counter = 1
-for status in st:
-  print "\n-----",counter.ToString(),"\n", limits.GetLimitsString(), "\n"
-  h.loadTree(status)
-  print status.Text
-  h.show(status)
-  if not limits.IsSafeToQueryTwitter():
-    print 'limits -> break'
-    break
-  withrepl = findReplies(status)
-  res.append(withrepl)
-  counter = counter+1
-h.show(res)
+import Status
+
+sql = """
+    select s.* from Status s 
+    where exists (select StatusId from Status s0 where s0.ReplyTo = s.StatusId)
+    order by s.StatusId desc 
+    limit 0, 300"""
+statuses = db.GetStatusesFromSql(sql)
+rooted = h.RootConversationsWithNoDownload(
+          ListModule.OfSeq[Status.status]([]),
+          ListModule.OfSeq[Status.status](statuses))
+toshow = System.Collections.Generic.List[Status.status]()
+for status in rooted:
+    if status.Children.Count > 0:
+        toshow.Add(status)
+h.show(toshow)
