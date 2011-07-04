@@ -92,3 +92,5 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
     member x.LoadConversations(maxConversations) = StatusDb.statusesDb.GetRootStatusesHavingReplies(maxConversations)
     member x.LoadChildren(status) = StatusesReplies.loadSavedReplyTree(status)
     member x.LoadLastStatuses(maxStatuses) = StatusDb.statusesDb.GetTimelineStatusesBefore(maxStatuses, Int64.MaxValue)
+    member x.RootConversationsWithNoDownload(baseStatuses, toRoot) = StatusesReplies.rootConversationsWithNoDownload baseStatuses toRoot
+    member x.RootConversationsWithDownload(baseStatuses, toRoot) = StatusesReplies.rootConversationsWithDownload baseStatuses toRoot

@@ -20,7 +20,7 @@ let addAndRootStatuses currStatuses currStatusesWithRoots toAdd =
                     |> Seq.filter (fun status -> not (currIds.Contains(status.StatusId)))
                     |> Seq.map (fun status -> ldbgp2 "Add {0} - {1}" status.StatusId status.UserName; status)
                     |> Seq.toList
-                    |> StatusesReplies.rootConversations currStatusesWithRoots
+                    |> StatusesReplies.rootConversationsWithDownload currStatusesWithRoots
     let plain = currStatuses @ (Seq.toList toAdd)
     (plain, rooted)
   

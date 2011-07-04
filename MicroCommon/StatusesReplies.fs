@@ -128,7 +128,7 @@ let rootConversation (status:status) =
     
 // takes list of statuses
 // for each status checks if it is placed in conversation. If it is, it finds the root
-let rootConversations baseStatuses (toRoot: status list) =
+let rootConversations statusDownloader baseStatuses (toRoot: status list) =
     // function that processes one status that is reply to other status and 
     // 2) or if there is no reply parent in resStatuses, loads reply parent (and its parent, ...) and adds it to the list
     // 3) or if there is reply parent, adds the status as a child
@@ -140,11 +140,11 @@ let rootConversations baseStatuses (toRoot: status list) =
                 ldbgp2 "Subtree {0} {1} is whole branch->adding to list" currentSubtree.UserName currentSubtree.StatusId
                 List.append resStatuses [currentSubtree]     // the subtree is aded to the top, because we reached root of the conversation and it wasn't rooted yet anywhere else
             else
-                // currentSubtree is a status with some children, but the status is not be rooted yet
+                // currentSubtree is a status with some children, but the status has not been rooted yet
                 let parent = StatusFunctions.FindStatusInConversationsById currentSubtree.ReplyTo resStatuses       // is somewhere in resStatuses current status?
                 match parent with
                 |None -> ldbgp2 "Parent for status {0} {1} not found, will be loaded" currentSubtree.UserName currentSubtree.StatusId
-                         let newRoot = getStatusOrEmpty Status.RequestedConversation currentSubtree.ReplyTo    // there is no parent -> load it and add current as child
+                         let newRoot = statusDownloader currentSubtree.ReplyTo    // there is no parent -> load it and add current as child
                          newRoot.Children.Add(currentSubtree)
                          append newRoot
                 |Some(p) ->
@@ -165,3 +165,10 @@ let rootConversations baseStatuses (toRoot: status list) =
     toRoot 
         |> Seq.filter (fun s -> s.ReplyTo <> -1L) 
         |> Seq.fold rootConversation baseWithPlainStatuses
+        
+// prepared function that downloads status if needed
+let rootConversationsWithDownload = rootConversations (getStatusOrEmpty Status.RequestedConversation)
+let rootConversationsWithNoDownload = rootConversations (fun id ->
+    match dbAccess.ReadStatusWithId(id) with
+     | Some(status) -> status
+     | None -> Status.getEmptyStatus())
