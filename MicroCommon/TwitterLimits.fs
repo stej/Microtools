@@ -28,6 +28,7 @@ type TwitterLimitsMessages =
 | UpdateLimit
 | UpdateSearchLimit of Net.HttpStatusCode * Net.WebHeaderCollection
 | GetLimits of AsyncReplyChannel<LimitState>
+| Stop
 
 type TwitterLimits() =
     let getRateLimit() =
@@ -93,7 +94,9 @@ type TwitterLimits() =
                         chnl.Reply(limits)
                         return! loop(limits)
                     | StartLimitChecking ->
-                        return! loop(limits)}
+                        return! loop(limits)
+                    | Stop ->
+                        return ()}
 
             mbox.Scan(fun msg ->
                 match msg with
@@ -119,6 +122,7 @@ type TwitterLimits() =
     do
         mbox.Error.Add(fun exn -> lerrp "{0}" exn)
     member x.Start() = mbox.Post(StartLimitChecking)
+    member x.Stop() = mbox.Post(Stop)
     member x.UpdateLimit() = mbox.Post(UpdateLimit)
     member x.UpdateSearchLimit(statusCode, headers) = mbox.Post(UpdateSearchLimit(statusCode, headers))
     member x.GetLimits() = mbox.PostAndReply(GetLimits)
