@@ -34,6 +34,7 @@ let saveToken (path:string) token =
     file.WriteLine(accessToken.Token)
     file.Write(accessToken.TokenSecret)
     file.Close()
+    linfo "..done"
 
 accessToken <- 
     if File.Exists(accessTokenPath) then

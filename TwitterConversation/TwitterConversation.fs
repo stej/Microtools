@@ -66,6 +66,7 @@ let readSingleStatus() =
                               Environment.Exit(0)
                               failwith ""
      | None -> lerrp "Unable to load status with id {0}" statusId
+               sprintf "Unable to load status with id %d" statusId |> MessageBox.Show |> ignore
                Environment.Exit(0)
                failwith ""
 let readStatuses() =
