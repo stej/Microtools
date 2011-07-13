@@ -95,4 +95,5 @@ let registerOnTwitter() =
 
 let checkAccessTokenFile() =
     if accessToken = null then
-        registerOnTwitter()
+        printfn "First authorize the application so that it can access your Twitter account. Look for register.bat file"
+        exit 1
