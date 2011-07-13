@@ -1,4 +1,4 @@
-First run register.bat and allow the applications to access your Twitter account (only read-only access).
+First run authorize.bat and allow the applications to access your Twitter account (only read-only access).
 New file twitter.accesstoken.txt should appear in the directory.
 
 And then you may try to run 
@@ -8,3 +8,5 @@ TwitterConversation
 	- if command line arg is specified, (e.g. TwitterConversation 91137008386318336), it shows the conversation if already
 		stored in db or only downloads the tweet
 		Then you may click Update to download the replies
+		
+First time you run the app, it will take long time to show something, because images are being downloaded and stored into images directory.
