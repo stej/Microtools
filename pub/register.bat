@@ -1,0 +1,1 @@
+Twipy.exe -file register.py -nogui
