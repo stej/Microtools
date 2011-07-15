@@ -8,6 +8,7 @@ open OAuth
 open Status
 open System.Windows.Threading
 open ipy
+open TwitterLimits
 
 open System.Windows
 open System.Windows.Controls
@@ -85,7 +86,7 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
         System.Diagnostics.Process.Start(file)
     member x.DownloadAndSavePersonalStatuses() = 
         Twitter.getLastStoredIds()
-            |> Twitter.loadAndSaveNewPersonalStatuses
+            |> Twitter.loadAndSaveNewPersonalStatuses twitterLimits.IsSafeToQueryTwitterStatuses
             |> Twitter.saveDownloadedStatuses
             |> fun downloaded -> downloaded.NewStatuses
             |> List.map (fun (status,_) -> status)

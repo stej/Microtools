@@ -52,7 +52,7 @@ let search name (sinceId:Int64) =
         //let url = sprintf "http://search.twitter.com/search.json?to=%s&since_id=%d&rpp=100&result_type=recent" name sinceId
         let url = sprintf "http://search.twitter.com/search.json?q=%%40%s&since_id=%d&rpp=100&result_type=recent" name sinceId
         match OAuth.requestTwitter url with
-         | Some(text, statusCode, headers) -> twitterLimits.UpdateSearchLimit(statusCode, headers)
+         | Some(text, statusCode, headers) -> twitterLimits.UpdateSearchLimitFromResponse(statusCode, headers)
                                               convertJsonToXml text
          | None -> emptyResult()
 
@@ -77,7 +77,9 @@ let friendsStatuses (fromStatusId:Int64) =
     match OAuth.requestTwitter url with
      | None
      | Some("", _, _) -> xml.LoadXml("<statuses type=\"array\"></statuses>")
-     | Some(text, _, _) -> xml.LoadXml(text)
+     | Some(text, statusCode, headers) -> 
+        twitterLimits.UpdateStandarsLimitFromResponse(statusCode, headers)
+        xml.LoadXml(text)
     xml
     
 let mentionsStatuses (fromStatusId:Int64) = 
@@ -88,7 +90,9 @@ let mentionsStatuses (fromStatusId:Int64) =
     match OAuth.requestTwitter url with
      | None
      | Some("", _, _) -> xml.LoadXml("<statuses type=\"array\"></statuses>")
-     | Some(text, _, _)  -> xml.LoadXml(text)
+     | Some(text, statusCode, headers)  -> 
+        twitterLimits.UpdateStandarsLimitFromResponse(statusCode, headers)
+        xml.LoadXml(text)
     xml
     
 let retweets (fromStatusId:Int64) =
@@ -99,7 +103,9 @@ let retweets (fromStatusId:Int64) =
     match OAuth.requestTwitter url with
      | None
      | Some("", _, _) -> xml.LoadXml("<statuses type=\"array\"></statuses>")
-     | Some(text, _, _)  -> xml.LoadXml(text)
+     | Some(text, statusCode, headers)  -> 
+        twitterLimits.UpdateStandarsLimitFromResponse(statusCode, headers)
+        xml.LoadXml(text)
     xml
 
 let publicStatuses() = 
@@ -107,17 +113,21 @@ let publicStatuses() =
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
      | None -> xml.LoadXml("<statuses type=\"array\"></statuses>")
-     | Some(text, _, _)  -> xml.LoadXml(text)
+     | Some(text, statusCode, headers)  -> 
+        twitterLimits.UpdateStandarsLimitFromResponse(statusCode, headers)
+        xml.LoadXml(text)
     xml
-    
+
 let currentUser() =
     let url = "http://api.twitter.com/1/account/verify_credentials.xml"
     let xml = new XmlDocument()
     match OAuth.requestTwitter url with
      | None -> failwith "Unable to get info for current user"
-     | Some(text, _, _)  -> xml.LoadXml(text)
+     | Some(text, statusCode, headers)  -> 
+        twitterLimits.UpdateStandarsLimitFromResponse(statusCode, headers)
+        xml.LoadXml(text)
     xml
-    
+
 let twitterLists() = 
     let user = xpathValue "/user/screen_name" (currentUser())
     let url = sprintf "http://api.twitter.com/1/%s/lists.xml" user
@@ -137,6 +147,7 @@ let extractRetweets xpath retweetsXml =
        |> xpathNodes xpath
        |> Seq.cast<XmlNode> 
        |> Seq.map OAuthFunctions.xml2Retweet
+
 let private loadNewFriendsStatuses maxId =
     friendsStatuses maxId |> extractStatuses "//statuses/status"  |> Seq.toList
 let private loadNewMentionsStatuses maxId =
@@ -154,16 +165,19 @@ let getLastStoredIds () =
     (dbAccess.GetLastTimelineId(),
      dbAccess.GetLastMentionsId(),
      dbAccess.GetLastRetweetsId())
-let loadAndSaveNewPersonalStatuses (lastTimelineId, lastMentionId, lastRetweetId) =
+let loadAndSaveNewPersonalStatuses fIsSaveToQueryStatuses (lastTimelineId, lastMentionId, lastRetweetId) =
     linfo "Loading new personal statuses"
 
     let getStatusId (status:status) = status.LogicalStatusId
     let loadSomeStatuses lastId (loader:Int64 -> status list) = 
-        let ret = loader lastId
-        if ret.Length > 0 then 
-            ret, Some(ret |> List.maxBy getStatusId)
+        if fIsSaveToQueryStatuses() then
+            let ret = loader lastId
+            if ret.Length > 0 then 
+                ret, Some(ret |> List.maxBy getStatusId)
+            else
+                ret, None
         else
-            ret, None
+            [], None
     let friends, lastF  = loadSomeStatuses lastTimelineId loadNewFriendsStatuses
     let mentions, lastM = loadSomeStatuses lastMentionId loadNewMentionsStatuses
     let retweets, lastR = loadSomeStatuses lastRetweetId loadNewRetweets

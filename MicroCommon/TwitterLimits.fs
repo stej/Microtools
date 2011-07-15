@@ -26,7 +26,8 @@ type LimitState = {
 type TwitterLimitsMessages =
 | StartLimitChecking
 | UpdateLimit
-| UpdateSearchLimit of Net.HttpStatusCode * Net.WebHeaderCollection
+| UpdateSearchLimitFromResponse of Net.HttpStatusCode * Net.WebHeaderCollection
+| UpdateStandarsLimitFromResponse of Net.HttpStatusCode * Net.WebHeaderCollection
 | GetLimits of AsyncReplyChannel<LimitState>
 | Stop
 
@@ -71,7 +72,7 @@ type TwitterLimits() =
                     match msg with
                     | UpdateLimit ->
                         return! loop( { limits with StandardRequest = getRateLimit() })
-                    | UpdateSearchLimit(statusCode, headers) ->
+                    | UpdateSearchLimitFromResponse(statusCode, headers) ->
                         let status = statusCode |> int
                         try 
                             if (status <> 420) then
@@ -86,6 +87,23 @@ type TwitterLimits() =
                                 | _ -> 
                                     lerrp "Unable to parse response Retry-After {0}" headers
                                     return! loop limits
+                        with ex ->
+                            lerrp "Excepting when parsing search limit {0}" ex
+                            return! loop(limits)
+                    | UpdateStandarsLimitFromResponse(_, headers) ->
+                        try 
+                            let remaining = headers.["X-RateLimit-Remaining"] |> int
+                            let fullLimit = headers.["X-RateLimit-Limit"] |> int
+                            let resetTime = headers.["X-RateLimit-Reset"] |> int
+                            if remaining <= 0 then
+                                lerr "Standard rate limit reached."
+                            return! loop { limits with 
+                                            StandardRequest =
+                                            {
+                                                remainingHits = remaining
+                                                hourlyLimit = fullLimit
+                                                resetTimeSec = resetTime 
+                                            } |> Some }
                         with ex ->
                             lerrp "Excepting when parsing search limit {0}" ex
                             return! loop(limits)
@@ -124,11 +142,14 @@ type TwitterLimits() =
     member x.Start() = mbox.Post(StartLimitChecking)
     member x.Stop() = mbox.Post(Stop)
     member x.UpdateLimit() = mbox.Post(UpdateLimit)
-    member x.UpdateSearchLimit(statusCode, headers) = mbox.Post(UpdateSearchLimit(statusCode, headers))
+    member x.UpdateSearchLimitFromResponse(statusCode, headers) = mbox.Post(UpdateSearchLimitFromResponse(statusCode, headers))
+    member x.UpdateStandarsLimitFromResponse(statusCode, headers) = mbox.Post(UpdateStandarsLimitFromResponse(statusCode, headers))
     member x.GetLimits() = mbox.PostAndReply(GetLimits)
     member x.GetLimitsString() = mbox.PostAndReply(GetLimits) |> limits2str
     member x.IsSafeToQueryTwitter() = 
         x.AsyncIsSafeToQueryTwitter() |> Async.RunSynchronously
+    member x.IsSafeToQueryTwitterStatuses() =
+        x.AsyncIsSafeToQueryTwitterStatuses() |> Async.RunSynchronously
 
     member x.AsyncGetLimits() = mbox.PostAndAsyncReply(GetLimits)
     /// returns true if the search/normal limits are not reached and if
@@ -140,6 +161,12 @@ type TwitterLimits() =
             match res.SearchLimit with
             | Some(date) when date > DateTime.Now -> return false
             | _ -> return true
+        | _ -> return false
+    }
+    member x.AsyncIsSafeToQueryTwitterStatuses() = async {
+        let! res = x.AsyncGetLimits()
+        match res.StandardRequest with
+        | Some(x) when x.remainingHits > Settings.MinRateLimit -> return true
         | _ -> return false
     }
 

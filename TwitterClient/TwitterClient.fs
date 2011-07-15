@@ -54,7 +54,7 @@ window.Loaded.Add(
         async {
           let rec asyncloop() = 
             setAppState "Loading.."
-            Twitter.loadAndSaveNewPersonalStatuses (Twitter.getLastStoredIds())    // or StatusesReplies.loadPublicStatuses
+            Twitter.loadAndSaveNewPersonalStatuses twitterLimits.IsSafeToQueryTwitterStatuses (Twitter.getLastStoredIds())    // or StatusesReplies.loadPublicStatuses
                 |> Twitter.saveDownloadedStatuses
                 |> fun downloaded -> downloaded.NewStatuses
                 |> List.map (fun (status,source) -> status)
