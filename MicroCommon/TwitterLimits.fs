@@ -166,7 +166,7 @@ type TwitterLimits() =
     member x.AsyncIsSafeToQueryTwitterStatuses() = async {
         let! res = x.AsyncGetLimits()
         match res.StandardRequest with
-        | Some(x) when x.remainingHits > Settings.MinRateLimit -> return true
+        | Some(x) when x.remainingHits > 0 -> return true
         | _ -> return false
     }
 
