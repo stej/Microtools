@@ -17,7 +17,7 @@ let getStatus source (id:Int64) =
         ldbgp "Status {0} from db" id
         Some(sInfo)
      | None -> 
-        let limits = async { return! twitterLimits.AsyncGetLimits() } |> Async.RunSynchronously
+        let limits = twitterLimits.GetLimits()
         match limits.StandardRequest with
         | None -> 
             None

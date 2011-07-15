@@ -71,3 +71,10 @@ let GetNewestDisplayDateFromConversation (sInfo:statusInfo) =
     Flatten [sInfo] |> Seq.map (fun info -> info.Status.DisplayDate)
                     |> Seq.sortBy (fun date -> -date.Ticks) 
                     |> Seq.nth 0
+
+let DirectChildHasId sInfo id =
+     sInfo.Status.Children |> Seq.exists (fun child -> child.Status.StatusId = id) //filter ids not in Children
+
+let AnyChildHasId sInfo id =
+    let flattened = sInfo.Status.Children |> Flatten
+    flattened |> Seq.exists (fun child -> child.Status.StatusId = id) //filter ids not in Children or deeper in children

@@ -13,7 +13,14 @@ type StatusSource =
    | Public   // public statuses
    | Retweet
    | Undefined
-   override x.ToString() = String.Format("{0}", x)
+let statusSource2String src =
+    match src with
+    | Timeline -> "Timeline"
+    | RequestedConversation -> "RequestedConversation"
+    | Search -> "Search"
+    | Public -> "Public"
+    | Retweet -> "Retweet"
+    | Undefined -> "Undefined"
 
 type retweetInfo = { 
       Id : string
@@ -74,7 +81,7 @@ and statusInfo = {
                    Status : status
                    Source : StatusSource
                  }
-                 override x.ToString() = String.Format("{0}-{1}", x.Status, x.Source)
+                 override x.ToString() = String.Format("{0}-{1}", x.Status, (statusSource2String x.Source))
                  member x.ChildrenIds () =
                     x.Status.Children |> Seq.map (fun s -> s.Status.StatusId)
         

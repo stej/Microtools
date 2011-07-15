@@ -85,14 +85,14 @@ let findReplies initialStatus =
             node |> xpathValue "id" |> Int64OrDefault 
 
         ldbgp2 "Find repl {0}, children: {1}" status.StatusId status.Children.Count
-        let (name, id) = status.UserName, status.StatusId
+        let name, id = status.UserName, status.StatusId
         let foundMentions =
             search name id
             |> xpathNodes "//results/item" 
             |> Seq.cast<XmlNode> 
             |> Seq.toList
             |> List.map getStatusIdFromNode                                                  //get statusId
-            |> List.filter (fun id -> not (status.Children.Exists(fun s0 -> s0.Status.StatusId = id)))//filter ids not in Children
+            |> List.filter (fun id -> not (StatusFunctions.DirectChildHasId sInfo id))      //filter ids not in Children
             // here I used PSeq, but .. with hangs sometimes..
             |> Seq.map (getStatus Status.Search)                                            //load status from db or download
             |> Seq.toList                                                                   //create list back

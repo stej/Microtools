@@ -144,7 +144,8 @@ type TwitterLimits() =
     member x.UpdateLimit() = mbox.Post(UpdateLimit)
     member x.UpdateSearchLimitFromResponse(statusCode, headers) = mbox.Post(UpdateSearchLimitFromResponse(statusCode, headers))
     member x.UpdateStandarsLimitFromResponse(statusCode, headers) = mbox.Post(UpdateStandarsLimitFromResponse(statusCode, headers))
-    member x.GetLimits() = mbox.PostAndReply(GetLimits)
+    member x.GetLimits() = 
+        x.AsyncGetLimits() |> Async.RunSynchronously
     member x.GetLimitsString() = mbox.PostAndReply(GetLimits) |> limits2str
     member x.IsSafeToQueryTwitter() = 
         x.AsyncIsSafeToQueryTwitter() |> Async.RunSynchronously
@@ -166,7 +167,7 @@ type TwitterLimits() =
     member x.AsyncIsSafeToQueryTwitterStatuses() = async {
         let! res = x.AsyncGetLimits()
         match res.StandardRequest with
-        | Some(x) when x.remainingHits > 0 -> return true
+        | Some(x) when x.remainingHits > Settings.MinRateLimit -> return true   // 0 was there before; Settings.MinRateLimit to make things less complicated
         | _ -> return false
     }
 
