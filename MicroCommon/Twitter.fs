@@ -7,15 +7,15 @@ open Utils
 open DbFunctions
 open TwitterLimits
 
-let private newStatusDownloaded = new Event<StatusSource*status>()
+let private newStatusDownloaded = new Event<statusInfo>()
 let NewStatusDownloaded = newStatusDownloaded.Publish
 
 let getStatus source (id:Int64) =
     ldbgp "Get status {0}" id
     match dbAccess.ReadStatusWithId(id) with
-     | Some(status) -> 
+     | Some(sInfo) -> 
         ldbgp "Status {0} from db" id
-        Some(status)
+        Some(sInfo)
      | None -> 
         let limits = async { return! twitterLimits.AsyncGetLimits() } |> Async.RunSynchronously
         match limits.StandardRequest with
@@ -31,15 +31,16 @@ let getStatus source (id:Int64) =
                                    match xml.SelectSingleNode("/root") with
                                    |null -> log Error (sprintf "status for %d is empty!" id)
                                             None
-                                   |node -> let status = OAuthFunctions.xml2Status node
-                                            newStatusDownloaded.Trigger(source, status)
+                                   |node -> let ret = { Status = OAuthFunctions.xml2Status node
+                                                        Source = source }
+                                            newStatusDownloaded.Trigger(ret)
                                             ldbgp "Downloaded {0}" id
-                                            Some(status)
+                                            Some(ret)
              | None -> None
 let getStatusOrEmpty source (id:Int64) =
     match getStatus source id with
     |Some(s) -> s
-    |None -> Status.getEmptyStatus()
+    |None -> { Status = Status.getEmptyStatus(); Source = Undefined }
 
 let search name (sinceId:Int64) =
     ldbgp "searching from {0}" sinceId
@@ -156,16 +157,16 @@ let loadNewRetweets maxId =
     retweets maxId |> extractRetweets "//statuses/status" |> Seq.toList
     
 type LoadedPersonalStatuses = {
-    NewStatuses : (status * StatusSource) list
-    LastFriendStatus : status option
-    LastMentionStatus : status option
-    LastRetweet : status option
+    NewStatuses : statusInfo list
+    LastFriendStatus : statusInfo option
+    LastMentionStatus : statusInfo option
+    LastRetweet : statusInfo option
 }
 let getLastStoredIds () =
     (dbAccess.GetLastTimelineId(),
      dbAccess.GetLastMentionsId(),
      dbAccess.GetLastRetweetsId())
-let loadAndSaveNewPersonalStatuses fIsSaveToQueryStatuses (lastTimelineId, lastMentionId, lastRetweetId) =
+let loadNewPersonalStatuses fIsSaveToQueryStatuses (lastTimelineId, lastMentionId, lastRetweetId) =
     linfo "Loading new personal statuses"
 
     let getStatusId (status:status) = status.LogicalStatusId
@@ -173,7 +174,7 @@ let loadAndSaveNewPersonalStatuses fIsSaveToQueryStatuses (lastTimelineId, lastM
         if fIsSaveToQueryStatuses() then
             let ret = loader lastId
             if ret.Length > 0 then 
-                ret, Some(ret |> List.maxBy getStatusId)
+                ret, Some({ Status = ret |> List.maxBy getStatusId; Source = Timeline })
             else
                 ret, None
         else
@@ -199,7 +200,9 @@ let loadAndSaveNewPersonalStatuses fIsSaveToQueryStatuses (lastTimelineId, lastM
 
     { 
         // publish collection without duplicates
-        NewStatuses = statusesCache.Values |> Seq.toList |> List.sortBy (fun (status,_) -> status.DisplayDate)
+        NewStatuses = statusesCache.Values |> Seq.toList 
+                                           |> List.sortBy (fun (status,_) -> status.DisplayDate)
+                                           |> List.map (fun (status, source) -> { Status = status; Source = source })
         LastFriendStatus = lastF
         LastMentionStatus = lastM
         LastRetweet = lastR
@@ -211,7 +214,7 @@ let saveDownloadedStatuses (statuses: LoadedPersonalStatuses) =
     if statuses.LastMentionStatus.IsSome then dbAccess.UpdateLastMentionsId(statuses.LastMentionStatus.Value)
     if statuses.LastRetweet.IsSome then dbAccess.UpdateLastRetweetsId(statuses.LastRetweet.Value)
     // this print is not necessary, but ensures that all commands are executed in db agent
-    printfn "Last timeline status id: %A" (dbAccess.GetLastTimelineId())
+    printfn "Last timeline status ids: %A" (dbAccess.GetLastTimelineId())
     statuses
     
 (*let loadPublicStatuses() =
@@ -228,5 +231,5 @@ let getStatusId status =
     status.StatusId
 let sameId status1 status2 =
     status1.StatusId = status2.StatusId
-let isParentOf parent status =
-    parent.StatusId = status.ReplyTo
+let isParentOf parentInfo statusInfo =
+    parentInfo.Status.StatusId = statusInfo.Status.ReplyTo

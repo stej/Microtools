@@ -39,10 +39,12 @@ let ensureStatusImage (status: Status.status) =
 let ensureStatusImageNoRet (status: Status.status) =
     ensureStatusImage status |> ignore
 
-let ensureStatusesImages (conversations: Status.status seq) =
-    StatusFunctions.Flatten conversations
+let ensureStatusesImages (conversations: Status.statusInfo seq) =
+    conversations
+        |> StatusFunctions.Flatten
         |> Seq.toList
-        |> List.map ensureStatusImage
+        |> List.iter (Status.extractStatus >> ensureStatusImage >> ignore)
+    conversations
     
 linfop "Images directory is {0}" directory
 if not (Directory.Exists(directory)) then 

@@ -8,10 +8,10 @@ open System.Windows.Media
 let fillPictures (wrap:WrapPanel) statuses =
     wrap.Children.Clear()
     statuses 
-      |> Seq.map (fun status -> (status, StatusFunctions.GetNewestDisplayDateFromConversation status))
-      |> Seq.sortBy (fun (status, displayDate) -> displayDate)
+      |> Seq.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
+      |> Seq.sortBy (fun (sInfo, displayDate) -> displayDate)
       |> Seq.map fst
-      |> Seq.map (fun status -> WpfUtils.createLittlePicture status) 
+      |> Seq.map (fun sInfo -> WpfUtils.createLittlePicture sInfo.Status) 
       |> Seq.iter (fun pic -> wrap.Children.Add(pic) |> ignore)
 
 let fillDetails window (details:StackPanel) filterText statuses =
@@ -25,7 +25,7 @@ let fillDetails window (details:StackPanel) filterText statuses =
     let showStatus rootStatus =
         let controls = WpfUtils.createConversationControls WpfUtils.End details
         WpfUtils.setNewConversation controls rootStatus
-        |> Seq.iter (fun detailCtl ->   //conversationNodeControlsInfo
+        |> Seq.iter (fun detailCtl ->   //type = conversationNodeControlsInfo
                         if detailCtl.Status.LogicalStatusId < firstLogicalStatusId then
                             detailCtl.Detail.Opacity <- 0.5
                         if StatusFilter.matchesFilter filter detailCtl.Status then
@@ -33,7 +33,7 @@ let fillDetails window (details:StackPanel) filterText statuses =
                      )
     details.Children.Clear()
     statuses 
-      |> Seq.map (fun status -> (status, StatusFunctions.GetNewestDisplayDateFromConversation status))
-      |> Seq.sortBy (fun (status, displayDate) -> displayDate)
+      |> Seq.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
+      |> Seq.sortBy (fun (sInfo, displayDate) -> displayDate)
       |> Seq.map fst
-      |> Seq.iter (fun rootStatus -> WpfUtils.dispatchMessage window (fun f -> showStatus rootStatus))
+      |> Seq.iter (fun rootStatusInfo -> WpfUtils.dispatchMessage window (fun f -> showStatus rootStatusInfo.Status))

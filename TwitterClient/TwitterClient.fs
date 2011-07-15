@@ -32,7 +32,7 @@ let appStateCtl = window.FindName("appState") :?> TextBlock
 let filterCtl = window.FindName("filter") :?> TextBox
 
 let setAppState state = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
-let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1))
+let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, [|p1|]))
 let setAppState2 (format:string) p1 p2 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1, p2))
 let setAppStateCount count = setAppState (sprintf "Done.. Count: %d" count)
 
@@ -41,8 +41,8 @@ DbFunctions.dbAccess <- StatusDb.statusesDb
 
 // status downloaded from Twitter
 Twitter.NewStatusDownloaded 
-    |> Event.add (fun (source,status) -> dbAccess.SaveStatus(source, status)
-                                         setAppState2 "Saving status {0} - {1}" status.UserName status.StatusId)
+    |> Event.add (fun sInfo -> dbAccess.SaveStatus(sInfo)
+                               setAppState1 "Saving status {0}" sInfo)
 
 twitterLimits.Start()
 
@@ -54,10 +54,9 @@ window.Loaded.Add(
         async {
           let rec asyncloop() = 
             setAppState "Loading.."
-            Twitter.loadAndSaveNewPersonalStatuses twitterLimits.IsSafeToQueryTwitterStatuses (Twitter.getLastStoredIds())    // or StatusesReplies.loadPublicStatuses
+            Twitter.loadNewPersonalStatuses twitterLimits.IsSafeToQueryTwitterStatuses (Twitter.getLastStoredIds())    // or StatusesReplies.loadPublicStatuses
                 |> Twitter.saveDownloadedStatuses
                 |> fun downloaded -> downloaded.NewStatuses
-                |> List.map (fun (status,source) -> status)
                 |> PreviewsState.userStatusesState.AddStatuses
             let list,trees = PreviewsState.userStatusesState.GetStatuses()
             

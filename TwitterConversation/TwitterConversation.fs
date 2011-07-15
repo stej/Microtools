@@ -76,7 +76,7 @@ let readStatuses() =
     else
         seq { yield readSingleStatus() }
 
-let private statusUpdated = new Event<WpfUtils.conversationControls * status>()
+let private statusUpdated = new Event<WpfUtils.conversationControls * statusInfo>()
 let StatusUpdated = statusUpdated.Publish
 
 let controlsCache = new System.Collections.Concurrent.ConcurrentDictionary<Int64, WpfUtils.conversationControls>()
@@ -126,9 +126,10 @@ let bindUpdate (controls:WpfUtils.conversationControls) status =
     )*)
 
 let addConversationCtls addTo rootStatus =
+    let status = rootStatus.Status
     WpfUtils.dispatchMessage window (fun _ -> let controls = WpfUtils.createConversationControls addTo panel |> WpfUtils.addUpdateButton
-                                              controlsCache.[rootStatus.StatusId] <- controls
-                                              bindUpdate controls rootStatus
+                                              controlsCache.[status.StatusId] <- controls
+                                              bindUpdate controls status
                                               //bindDelete controls rootStatus
                                               )
     rootStatus
@@ -137,9 +138,9 @@ let freshStatusColorer = (fun status -> status.Inserted >= lastUpdateall), Brush
 /// refreshes the status (all the conversation)
 /// @fnShouldColor = function that returns true if @color should be applied
 let refreshOneConversationEx (colorers:((status->bool)*SolidColorBrush) list) rootStatus =
-    let controls = controlsCache.[rootStatus.StatusId]
+    let controls = controlsCache.[rootStatus.Status.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
-        for detailCtl in WpfUtils.updateConversation controls rootStatus do
+        for detailCtl in WpfUtils.updateConversation controls rootStatus.Status do
             let color = colorers |> List.tryPick (fun (fn,color) -> if fn detailCtl.Status then Some(color) else None)
             match color with
             | None -> ()
@@ -170,8 +171,8 @@ window.Loaded.Add(fun _ ->
     //    |> Event.add (fun status -> setState (sprintf "Loading %s - %d" status.UserName status.StatusId))
     // status downloaded from Twitter
     Twitter.NewStatusDownloaded 
-        |> Event.add (fun (source,status) -> dbAccess.SaveStatus(source, status)
-                                             linfop "Downloaded {0}" status)
+        |> Event.add (fun sInfo -> dbAccess.SaveStatus(sInfo)
+                                   linfop "Downloaded {0}" sInfo)
     // some children loaded
     StatusesReplies.SomeChildrenLoaded 
         |> Event.add (fun rootStatus -> setNewConversationContent rootStatus)
@@ -180,12 +181,14 @@ window.Loaded.Add(fun _ ->
         setState "Reading.."
         let statuses = readStatuses()
         statuses
-            |> Seq.map ImagesSource.ensureStatusImage
-            |> Seq.iteri (fun i status -> setState (sprintf "Reading status %i" i)
-                                          status |> addConversationCtls WpfUtils.End
-                                                 |> StatusesReplies.loadSavedReplyTree
-                                                 |> ConversationState.conversationsState.AddConversation
-                                                 |> setNewConversationContent
+            |> ImagesSource.ensureStatusesImages
+            |> Seq.iteri (fun i sInfo -> setState (sprintf "Reading status %i" i)
+                                         let status = sInfo.Status
+                                         sInfo  |> addConversationCtls WpfUtils.End
+                                                |> (StatusesReplies.loadSavedReplyTree
+                                                    >> ConversationState.conversationsState.AddConversation
+                                                    >> Status.extractStatus
+                                                    >> setNewConversationContent)
             )
         setState (sprintf "Done.. Count: %d" (Seq.length statuses))
     } |> Async.Start
@@ -197,27 +200,28 @@ window.Loaded.Add(fun _ ->
 // all the searches
 let addNewlyFoundConversations() =
     readStatuses() 
-            |> Seq.filter (fun status -> not (ConversationState.conversationsState.ContainsStatus(status.StatusId)))
-            |> Seq.map ImagesSource.ensureStatusImage
-            |> Seq.sortBy (fun status -> status.StatusId)   // sort ascending, because the statuses are added to the beginning -> makes descending order
-            |> Seq.iter (fun status -> status |> addConversationCtls WpfUtils.Beginning
-                                                |> StatusesReplies.loadSavedReplyTree
-                                                |> ConversationState.conversationsState.AddConversation
-                                                |> setNewConversationContent)
+        |> Seq.filter (fun sInfo -> not (ConversationState.conversationsState.ContainsStatus(sInfo.Status.StatusId)))
+        |> ImagesSource.ensureStatusesImages
+        |> Seq.sortBy (fun sInfo -> sInfo.Status.StatusId)   // sort ascending, because the statuses are added to the beginning -> makes descending order
+        |> Seq.iter (fun sInfo -> sInfo |> addConversationCtls WpfUtils.Beginning
+                                        |> (StatusesReplies.loadSavedReplyTree
+                                            >> ConversationState.conversationsState.AddConversation
+                                            >> Status.extractStatus
+                                            >> setNewConversationContent))
 let addNewlyFoundStatuses() =
     linfo "Looking for newly found statuses"
     let checkConversationForNewChildren root =
         // newly added statuses; global for all the conversation
-        let news = new ResizeArray<status>()
+        let news = new ResizeArray<statusInfo>()
 
         // checks and adds new children for given status to @news list
-        let rec checkStatusForNewChildren status =
-            StatusesReplies.newlyAddedStatusesState.GetNewReplies (status, status.ChildrenIds())
-            |> Seq.map (doAndRet news.Add)
-            |> Seq.iter status.Children.Add
-            status.Children.Sort(fun s1 s2 -> s1.StatusId.CompareTo(s2.StatusId))
-            status.Children
-            |> Seq.iter checkStatusForNewChildren
+        let rec checkStatusForNewChildren sInfo =
+            StatusesReplies.newlyAddedStatusesState.GetNewReplies (sInfo, sInfo.ChildrenIds())
+                |> Seq.map (doAndRet news.Add)
+                |> Seq.iter sInfo.Status.Children.Add
+            sInfo.Status.Children.Sort(fun s1 s2 -> s1.Status.StatusId.CompareTo(s2.Status.StatusId))
+            sInfo.Status.Children
+                |> Seq.iter checkStatusForNewChildren
         checkStatusForNewChildren root
         (root, news)
 
@@ -225,11 +229,14 @@ let addNewlyFoundStatuses() =
         news |> Seq.exists (fun child -> child.StatusId = status.StatusId)
     let newlyAddedStatusColorer news = 
         statusInNews news, Brushes.LightSalmon                              // fn that takes one param - news and returns tuple; frst is fn taking status
+
     ConversationState.conversationsState.GetConversations()
-    |> List.map checkConversationForNewChildren
-    |> List.filter (fun (root,newstats) -> newstats.Count > 0)
-    |> List.map (doAndRet (fun (root,newstats) -> linfo (sprintf "%s %s has NEW STATUSES. Count: %d" root.UserName root.Text newstats.Count)))
-    |> List.iter (fun (root,newstats) -> refreshOneConversationEx [newlyAddedStatusColorer newstats; freshStatusColorer] root)
+        |> List.map checkConversationForNewChildren
+        |> List.filter (fun (root,newstats) -> newstats.Count > 0)
+        |> List.map (doAndRet (fun (root,newstats) -> linfo (sprintf "%s %s has NEW STATUSES. Count: %d" root.Status.UserName root.Status.Text newstats.Count)))
+        |> List.iter (fun (root,newstats) -> 
+            let statuses = newstats |> Seq.map Status.extractStatus
+            refreshOneConversationEx [newlyAddedStatusColorer statuses; freshStatusColorer] root)
     linfo "Looking for newly found statuses.. Done"    
     
 let mutable (cts:CancellationTokenSource) = null
@@ -293,7 +300,7 @@ updateAll.Click.Add(fun _ ->
                 | statusId::rest ->
                     let! limitSafe = twitterLimits.AsyncIsSafeToQueryTwitter()
                     if limitSafe then 
-                        let status = ConversationState.conversationsState.GetConversation(statusId)
+                        let status = ConversationState.conversationsState.GetConversation(statusId).Status
                         setState (sprintf "Updating status %s - %d" status.UserName status.StatusId)
                         do! getAsyncConversationUpdate (controlsCache.[statusId]) status
                         return! update rest
@@ -303,7 +310,7 @@ updateAll.Click.Add(fun _ ->
                         return! update statusIds
         }
         let ids = ConversationState.conversationsState.GetConversations()
-                    |> List.map (fun s -> s.StatusId)
+                    |> List.map (fun s -> s.Status.StatusId)
                     |> List.sortBy (fun s -> -s)
         for id in ids do showConversationWillBeProcessed (controlsCache.[id].Wrapper)
         do! update ids

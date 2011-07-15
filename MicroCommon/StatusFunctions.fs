@@ -2,11 +2,14 @@
 open Status
 
 /// function that would not be needed if Children were immutable...
-let rec cloneStatus status =
-    let ret = { status with Children = new ResizeArray<status>() }   // fake
-    let children = status.Children.ToArray() |> Array.map cloneStatus
-    ret.Children.Clear()
-    ret.Children.AddRange(children)
+let rec cloneStatus statusInfo =
+    let children = statusInfo.Status.Children.ToArray() |> Array.map cloneStatus
+
+    let ret = { 
+        statusInfo with Status = { statusInfo.Status with Children = new ResizeArray<statusInfo>() }   // fake
+    }
+    ret.Status.Children.Clear()
+    ret.Status.Children.AddRange(children)
     ret
 
 (*let printStatus root =
@@ -23,6 +26,7 @@ let StatusSource2Int source =
      | Public -> 3
      | RequestedConversation -> 4
      | Retweet -> 5
+     | Undefined -> 1000
 
 let Int2StatusSource source =
     match source with
@@ -31,38 +35,39 @@ let Int2StatusSource source =
      | 3 -> Public
      | 4 -> RequestedConversation
      | 5 -> Retweet
+     | 1000 -> Undefined
      | _ -> failwith (sprintf "Value %A can not be converted to StatusSource" source)
      
 // takes status with children and returns Some(status) with StatusId equal to statusId or None if there is no such status in the tree
 let FindStatusById statusId tree =
     let rec get_ currStatus =
-        if currStatus.StatusId = statusId then
+        if currStatus.Status.StatusId = statusId then
             Some(currStatus)
         else
-            let rec traverseChildren (children: status list) =
+            let rec traverseChildren (children: statusInfo list) =
                 match children with
                 | [] -> None
                 | c::oth -> match get_ c with 
                             |Some(status) -> Some(status)
                             |None -> traverseChildren oth
-            currStatus.Children |> Seq.toList |> traverseChildren 
+            currStatus.Status.Children |> Seq.toList |> traverseChildren 
     get_ tree
-let FindStatusInConversationsById statusId (trees: status list) =
+let FindStatusInConversationsById statusId (trees: statusInfo list) =
     trees |> List.tryPick (FindStatusById statusId)
     
-let Flatten (statuses:status seq) =
-    let rec flatten (statuses_: status seq) =
+let Flatten (statuses:statusInfo seq) =
+    let rec flatten (statuses_: statusInfo seq) =
         seq {
             for s in statuses_ do
                 yield s
-                yield! (flatten s.Children)
+                yield! (flatten s.Status.Children)
         }
     flatten statuses
 
 let getId status =
     status.StatusId
 
-let GetNewestDisplayDateFromConversation (status:status) =
-    Flatten [status] |> Seq.map (fun status -> status.DisplayDate)
-                     |> Seq.sortBy (fun date -> -date.Ticks) 
-                     |> Seq.nth 0
+let GetNewestDisplayDateFromConversation (sInfo:statusInfo) =
+    Flatten [sInfo] |> Seq.map (fun info -> info.Status.DisplayDate)
+                    |> Seq.sortBy (fun date -> -date.Ticks) 
+                    |> Seq.nth 0

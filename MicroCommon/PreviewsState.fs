@@ -13,20 +13,20 @@ open StatusFunctions
 ///   - if any two statuses share the same parent, they are added to the parent's collection; there is no duplication
 let addAndRootStatuses currStatuses currStatusesWithRoots toAdd =
     let currIds = Flatten currStatusesWithRoots 
-                  |> Seq.map getId 
+                  |> Seq.map (extractStatus>>getId)
                   |> Set.ofSeq
     /// Seq.filter - statuses that should be added and are not contained even in conversation roots        
     let rooted = toAdd 
-                    |> Seq.filter (fun status -> not (currIds.Contains(status.StatusId)))
-                    |> Seq.map (fun status -> ldbgp2 "Add {0} - {1}" status.StatusId status.UserName; status)
+                    |> Seq.filter (fun sInfo -> not (currIds.Contains(sInfo.Status.StatusId)))
+                    |> Seq.map (fun sInfo -> ldbgp2 "Add {0} - {1}" sInfo.Status.StatusId sInfo.Status.UserName; sInfo)
                     |> Seq.toList
                     |> StatusesReplies.rootConversationsWithDownload currStatusesWithRoots
     let plain = currStatuses @ (Seq.toList toAdd)
     (plain, rooted)
   
 type PreviewStateMessages =
-| AddStatuses of status seq * AsyncReplyChannel<unit>
-| GetStatuses of AsyncReplyChannel<status list * status list>
+| AddStatuses of statusInfo seq * AsyncReplyChannel<unit>
+| GetStatuses of AsyncReplyChannel<statusInfo list * statusInfo list>
 | GetFirstStatusId of AsyncReplyChannel<Int64 option>
 | ClearStatuses
 
@@ -49,7 +49,7 @@ type UserStatusesState() =
                     return! loop statuses statusesWithRoots
                 | GetFirstStatusId(chnl) ->
                     let id = if statuses.Length > 0 then 
-                                let first = Flatten statuses |> Seq.sortBy (fun s -> s.LogicalStatusId) |> Seq.nth 0
+                                let first = Flatten statuses |> Seq.map extractStatus |> Seq.sortBy (fun s -> s.LogicalStatusId) |> Seq.nth 0
                                 Some(first.StatusId)
                              else None
                     chnl.Reply(id)

@@ -186,21 +186,22 @@ let addUpdateButton (controls:conversationControls) =
     controls.Wrapper.Children.Add(update) |> ignore
     { controls with UpdateButton = update }
     
-let updateConversation (controls:conversationControls) status =
+let updateConversation (controls:conversationControls) (updatedStatus:status) =
     controls.Statuses.Children.Clear()
 
     let conversationCtl = new ResizeArray<_>()
+
     let rec addTweets depth currentStatus =
         let detail, img = createDetail currentStatus
         img.Margin <- new Thickness(depth * (pictureSize+2.), 0., 0., 5.)
         controls.Statuses.Children.Add(detail) |> ignore
         currentStatus.Children 
-            |> Seq.sortBy (fun s -> s.StatusId) 
-            |> Seq.iter (fun s -> addTweets (depth+1.) s)
+            |> Seq.sortBy (fun s -> s.Status.StatusId) 
+            |> Seq.iter (fun s -> addTweets (depth+1.) s.Status)
         conversationCtl.Add({ Detail = detail
                               Img = img
                               Status = currentStatus})
-    addTweets 0. status
+    addTweets 0. updatedStatus
     conversationCtl |> Seq.toList
 
 /// partial, set just the function; remove

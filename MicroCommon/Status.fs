@@ -12,6 +12,8 @@ type StatusSource =
    | Search   // downloaded during search
    | Public   // public statuses
    | Retweet
+   | Undefined
+   override x.ToString() = String.Format("{0}", x)
 
 type retweetInfo = { 
       Id : string
@@ -31,7 +33,10 @@ type retweetInfo = {
       UserIsFollowing      : bool
       Inserted             : DateTime
 }
-type status = { Id : string; StatusId : Int64; App : string; Account : string
+type status = { Id : string;
+                StatusId : int64;
+                App : string;
+                Account : string
                 Text : string
                 Date : DateTime
                 UserName: string
@@ -49,7 +54,7 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                 UserIsFollowing : bool
                 Hidden : bool
                 Inserted : DateTime
-                Children : ResizeArray<status>
+                Children : ResizeArray<statusInfo>
                 RetweetInfo : retweetInfo option
               }
               override x.ToString() =
@@ -59,14 +64,19 @@ type status = { Id : string; StatusId : Int64; App : string; Account : string
                     x.UserName,
                     (if x.Text.Length < 40 then x.Text else (x.Text.Substring(0, 40) + "..."))
                 )
-              member x.ChildrenIds () =
-                x.Children |> Seq.map (fun s -> s.StatusId)
               member x.IsRetweet () =
                 match x.RetweetInfo with
                 | None -> false
                 | _ -> true
               member x.DisplayDate = if x.RetweetInfo.IsSome then x.RetweetInfo.Value.Date else x.Date
               member x.LogicalStatusId = if x.RetweetInfo.IsSome then x.RetweetInfo.Value.RetweetId else x.StatusId
+and statusInfo = {
+                   Status : status
+                   Source : StatusSource
+                 }
+                 override x.ToString() = String.Format("{0}-{1}", x.Status, x.Source)
+                 member x.ChildrenIds () =
+                    x.Status.Children |> Seq.map (fun s -> s.Status.StatusId)
         
 let getEmptyStatus() =
     { Id = null; 
@@ -90,6 +100,9 @@ let getEmptyStatus() =
       UserIsFollowing = false
       Hidden = false
       Inserted = DateTime.Now
-      Children = new ResizeArray<status>()
+      Children = new ResizeArray<statusInfo>()
       RetweetInfo = None
     }
+
+let extractStatus statusInfo = 
+    statusInfo.Status

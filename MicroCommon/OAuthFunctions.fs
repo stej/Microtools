@@ -27,7 +27,7 @@ let xml2Status (xml:XmlNode) =
       UserIsFollowing      = getValue "user/following" |> BoolOrDefault false
       Hidden               = false                                      // change?
       Inserted             = DateTime.Now
-      Children             = new ResizeArray<status>()
+      Children             = new ResizeArray<statusInfo>()
       RetweetInfo          = None
     }
 let xml2Retweet (xml:XmlNode) = 
@@ -72,6 +72,6 @@ let xml2Retweet (xml:XmlNode) =
       UserIsFollowing      = getValue "retweeted_status/user/following" |> BoolOrDefault false
       Hidden               = false                                      // change?
       Inserted             = DateTime.Now
-      Children             = new ResizeArray<status>()
+      Children             = new ResizeArray<statusInfo>()
       RetweetInfo          = Some(xml2RetweetInfo xml)
     }

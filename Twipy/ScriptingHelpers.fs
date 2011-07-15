@@ -20,16 +20,16 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
     let fillPictures = DisplayStatus.fillPictures wrapContent
 
     member x.loadTree status = StatusesReplies.loadSavedReplyTree status
-    member x.show (statuses: status seq) = 
+    member x.show (statuses: statusInfo seq) = 
         WpfUtils.dispatchMessage window (fun _ -> fillPictures statuses
                                                   fillDetails statuses)
 
     // print and show status together
     member x.show (o: Object) = 
         match o with
-        | :? status as status -> 
-            WpfUtils.dispatchMessage window (fun _ -> fillPictures [status]
-                                                      fillDetails [status])
+        | :? statusInfo as sInfo-> 
+            WpfUtils.dispatchMessage window (fun _ -> fillPictures [sInfo]
+                                                      fillDetails [sInfo])
         | _ -> 
             WpfUtils.dispatchMessage window (fun _ -> 
                 wrapContent.Children.Clear()
@@ -41,7 +41,7 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
             )
     member x.find text =
         StatusDb.statusesDb.GetStatusesFromSql(sprintf "select * from Status where Text like '%%%s%%' or UserName like '%%%s%%'" text text)
-    member x.exportToHtml (statuses: status seq) =
+    member x.exportToHtml (statuses: statusInfo seq) =
         let file = System.IO.Path.GetTempFileName().Replace(".tmp", ".html")
         let processText text =
             let parts = seq { 
@@ -55,6 +55,7 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
             }
             String.Join("", parts)
         let rec processStatus depth status =
+            let rawStatus = status.Status
             let text = sprintf "
                             <div class=\"status\" style=\"margin-left:%dem\">
                                 <img src=\"%s\" />
@@ -65,9 +66,9 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
                                   </div>
                                   <span>%s</span>
                                 </div>
-                            </div>" (depth*3) status.UserProfileImage status.UserName status.StatusId status.StatusId (status.Date.ToString("yyyy-MM-dd HH:mm")) (processText status.Text)
+                            </div>" (depth*3) rawStatus.UserProfileImage rawStatus.UserName rawStatus.StatusId rawStatus.StatusId (rawStatus.Date.ToString("yyyy-MM-dd HH:mm")) (processText rawStatus.Text)
             System.IO.File.AppendAllText(file, text)
-            status.Children |> Seq.iter (processStatus (depth+1))
+            rawStatus.Children |> Seq.iter (processStatus (depth+1))
         System.IO.File.AppendAllText(file, "<html>
             <head>
                 <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />
@@ -86,10 +87,9 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
         System.Diagnostics.Process.Start(file)
     member x.DownloadAndSavePersonalStatuses() = 
         Twitter.getLastStoredIds()
-            |> Twitter.loadAndSaveNewPersonalStatuses twitterLimits.IsSafeToQueryTwitterStatuses
+            |> Twitter.loadNewPersonalStatuses twitterLimits.IsSafeToQueryTwitterStatuses
             |> Twitter.saveDownloadedStatuses
             |> fun downloaded -> downloaded.NewStatuses
-            |> List.map (fun (status,_) -> status)
     member x.LoadConversations(maxConversations) = StatusDb.statusesDb.GetRootStatusesHavingReplies(maxConversations)
     member x.LoadChildren(status) = StatusesReplies.loadSavedReplyTree(status)
     member x.LoadLastStatuses(maxStatuses) = StatusDb.statusesDb.GetTimelineStatusesBefore(maxStatuses, Int64.MaxValue)
