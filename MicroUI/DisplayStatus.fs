@@ -26,9 +26,9 @@ let fillDetails window (details:StackPanel) filterText statuses =
         let controls = WpfUtils.createConversationControls WpfUtils.End details
         WpfUtils.setNewConversation controls rootStatus
         |> Seq.iter (fun detailCtl ->   //type = conversationNodeControlsInfo
-                        if detailCtl.Status.LogicalStatusId < firstLogicalStatusId then
+                        if detailCtl.StatusInfo.Status.LogicalStatusId < firstLogicalStatusId then
                             detailCtl.Detail.Opacity <- 0.5
-                        if StatusFilter.matchesFilter filter detailCtl.Status then
+                        if StatusFilter.matchesFilter filter detailCtl.StatusInfo then
                             detailCtl.Detail.Opacity <- 0.2
                      )
     details.Children.Clear()
@@ -36,4 +36,4 @@ let fillDetails window (details:StackPanel) filterText statuses =
       |> Seq.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
       |> Seq.sortBy (fun (sInfo, displayDate) -> displayDate)
       |> Seq.map fst
-      |> Seq.iter (fun rootStatusInfo -> WpfUtils.dispatchMessage window (fun f -> showStatus rootStatusInfo.Status))
+      |> Seq.iter (fun rootStatusInfo -> WpfUtils.dispatchMessage window (fun f -> showStatus rootStatusInfo))

@@ -22,10 +22,14 @@ let defaultConfigFilter =
 let configFiltersMap = configFilters |> Map.ofSeq
 
 // returns info about if the status matches the filter
-let matchesFilter (filter:statusFilter) (status:status) = 
+let matchesFilter (filter:statusFilter) (sInfo:statusInfo) = 
+    let status = sInfo.Status
+    let source = sInfo.Source
     let matchItem = function 
                     | (UserName, text) ->
-                        let user = match status.RetweetInfo with | Some(r) -> r.UserName | None -> status.UserName
+                        let user = match status.RetweetInfo with 
+                                    | Some(r) -> r.UserName 
+                                    | None -> status.UserName
                         System.String.Compare(user, text, StringComparison.InvariantCultureIgnoreCase) = 0
                     | (Text, text) -> 
                         let left = if text.StartsWith("*") then "" else "\\b"
@@ -33,8 +37,12 @@ let matchesFilter (filter:statusFilter) (status:status) =
                         let right = if text.EndsWith("*") then "" else "\\b"
                         let pattern = sprintf "%s%s%s" left mid right
                         Regex.Match(status.Text, pattern, RegexOptions.IgnoreCase).Success
-                    | (RTs,_) -> 
-                        status.RetweetInfo.IsSome // todo - include timeline statuses
+                    | (RTs,_) ->
+                        // timeline and requested conversation (even when retweeted) don't match the filter
+                        match source with
+                        | Timeline
+                        | StatusSource.RequestedConversation -> false
+                        | _ -> status.RetweetInfo.IsSome
                     | (TimelineStatuses, _) -> 
                         status.RetweetInfo.IsNone
     let rec matchrec filter =

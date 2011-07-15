@@ -134,14 +134,14 @@ let addConversationCtls addTo rootStatus =
                                               )
     rootStatus
     
-let freshStatusColorer = (fun status -> status.Inserted >= lastUpdateall), Brushes.Yellow
+let freshStatusColorer = (fun sInfo -> sInfo.Status.Inserted >= lastUpdateall), Brushes.Yellow
 /// refreshes the status (all the conversation)
 /// @fnShouldColor = function that returns true if @color should be applied
-let refreshOneConversationEx (colorers:((status->bool)*SolidColorBrush) list) rootStatus =
+let refreshOneConversationEx (colorers:((statusInfo->bool)*SolidColorBrush) list) rootStatus =
     let controls = controlsCache.[rootStatus.Status.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
-        for detailCtl in WpfUtils.updateConversation controls rootStatus.Status do
-            let color = colorers |> List.tryPick (fun (fn,color) -> if fn detailCtl.Status then Some(color) else None)
+        for detailCtl in WpfUtils.updateConversation controls rootStatus do
+            let color = colorers |> List.tryPick (fun (fn,color) -> if fn detailCtl.StatusInfo then Some(color) else None)
             match color with
             | None -> ()
             | Some(c) -> detailCtl.Detail.Background <- c
@@ -150,7 +150,7 @@ let refreshOneConversation rootStatus =
     refreshOneConversationEx [freshStatusColorer] rootStatus
 
 let setNewConversationContent rootStatus =
-    let controls = controlsCache.[rootStatus.StatusId]
+    let controls = controlsCache.[rootStatus.Status.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
         WpfUtils.setNewConversation controls rootStatus |> ignore
     )
@@ -187,7 +187,6 @@ window.Loaded.Add(fun _ ->
                                          sInfo  |> addConversationCtls WpfUtils.End
                                                 |> (StatusesReplies.loadSavedReplyTree
                                                     >> ConversationState.conversationsState.AddConversation
-                                                    >> Status.extractStatus
                                                     >> setNewConversationContent)
             )
         setState (sprintf "Done.. Count: %d" (Seq.length statuses))
@@ -206,7 +205,6 @@ let addNewlyFoundConversations() =
         |> Seq.iter (fun sInfo -> sInfo |> addConversationCtls WpfUtils.Beginning
                                         |> (StatusesReplies.loadSavedReplyTree
                                             >> ConversationState.conversationsState.AddConversation
-                                            >> Status.extractStatus
                                             >> setNewConversationContent))
 let addNewlyFoundStatuses() =
     linfo "Looking for newly found statuses"
@@ -225,8 +223,8 @@ let addNewlyFoundStatuses() =
         checkStatusForNewChildren root
         (root, news)
 
-    let statusInNews news status =                                          // returns true if passed status is news list
-        news |> Seq.exists (fun child -> child.StatusId = status.StatusId)
+    let statusInNews news sInfo =                                          // returns true if passed status is news list
+        news |> Seq.exists (fun childInfo -> childInfo.Status.StatusId = sInfo.Status.StatusId)
     let newlyAddedStatusColorer news = 
         statusInNews news, Brushes.LightSalmon                              // fn that takes one param - news and returns tuple; frst is fn taking status
 
@@ -234,9 +232,7 @@ let addNewlyFoundStatuses() =
         |> List.map checkConversationForNewChildren
         |> List.filter (fun (root,newstats) -> newstats.Count > 0)
         |> List.map (doAndRet (fun (root,newstats) -> linfo (sprintf "%s %s has NEW STATUSES. Count: %d" root.Status.UserName root.Status.Text newstats.Count)))
-        |> List.iter (fun (root,newstats) -> 
-            let statuses = newstats |> Seq.map Status.extractStatus
-            refreshOneConversationEx [newlyAddedStatusColorer statuses; freshStatusColorer] root)
+        |> List.iter (fun (root,newstats) -> refreshOneConversationEx [newlyAddedStatusColorer newstats; freshStatusColorer] root)
     linfo "Looking for newly found statuses.. Done"    
     
 let mutable (cts:CancellationTokenSource) = null

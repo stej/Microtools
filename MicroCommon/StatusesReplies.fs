@@ -61,7 +61,7 @@ let newlyAddedStatusesState = new NewlyFoundReplies()
 
 let private statusAdded = new Event<status>()
 let StatusAdded = statusAdded.Publish
-let private someChildrenLoaded = new Event<status>()
+let private someChildrenLoaded = new Event<statusInfo>()
 let SomeChildrenLoaded = someChildrenLoaded.Publish
 let private loadingStatusReplyTree = new Event<status>()
 let LoadingStatusReplyTree = loadingStatusReplyTree.Publish
@@ -71,7 +71,7 @@ let loadSavedReplyTree initialStatusInfo =
         let replies = dbAccess.ReadStatusReplies sInfo.Status.StatusId
         replies |> Seq.iter (fun reply -> sInfo.Status.Children.Add(reply)
                                           statusAdded.Trigger(reply.Status))
-        someChildrenLoaded.Trigger(initialStatusInfo.Status)
+        someChildrenLoaded.Trigger(initialStatusInfo)
         replies |> Seq.iter addReplies
         loadingStatusReplyTree.Trigger(initialStatusInfo.Status)
     addReplies initialStatusInfo
@@ -110,7 +110,7 @@ let findReplies initialStatus =
                                         ldbgp "Add {0}" processedStatus.StatusId
                                         status.Children.Add(s)
                                         statusAdded.Trigger(processedStatus))
-        someChildrenLoaded.Trigger(initialStatus.Status)
+        someChildrenLoaded.Trigger(initialStatus)
         status.Children |> Seq.iter (fun s -> ldbgp "Call fn {0}" s.Status.StatusId
                                               findRepliesIn (depth+1) s)
 

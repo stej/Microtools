@@ -149,7 +149,7 @@ type conversationControls = {
 type conversationNodeControlsInfo = {
     Detail : StackPanel
     Img : Border
-    Status: status
+    StatusInfo: statusInfo
 }
 
 type ConversationControlPlacement =
@@ -186,21 +186,22 @@ let addUpdateButton (controls:conversationControls) =
     controls.Wrapper.Children.Add(update) |> ignore
     { controls with UpdateButton = update }
     
-let updateConversation (controls:conversationControls) (updatedStatus:status) =
+let updateConversation (controls:conversationControls) (updatedStatus:statusInfo) =
     controls.Statuses.Children.Clear()
 
     let conversationCtl = new ResizeArray<_>()
 
     let rec addTweets depth currentStatus =
-        let detail, img = createDetail currentStatus
+        let detail, img = createDetail currentStatus.Status
         img.Margin <- new Thickness(depth * (pictureSize+2.), 0., 0., 5.)
         controls.Statuses.Children.Add(detail) |> ignore
-        currentStatus.Children 
-            |> Seq.sortBy (fun s -> s.Status.StatusId) 
-            |> Seq.iter (fun s -> addTweets (depth+1.) s.Status)
+        currentStatus.Status.Children 
+            |> Seq.map (fun sInfo -> (sInfo, sInfo.Status.StatusId))
+            |> Seq.sortBy (fun (_,id) -> id) 
+            |> Seq.iter (fun s -> addTweets (depth+1.) (fst s))
         conversationCtl.Add({ Detail = detail
                               Img = img
-                              Status = currentStatus})
+                              StatusInfo = currentStatus})
     addTweets 0. updatedStatus
     conversationCtl |> Seq.toList
 
