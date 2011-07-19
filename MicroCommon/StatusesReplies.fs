@@ -69,7 +69,7 @@ let LoadingStatusReplyTree = loadingStatusReplyTree.Publish
 let loadSavedReplyTree initialStatusInfo = 
     let rec addReplies sInfo = 
         let replies = dbAccess.ReadStatusReplies sInfo.Status.StatusId
-        replies |> Seq.iter (fun reply -> sInfo.Status.Children.Add(reply)
+        replies |> Seq.iter (fun reply -> sInfo.Children.Add(reply)
                                           statusAdded.Trigger(reply.Status))
         someChildrenLoaded.Trigger(initialStatusInfo)
         replies |> Seq.iter addReplies
@@ -84,7 +84,7 @@ let findReplies initialStatus =
             ldbg "status from node"
             node |> xpathValue "id" |> Int64OrDefault 
 
-        ldbgp2 "Find repl {0}, children: {1}" status.StatusId status.Children.Count
+        ldbgp2 "Find repl {0}, children: {1}" status.StatusId sInfo.Children.Count
         let name, id = status.UserName, status.StatusId
         let foundMentions =
             search name id
@@ -103,16 +103,16 @@ let findReplies initialStatus =
         let statuses = 
             foundMentions
             |> List.filter (fun sInfo -> sInfo.Status.ReplyTo = id)                               //get only reply to current status
-        let countBefore = status.Children.Count
+        let countBefore = sInfo.Children.Count
         statuses |> List.iter (fun s -> let processedStatus = s.Status
-                                        if status.Children.Exists(fun s0 -> s0.Status.StatusId = processedStatus.StatusId) then
+                                        if sInfo.Children.Exists(fun s0 -> s0.Status.StatusId = processedStatus.StatusId) then
                                            lerrp2 "ERROR: exists {0} {1}" processedStatus.StatusId processedStatus.Text
                                         ldbgp "Add {0}" processedStatus.StatusId
-                                        status.Children.Add(s)
+                                        sInfo.Children.Add(s)
                                         statusAdded.Trigger(processedStatus))
         someChildrenLoaded.Trigger(initialStatus)
-        status.Children |> Seq.iter (fun s -> ldbgp "Call fn {0}" s.Status.StatusId
-                                              findRepliesIn (depth+1) s)
+        sInfo.Children |> Seq.iter (fun s -> ldbgp "Call fn {0}" s.Status.StatusId
+                                             findRepliesIn (depth+1) s)
 
     findRepliesIn 0 initialStatus
     initialStatus
@@ -151,11 +151,11 @@ let rootConversations (statusDownloader: int64 -> statusInfo) baseStatuses (toRo
                 match parent with
                 |None -> ldbgp2 "Parent for status {0} {1} not found, will be loaded" currSubtreeStatus.UserName currSubtreeStatus.StatusId
                          let newRoot = statusDownloader currSubtreeStatus.ReplyTo    // there is no parent -> load it and add current as child
-                         newRoot.Status.Children.Add(currentSubtree)
+                         newRoot.Children.Add(currentSubtree)
                          append newRoot
                 |Some(p) ->
                          ldbg (sprintf "Subtree %s %d found parent %s %d" currSubtreeStatus.UserName currSubtreeStatus.StatusId p.Status.UserName p.Status.StatusId)
-                         p.Status.Children.Add(currentSubtree)
+                         p.Children.Add(currentSubtree)
                          resStatuses // return unchanged resStatuses
         match StatusFunctions.FindStatusInConversationsById currStatus.Status.StatusId resStatuses with
         |None    -> append currStatus
@@ -178,4 +178,5 @@ let rootConversationsWithNoDownload = rootConversations (fun id ->
     match dbAccess.ReadStatusWithId(id) with
      | Some(status) -> status
      | None -> { Status = Status.getEmptyStatus()
+                 Children = new ResizeArray<statusInfo>()
                  Source = Undefined })

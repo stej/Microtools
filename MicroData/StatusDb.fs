@@ -64,13 +64,14 @@ let private readStatus (rd:SQLiteDataReader) =
                   UserIsFollowing    = bol rd "UserIsFollowing"
                   Hidden             = bol rd "Hidden"
                   Inserted           = date rd "Inserted"
-                  Children           = new ResizeArray<statusInfo>()
                   RetweetInfo        = None
       }
       DbRetweetInfoId = (str rd "RetweetInfoId")
       DbSource = (intt rd "Source" |> Int2StatusSource)}
 let dbStatus2statusInfo dbStatus = 
-    { Status = dbStatus.DbStatus; Source = dbStatus.DbSource }
+    { Status = dbStatus.DbStatus
+      Children = new ResizeArray<statusInfo>()
+      Source = dbStatus.DbSource }
 
 let useDb useFce = 
     use conn = new System.Data.SQLite.SQLiteConnection()

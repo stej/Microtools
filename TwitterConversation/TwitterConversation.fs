@@ -216,9 +216,9 @@ let addNewlyFoundStatuses() =
         let rec checkStatusForNewChildren sInfo =
             StatusesReplies.newlyAddedStatusesState.GetNewReplies (sInfo, sInfo.ChildrenIds())
                 |> Seq.map (doAndRet news.Add)
-                |> Seq.iter sInfo.Status.Children.Add
-            sInfo.Status.Children.Sort(fun s1 s2 -> s1.Status.StatusId.CompareTo(s2.Status.StatusId))
-            sInfo.Status.Children
+                |> Seq.iter sInfo.Children.Add
+            sInfo.Children.Sort(fun s1 s2 -> s1.Status.StatusId.CompareTo(s2.Status.StatusId))
+            sInfo.Children
                 |> Seq.iter checkStatusForNewChildren
         checkStatusForNewChildren root
         (root, news)

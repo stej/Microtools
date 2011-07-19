@@ -195,7 +195,7 @@ let updateConversation (controls:conversationControls) (updatedStatus:statusInfo
         let detail, img = createDetail currentStatus.Status
         img.Margin <- new Thickness(depth * (pictureSize+2.), 0., 0., 5.)
         controls.Statuses.Children.Add(detail) |> ignore
-        currentStatus.Status.Children 
+        currentStatus.Children 
             |> Seq.map (fun sInfo -> (sInfo, sInfo.Status.StatusId))
             |> Seq.sortBy (fun (_,id) -> id) 
             |> Seq.iter (fun s -> addTweets (depth+1.) (fst s))

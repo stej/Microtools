@@ -32,6 +32,7 @@ let getStatus source (id:Int64) =
                                    |null -> log Error (sprintf "status for %d is empty!" id)
                                             None
                                    |node -> let ret = { Status = OAuthFunctions.xml2Status node
+                                                        Children = new ResizeArray<statusInfo>()
                                                         Source = source }
                                             newStatusDownloaded.Trigger(ret)
                                             ldbgp "Downloaded {0}" id
@@ -40,7 +41,9 @@ let getStatus source (id:Int64) =
 let getStatusOrEmpty source (id:Int64) =
     match getStatus source id with
     |Some(s) -> s
-    |None -> { Status = Status.getEmptyStatus(); Source = Undefined }
+    |None -> { Status = Status.getEmptyStatus()
+               Children = new ResizeArray<statusInfo>()
+               Source = Undefined }
 
 let search name (sinceId:Int64) =
     ldbgp "searching from {0}" sinceId
@@ -174,7 +177,9 @@ let loadNewPersonalStatuses fIsSaveToQueryStatuses (lastTimelineId, lastMentionI
         if fIsSaveToQueryStatuses() then
             let ret = loader lastId
             if ret.Length > 0 then 
-                ret, Some({ Status = ret |> List.maxBy getStatusId; Source = Timeline })
+                ret, Some({ Status = ret |> List.maxBy getStatusId
+                            Children = new ResizeArray<statusInfo>()
+                            Source = Timeline })
             else
                 ret, None
         else
@@ -202,7 +207,9 @@ let loadNewPersonalStatuses fIsSaveToQueryStatuses (lastTimelineId, lastMentionI
         // publish collection without duplicates
         NewStatuses = statusesCache.Values |> Seq.toList 
                                            |> List.sortBy (fun (status,_) -> status.DisplayDate)
-                                           |> List.map (fun (status, source) -> { Status = status; Source = source })
+                                           |> List.map (fun (status, source) -> { Status = status
+                                                                                  Children = new ResizeArray<statusInfo>()
+                                                                                  Source = source })
         LastFriendStatus = lastF
         LastMentionStatus = lastM
         LastRetweet = lastR

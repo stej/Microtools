@@ -55,8 +55,9 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
             }
             String.Join("", parts)
         let rec processStatus depth status =
-            let rawStatus = status.Status
-            let text = sprintf "
+            let text = 
+                let rawStatus = status.Status
+                sprintf "
                             <div class=\"status\" style=\"margin-left:%dem\">
                                 <img src=\"%s\" />
                                 <div class=\"body\">
@@ -68,7 +69,7 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
                                 </div>
                             </div>" (depth*3) rawStatus.UserProfileImage rawStatus.UserName rawStatus.StatusId rawStatus.StatusId (rawStatus.Date.ToString("yyyy-MM-dd HH:mm")) (processText rawStatus.Text)
             System.IO.File.AppendAllText(file, text)
-            rawStatus.Children |> Seq.iter (processStatus (depth+1))
+            status.Children |> Seq.iter (processStatus (depth+1))
         System.IO.File.AppendAllText(file, "<html>
             <head>
                 <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />

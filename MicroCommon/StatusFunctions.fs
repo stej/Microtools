@@ -3,13 +3,13 @@ open Status
 
 /// function that would not be needed if Children were immutable...
 let rec cloneStatus statusInfo =
-    let children = statusInfo.Status.Children.ToArray() |> Array.map cloneStatus
+    let children = statusInfo.Children.ToArray() |> Array.map cloneStatus
 
     let ret = { 
-        statusInfo with Status = { statusInfo.Status with Children = new ResizeArray<statusInfo>() }   // fake
+        statusInfo with Children = new ResizeArray<statusInfo>()
     }
-    ret.Status.Children.Clear()
-    ret.Status.Children.AddRange(children)
+    ret.Children.Clear()
+    ret.Children.AddRange(children)
     ret
 
 (*let printStatus root =
@@ -50,7 +50,7 @@ let FindStatusById statusId tree =
                 | c::oth -> match get_ c with 
                             |Some(status) -> Some(status)
                             |None -> traverseChildren oth
-            currStatus.Status.Children |> Seq.toList |> traverseChildren 
+            currStatus.Children |> Seq.toList |> traverseChildren 
     get_ tree
 let FindStatusInConversationsById statusId (trees: statusInfo list) =
     trees |> List.tryPick (FindStatusById statusId)
@@ -60,7 +60,7 @@ let Flatten (statuses:statusInfo seq) =
         seq {
             for s in statuses_ do
                 yield s
-                yield! (flatten s.Status.Children)
+                yield! (flatten s.Children)
         }
     flatten statuses
 
@@ -73,8 +73,8 @@ let GetNewestDisplayDateFromConversation (sInfo:statusInfo) =
                     |> Seq.nth 0
 
 let DirectChildHasId sInfo id =
-     sInfo.Status.Children |> Seq.exists (fun child -> child.Status.StatusId = id) //filter ids not in Children
+     sInfo.Children |> Seq.exists (fun child -> child.Status.StatusId = id) //filter ids not in Children
 
 let AnyChildHasId sInfo id =
-    let flattened = sInfo.Status.Children |> Flatten
+    let flattened = sInfo.Children |> Flatten
     flattened |> Seq.exists (fun child -> child.Status.StatusId = id) //filter ids not in Children or deeper in children

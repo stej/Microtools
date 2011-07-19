@@ -6,6 +6,7 @@ open System.Collections.Generic
 open System.Text.RegularExpressions
 open Utils
 
+// todo: convert to enumeration
 type StatusSource =
    | Timeline  // downloaded as timeline (mentions/friends)
    | RequestedConversation // requested - either user wants to check conversation where the status is placed or the status is fetched to see where timeline status is rooted
@@ -61,7 +62,6 @@ type status = { Id : string;
                 UserIsFollowing : bool
                 Hidden : bool
                 Inserted : DateTime
-                Children : ResizeArray<statusInfo>
                 RetweetInfo : retweetInfo option
               }
               override x.ToString() =
@@ -79,11 +79,12 @@ type status = { Id : string;
               member x.LogicalStatusId = if x.RetweetInfo.IsSome then x.RetweetInfo.Value.RetweetId else x.StatusId
 and statusInfo = {
                    Status : status
+                   Children : ResizeArray<statusInfo>
                    Source : StatusSource
                  }
                  override x.ToString() = String.Format("{0}-{1}", x.Status, (statusSource2String x.Source))
                  member x.ChildrenIds () =
-                    x.Status.Children |> Seq.map (fun s -> s.Status.StatusId)
+                    x.Children |> Seq.map (fun s -> s.Status.StatusId)
         
 let getEmptyStatus() =
     { Id = null; 
@@ -107,7 +108,6 @@ let getEmptyStatus() =
       UserIsFollowing = false
       Hidden = false
       Inserted = DateTime.Now
-      Children = new ResizeArray<statusInfo>()
       RetweetInfo = None
     }
 
