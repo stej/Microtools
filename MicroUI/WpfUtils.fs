@@ -37,7 +37,7 @@ let private createPictureX imagePath size margin =
               //Stretch <- Media.Stretch.Uniform
 let private createStatusPicture size margin (status:status) = 
     let pic = createPictureX (ImagesSource.getImagePath status) pictureSize margin
-    pic.ToolTip <- new ToolTip(Content = (sprintf "%s %A\n%s" status.UserName status.Date status.Text))
+    pic.ToolTip <- new ToolTip(Content = (sprintf "%s %A\n%s" status.UserName (status.Date.ToLocalTime()) status.Text))
     pic
 let private getRetweetImage () =
     createPictureX "retweet.png" 14. (new Thickness(1.5, 5., 0., 0.))    
@@ -103,7 +103,7 @@ let createDetail (status:status) =
              new Run(" | ")                     :> Inline
              hl status.UserName status.StatusId :> Inline
              new Run(" | ")           :> Inline
-             new Run(sprintf "%s" (status.Date.ToString("yyyy-MM-dd HH:mm:ss"))) :> Inline
+             new Run(sprintf "%s" (status.Date.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"))) :> Inline
             ] |> List.iter m.Inlines.Add
             m
         let wrapTextInfoAndRetweetIcon () =

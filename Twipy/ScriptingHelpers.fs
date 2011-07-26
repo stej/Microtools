@@ -54,31 +54,41 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
                         yield! part
             }
             String.Join("", parts)
+        // h.exportToHtml(h.find('logger'))
         let rec processStatus depth status =
             let text = 
                 let rawStatus = status.Status
+                let user = rawStatus.UserName
+                let img = rawStatus.UserProfileImage
+                let statusid = rawStatus.StatusId
                 sprintf "
                             <div class=\"status\" style=\"margin-left:%dem\">
-                                <img src=\"%s\" />
+                                <a href=\"http://twitter.com/%s\" class=\"img\">
+                                    <img src=\"%s\" />
+                                </a>
                                 <div class=\"body\">
                                   <div class=\"meta\">
-                                    <a href=\"http://twitter.com/%s/status/%d\">%d</a>
-                                    %s
+                                    <a href=\"http://twitter.com/%s/status/%d\">%s</a>
                                   </div>
                                   <span>%s</span>
                                 </div>
-                            </div>" (depth*3) rawStatus.UserProfileImage rawStatus.UserName rawStatus.StatusId rawStatus.StatusId (rawStatus.Date.ToString("yyyy-MM-dd HH:mm")) (processText rawStatus.Text)
+                            </div>" (depth*3) user img user statusid (rawStatus.Date.ToLocalTime().ToString("yyyy-MM-dd HH:mm")) (processText rawStatus.Text)
             System.IO.File.AppendAllText(file, text)
             status.Children |> Seq.iter (processStatus (depth+1))
         System.IO.File.AppendAllText(file, "<html>
             <head>
                 <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />
                 <style>
-                    .status { font-family: Verdana; font-size: 10pt; color:#444; margin-bottom:.5em }
+                    .status { font-family: Verdana; font-size: 10pt; color:#444; 
+                              margin-bottom:.5em; 
+                              padding-top:.3em;
+                              padding-bottom:.3em;
+                              width:45em; 
+                              border-bottom:1px dashed gray }
                     .status img { width: 40px; height: 40px; display:inline-block; }
                     .status .body { width: 40em; display:inline-block; vertical-align:top }
                     .status .meta { font-size: smaller; color: #999; font-style:italic }
-                    .status .meta a { text-decoration: none }
+                    .status .meta a, .status a.img { text-decoration: none }
                 </style>
             </head>
             <body>")

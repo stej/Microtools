@@ -75,7 +75,8 @@ let TwitterDateOrDefault (value:string) =
         groups.["day"].Value |> IntOrDefault,
         groups.["h"].Value |> IntOrDefault,
         groups.["m"].Value |> IntOrDefault,
-        groups.["s"].Value |> IntOrDefault)
+        groups.["s"].Value |> IntOrDefault,
+        DateTimeKind.Utc)
 let BoolOrDefault deflt (value:string) =
     try Convert.ToBoolean(value)
     with ex -> deflt
