@@ -12,7 +12,9 @@ open System.Diagnostics
 open Status
 open Utils
 
-let regexUrl = new System.Text.RegularExpressions.Regex("(?<user>@\w+)|" + "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
+let regexUrl = new System.Text.RegularExpressions.Regex("(?<user>@\w+)|" + 
+                                                        "(?<hash>#\w+)|" +
+                                                        "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
 
 let (fontSize, pictureSize) = 
     let s = match Settings.Size with
@@ -50,6 +52,7 @@ let private linkFromText text =
     let matchGroups = regexUrl.Match(text).Groups
     let url, txt = if matchGroups.["url"].Success then text,text
                    else if matchGroups.["user"].Success then (sprintf "http://twitter.com/%s" (text.TrimStart('@')), text)
+                   else if matchGroups.["hash"].Success then (sprintf "http://twitter.com/search?q=%s" (System.Web.HttpUtility.UrlEncode(text)), text)
                    else failwith "unknown regex group"
     let hl = new Hyperlink(new Run(txt),
                            NavigateUri = new Uri(url))
