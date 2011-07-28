@@ -27,6 +27,13 @@ let getStatus source (id:Int64) =
             ldbgp "Downloading {0}" id // todo: store status in db!
             let formatter = sprintf "http://api.twitter.com/1/statuses/show/%d.json"
             match OAuth.requestTwitter (formatter id) with
+             | Some(text, System.Net.HttpStatusCode.Forbidden, _) -> 
+                                   let ret = { Status = { getEmptyStatus() with StatusId = id; Text = "forbidden" }
+                                               Children = new ResizeArray<statusInfo>()
+                                               Source = source }
+                                   newStatusDownloaded.Trigger(ret)
+                                   ldbgp "Downloaded forbidden status"
+                                   Some(ret)
              | Some(text, _, _) -> let xml = text |> convertJsonToXml
                                    match xml.SelectSingleNode("/root") with
                                    |null -> log Error (sprintf "status for %d is empty!" id)
