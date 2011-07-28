@@ -44,9 +44,7 @@
     <Compile Include="Cmdline.fs" />
     <Compile Include="ScriptingHelpers.fs" />
     <Compile Include="Twipy.fs" />
-    <None Include="App.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Include="App.config" />
     <None Include="Twipy.xaml" />
   </ItemGroup>
   <ItemGroup>

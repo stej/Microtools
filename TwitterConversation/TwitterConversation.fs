@@ -173,9 +173,9 @@ window.Loaded.Add(fun _ ->
     Twitter.NewStatusDownloaded 
         |> Event.add (fun sInfo -> dbAccess.SaveStatus(sInfo)
                                    linfop "Downloaded {0}" sInfo)
-    // some children loaded
-    StatusesReplies.SomeChildrenLoaded 
-        |> Event.add (fun rootStatus -> setNewConversationContent rootStatus)
+    // some children loaded; slows dowhn loading quite significantly in some cases -> removed
+    // StatusesReplies.SomeChildrenLoaded 
+    //     |> Event.add (fun rootStatus -> setNewConversationContent rootStatus)
 
     async {
         setState "Reading.."

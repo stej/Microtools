@@ -48,7 +48,7 @@ type TwitterLimits() =
         MailboxProcessor.Start(fun mbox ->
             let rec asyncUpdateLoop() =
                 async { do! Async.Sleep(5000) } |> Async.RunSynchronously
-                ldbg "Sulimit"
+                //ldbg "Sulimit"
                 mbox.Post(UpdateLimit)
                 asyncUpdateLoop()
 
@@ -108,7 +108,7 @@ type TwitterLimits() =
                             lerrp "Excepting when parsing search limit {0}" ex
                             return! loop(limits)
                     | GetLimits(chnl) ->
-                        ldbg "Get limits"
+                        //ldbg "Get limits"
                         chnl.Reply(limits)
                         return! loop(limits)
                     | StartLimitChecking ->
