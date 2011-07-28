@@ -7,11 +7,14 @@ open Status
 open Utils
 open Twitter
 open DbFunctions
+open System.Collections.Generic
 
 type NewlyFoundRepliesMessages =
 | AddStatus of statusInfo
 | GetNewReplies of statusInfo * int64 seq * AsyncReplyChannel<statusInfo seq>
+| GetCachedStatus of int64 * AsyncReplyChannel<statusInfo option>
 | Clear
+
 /// Storage with new unexpected replies.
 /// Unexpected means that when checking a conversation, all current replies are found. However, later when checking other conversation,
 /// new replies to the previous one may be found. It is because the application doesn't search for replies, but for mentions. 
@@ -33,28 +36,36 @@ type NewlyFoundReplies() =
                 ldbgp "Newly found replies, message: {0}" msg
                 match msg with
                 | Clear ->
-                    return! loop []
+                    return! loop (new Dictionary<int64, statusInfo>())
                 | AddStatus(toAdd) ->
-                    if replies |> List.exists (fun s -> s.Status.StatusId = toAdd.Status.StatusId) then
+                    if replies.ContainsKey(toAdd.Status.StatusId) then
                         return! loop replies
                     else
-                        ldbgp "Added. Count of replies collected: {0}" (replies.Length+1)
-                        return! loop (toAdd::replies)
+                        ldbgp "Added. Count of replies collected: {0}" (replies.Count+1)
+                        replies.[toAdd.Status.StatusId] <- toAdd
+                        return! loop replies
                 | GetNewReplies(parent, withoutChildrenIds, chnl) ->
                     let childrenSet = withoutChildrenIds |> Set.ofSeq
-                    let ret = replies 
-                              |> List.filter (isParentOf parent)                            // filter by parent
-                              |> List.filter (extractStatus >> getStatusId >> childrenSet.Contains >> not)   // filter out those from childrenSet
+                    let ret = replies.Values
+                              |> Seq.filter (isParentOf parent)                            // filter by parent
+                              |> Seq.filter (extractStatus >> getStatusId >> childrenSet.Contains >> not)   // filter out those from childrenSet
                     chnl.Reply(ret)
+                    return! loop replies
+                | GetCachedStatus(statusId, chnl) ->
+                    //let status = replies |> List.filter (fun s -> s.Status.StatusId = statusId) // use
+                    match replies.TryGetValue(statusId) with
+                    | true, sInfo -> chnl.Reply(Some(sInfo))
+                    | false, _ -> chnl.Reply(None)
                     return! loop replies
             }
             ldbg "Starting NewlyFoundReplies"
-            loop []
+            loop (new Dictionary<int64, statusInfo>())
         )
     do
         mbox.Error.Add(fun exn -> lerrp "{0}" exn)
     member x.AddStatus(s) = mbox.Post(AddStatus(s)); s
     member x.GetNewReplies(statusInfo, withoutIds) = mbox.PostAndReply(fun reply -> GetNewReplies(statusInfo, withoutIds, reply))
+    member x.GetCachedStatus(statusId) = mbox.PostAndReply(fun reply -> GetCachedStatus(statusId, reply))
     member x.Clear() = mbox.Post(Clear)
 
 let newlyAddedStatusesState = new NewlyFoundReplies()
@@ -78,11 +89,16 @@ let loadSavedReplyTree initialStatusInfo =
     initialStatusInfo
 
 let findReplies initialStatus =
+    // todo: refactor - takes too long for people who answer more than once - duplicate requests
     let rec findRepliesIn depth sInfo =
         let status = sInfo.Status
         let getStatusIdFromNode node =
             ldbg "status from node"
             node |> xpathValue "id" |> Int64OrDefault 
+        let getStatusPreferCached statusId =
+            match newlyAddedStatusesState.GetCachedStatus statusId with
+            | Some(statusInfo) -> Some(statusInfo)
+            | None -> getStatus Status.Search statusId
 
         ldbgp2 "Find repl {0}, children: {1}" status.StatusId sInfo.Children.Count
         let name, id = status.UserName, status.StatusId
@@ -92,9 +108,9 @@ let findReplies initialStatus =
             |> Seq.cast<XmlNode> 
             |> Seq.toList
             |> List.map getStatusIdFromNode                                                  //get statusId
-            |> List.filter (fun id -> not (StatusFunctions.DirectChildHasId sInfo id))      //filter ids not in Children
+            |> List.filter (fun id -> not (StatusFunctions.DirectChildHasId sInfo id))      //filter ids not in Children still
             // here I used PSeq, but .. with hangs sometimes..
-            |> Seq.map (getStatus Status.Search)                                            //load status from db or download
+            |> Seq.map getStatusPreferCached                                                //load status from cache, db or download
             |> Seq.toList                                                                   //create list back
             |> List.filter (fun sInfo -> sInfo.IsSome)                                      //filter non-null
             |> List.map (fun sInfo -> sInfo.Value)                                          //extract statusInfo

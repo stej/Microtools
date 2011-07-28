@@ -24,8 +24,7 @@
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
     <DocumentationFile>bin\Debug\TwitterConversation.XML</DocumentationFile>
-    <StartArguments>
-    </StartArguments>
+    <StartArguments>95311780175298560</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
@@ -43,9 +42,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ConversationState.fs" />
     <Compile Include="TwitterConversation.fs" />
-    <None Include="App.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Include="App.config" />
     <None Include="TwitterConversation.xaml" />
   </ItemGroup>
   <ItemGroup>
