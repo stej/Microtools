@@ -1,8 +1,3 @@
-l = db.GetLastTwitterStatusId()
-print "%d" % l
-status = db.ReadStatusWithId(l)
-print "%d" % status.Value.Children.Count
-##############3
 l = db.GetLastTimelineId()
 status = db.ReadStatusWithId(l).Value
 h.loadTree(status)
@@ -25,18 +20,17 @@ def countSize(status):
   size = size + 1
   for ch in status.Children:
     countSize(ch)
-for s in statuses:
+for s in st:
   countSize(s)
-print size
-
+print size 
 ##############
 sizes = []
-def countSize(status):
+def countSize(sInfo):
   curr = 0
-  for ch in status.Children:
+  for ch in sInfo.Children:
     curr = curr + countSize(ch)
   return curr + 1
-st = db.GetRootStatusesHavingReplies(500)
+st = db.GetRootStatusesHavingReplies(100)
 for status in st:
   h.loadTree(status)
   sizes.append(countSize(status))
@@ -53,9 +47,9 @@ f.Bar(sizes)
 ##############
 st = db.GetRootStatusesHavingReplies(100000)
 sizes = {}
-def countSize(status):
+def countSize(sInfo):
   curr = 0
-  for ch in status.Children: curr = curr + countSize(ch)
+  for ch in sInfo.Children: curr = curr + countSize(ch)
   return curr + 1
 for status in st:
   h.loadTree(status)
@@ -71,28 +65,16 @@ clr.AddReferenceToFileAndPath('c:\\prgs\\dev\\Sho 2.0 for .NET 4\\bin\\ShoViz.dl
 import ShoNS.Visualization
 f = ShoNS.Visualization.ShoPlotHelper.Figure()
 f.Bar([k for k in sizes.keys()], [sizes[k] for k in sizes.keys()])
-
-####################
-# I have statuses in st, then display some of them:
-import Microsoft.FSharp.Collections
-list = Microsoft.FSharp.Collections.ListModule.OfSeq[Status.status]([st[0]])
-a = Microsoft.FSharp.Collections.FSharpList[Status.status](10, list)
-print a.GetType()
-####################
-st = db.GetRootStatusesHavingReplies(2)
-for status in st:
-  h.loadTree(status)
-h.exportToHtml(st)
 ###################
 st = db.GetStatusesFromSql("select * from Status where UserName like 'AugiCZ' and ReplyTo=-1")
 for status in st:
   h.loadTree(status)
 h.exportToHtml(st)
 ###################
-st = db.GetRootStatusesHavingReplies(100000)
-for status in st:
-    h.loadTree(status)
-    print status.Text
+st = db.GetRootStatusesHavingReplies(10)
+for sInfo in st:
+    h.loadTree(sInfo)
+    print sInfo.Status.Text
 h.exportToHtml(st)
 ###################
 # ensure images for users from given query
@@ -100,11 +82,11 @@ from ImagesSource import *
 
 a = 0
 statuses = h.find("cqrs")
-for status in statuses:
- h.show(status)
- ensureStatusImage(status)
+for sInfo in statuses:
+ h.show(sInfo)
+ ensureStatusImage(sInfo.Status)
  a = a + 1
- if a > 100:  # max 100 users
+ if a > 150:  # max 100 users
    break
 ###################
 print limits.GetLimitsString()
@@ -113,10 +95,10 @@ print limits.GetLimitsString()
 h.show(statuses)
 ###################
 # get status somehow (e.g. load from db)
-status = ......
+status = db.ReadStatusWithId(91945905766408192)
 h.show(status)
 from StatusesReplies import *
-withrepl = findReplies(status)
+withrepl = findReplies(status.Value)
 h.show(withrepl)
 ####################
 # take last 300 statuses and try to root them - find conversations
@@ -129,13 +111,23 @@ sql = """
     select s.* from Status s 
     where exists (select StatusId from Status s0 where s0.ReplyTo = s.StatusId)
     order by s.StatusId desc 
-    limit 0, 300"""
+    limit 0, 10"""
 statuses = db.GetStatusesFromSql(sql)
 rooted = h.RootConversationsWithNoDownload(
-          ListModule.OfSeq[Status.status]([]),
-          ListModule.OfSeq[Status.status](statuses))
-toshow = System.Collections.Generic.List[Status.status]()
-for status in rooted:
-    if status.Children.Count > 0:
-        toshow.Add(status)
+          ListModule.OfSeq[Status.statusInfo]([]),
+          ListModule.OfSeq[Status.statusInfo](statuses))
+toshow = System.Collections.Generic.List[Status.statusInfo]()
+for sInfo in rooted:
+    if sInfo.Children.Count > 0:
+        toshow.Add(sInfo)
 h.show(toshow)
+###################
+# register on Twitter
+import OAuth
+limits.Stop()
+OAuth.registerOnTwitter()
+###################
+import StatusDb
+sdb = StatusDb.StatusesDbState('d:\\temp\\TwitterConversation\\statuses.export.db')
+store = db.GetStatusesFromSql('select * from Status order by Inserted desc limit 0,20')
+sdb.SaveStatuses(store)
