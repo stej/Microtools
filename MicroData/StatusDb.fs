@@ -62,7 +62,6 @@ let private readStatus (rd:SQLiteDataReader) =
                   UserUrl            = str rd "UserUrl"
                   UserStatusesCount  = intt rd "UserStatusesCount"
                   UserIsFollowing    = bol rd "UserIsFollowing"
-                  Hidden             = bol rd "Hidden"
                   Inserted           = date rd "Inserted"
                   RetweetInfo        = None
       }
@@ -99,17 +98,21 @@ let executeSelect readFce (cmd:SQLiteCommand) =
 
 // todo: rename
 let loadRetweetInfo (conn:SQLiteConnection) (retweetInfoId:string) =
-    use cmd = conn.CreateCommand()
-    cmd.CommandText <- "Select * from RetweetInfo where Id = @p1 limit 0,1"
-    cmd.Parameters.Add(new SQLiteParameter("@p1", retweetInfoId)) |> ignore
-    let rd = cmd.ExecuteReader()
-    let ret = 
-        if rd.Read() then
-            Some(readRetweetInfo rd)
-        else
-            None
-    rd.Close()
-    ret
+    match retweetInfoId with
+    | null 
+    | "" -> None
+    | value ->
+        use cmd = conn.CreateCommand()
+        cmd.CommandText <- "Select * from RetweetInfo where Id = @p1 limit 0,1"
+        cmd.Parameters.Add(new SQLiteParameter("@p1", retweetInfoId)) |> ignore
+        let rd = cmd.ExecuteReader()
+        let ret = 
+            if rd.Read() then
+                Some(readRetweetInfo rd)
+            else
+                None
+        rd.Close()
+        ret
 let addRetweetInfo (conn:SQLiteConnection) (dbStatus:statusFromDb) =
     match dbStatus.DbRetweetInfoId with
     | null -> dbStatus
@@ -312,7 +315,7 @@ type StatusesDbState() =
                     null
             use cmd = conn.CreateCommand()
             cmd.CommandText <- "INSERT INTO Status(
-                Id, StatusId, App, Account, Text, Date, UserName, UserId, UserProfileImage, ReplyTo, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Hidden, Source, Inserted, RetweetInfoId
+                Id, StatusId, App, Account, Text, Date, UserName, UserId, UserProfileImage, ReplyTo, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Source, Inserted, RetweetInfoId
                 ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23)"
             addCmdParameter cmd "@p1" (sprintf "%s-%d" s.App s.StatusId)
             addCmdParameter cmd "@p2" s.StatusId
@@ -333,7 +336,6 @@ type StatusesDbState() =
             addCmdParameter cmd "@p17" s.UserUrl
             addCmdParameter cmd "@p18" s.UserStatusesCount
             addCmdParameter cmd "@p19" s.UserIsFollowing
-            addCmdParameter cmd "@p20" s.Hidden
             addCmdParameter cmd "@p21" (StatusSource2Int source)
             addCmdParameter cmd "@p22" DateTime.Now.Ticks
             addCmdParameter cmd "@p23" retweetInfoId

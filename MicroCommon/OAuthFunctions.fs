@@ -25,7 +25,6 @@ let xml2Status (xml:XmlNode) =
       UserUrl              = getValue "user/url"
       UserStatusesCount    = getValue "user/statuses_count" |> IntOrDefault
       UserIsFollowing      = getValue "user/following" |> BoolOrDefault false
-      Hidden               = false                                      // change?
       Inserted             = DateTime.Now
       RetweetInfo          = None
     }
@@ -69,7 +68,6 @@ let xml2Retweet (xml:XmlNode) =
       UserUrl              = getValue "retweeted_status/user/url"
       UserStatusesCount    = getValue "retweeted_status/user/statuses_count" |> IntOrDefault
       UserIsFollowing      = getValue "retweeted_status/user/following" |> BoolOrDefault false
-      Hidden               = false                                      // change?
       Inserted             = DateTime.Now
       RetweetInfo          = Some(xml2RetweetInfo xml)
     }

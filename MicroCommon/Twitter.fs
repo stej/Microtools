@@ -32,7 +32,7 @@ let getStatus source (id:Int64) =
                                                Children = new ResizeArray<statusInfo>()
                                                Source = source }
                                    newStatusDownloaded.Trigger(ret)
-                                   ldbgp "Downloaded forbidden status"
+                                   ldbg "Downloaded forbidden status"
                                    Some(ret)
              | Some(text, _, _) -> let xml = text |> convertJsonToXml
                                    match xml.SelectSingleNode("/root") with

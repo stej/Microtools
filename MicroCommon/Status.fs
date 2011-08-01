@@ -60,7 +60,6 @@ type status = { Id : string;
                 UserUrl : string
                 UserStatusesCount : int
                 UserIsFollowing : bool
-                Hidden : bool
                 Inserted : DateTime
                 RetweetInfo : retweetInfo option
               }
@@ -106,7 +105,6 @@ let getEmptyStatus() =
       UserUrl = ""
       UserStatusesCount = -1
       UserIsFollowing = false
-      Hidden = false
       Inserted = DateTime.Now
       RetweetInfo = None
     }
