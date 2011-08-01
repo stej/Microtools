@@ -72,9 +72,9 @@ let dbStatus2statusInfo dbStatus =
       Children = new ResizeArray<statusInfo>()
       Source = dbStatus.DbSource }
 
-let useDb useFce = 
+let useDb file useFce = 
     use conn = new System.Data.SQLite.SQLiteConnection()
-    conn.ConnectionString <- sprintf "Data Source=\"%s\"" fileName
+    conn.ConnectionString <- sprintf "Data Source=\"%s\"" file
     conn.Open()
     let result = useFce conn 
     conn.Close()
@@ -140,10 +140,10 @@ type StatusesDbMessages =
 | SaveStatuses of statusInfo list
 | DeleteStatus of statusInfo
 
-type StatusesDbState() =
+type StatusesDbState(file) =
 
     let getLastId whatType column = 
-        useDb (fun conn ->
+        useDb file (fun conn ->
             ldbgp "Getting {0}" whatType
             use cmd = conn.CreateCommand(CommandText = (sprintf "select %s from AppState" column))
             let ret = Convert.ToInt64(cmd.ExecuteScalar())
@@ -151,7 +151,7 @@ type StatusesDbState() =
             ret
         )
     let updateLastId column (lastStatus:Status.status) =
-        useDb (fun conn ->
+        useDb file (fun conn ->
             let id = lastStatus.LogicalStatusId
             use cmd = conn.CreateCommand(CommandText = (sprintf "Update AppState set %s = @p1" column))
             addCmdParameter cmd "@p1" id
@@ -182,13 +182,13 @@ type StatusesDbState() =
 
     // todo - rework - use other method
     let readStatusWithId (statusId:Int64) = 
-        useDb (fun conn -> 
+        useDb file (fun conn -> 
             match readStatusWithIdUseConn conn statusId with 
             |Some(sInfo) -> Some(sInfo)
             |_ -> None)
     
     let readStatusReplies (statusId:Int64) = 
-        useDb (fun conn ->
+        useDb file (fun conn ->
             use cmd = conn.CreateCommand()
             cmd.CommandText <- "Select * from Status where ReplyTo = @p1"
             addCmdParameter cmd "@p1" statusId
@@ -199,7 +199,7 @@ type StatusesDbState() =
 
     let getRootStatusesHavingReplies(maxCount) = 
         ldbgp "Getting conversation roots, count {0}" maxCount
-        let res = useDb (fun conn ->
+        let res = useDb file (fun conn ->
                     use cmd = conn.CreateCommand()
                     //select distinct s.* from Status s join Status reply on s.StatusId=reply.ReplyTo and s.ReplyTo = -1 order by s.StatusId desc limit 0,@maxcount
                     cmd.CommandText <- "select s.* from Status s 
@@ -222,7 +222,7 @@ type StatusesDbState() =
     
     let getTimelineStatusesBefore count (statusId:Int64) = 
        ldbgp "getTimelineStatusesBefore {0}" statusId
-       useDb (fun conn ->
+       useDb file (fun conn ->
             use cmd = conn.CreateCommand()
             cmd.CommandText <- "Select s.*,  
                                     case when s.RetweetInfoid is null then s.StatusId else r.RetweetId end as LogicalstatusId
@@ -240,13 +240,13 @@ type StatusesDbState() =
         )
     let getStatusesFromSql sql = 
         ldbgp "getStatusesFromSql {0}" sql
-        useDb (fun conn ->
+        useDb file (fun conn ->
             use cmd = conn.CreateCommand()
             cmd.CommandText <- sql
             executeSelectStatuses cmd |> List.map ((addRetweetInfo conn) >> dbStatus2statusInfo)
         )
     let updateStatusSource source (status:status) =
-        useDb (fun conn ->
+        useDb file (fun conn ->
             use cmd = conn.CreateCommand(CommandText = "update Status set source = @p0 where StatusId = @p1")
             addCmdParameter cmd "@p0" (StatusSource2Int source)
             addCmdParameter cmd "@p1" status.StatusId
@@ -315,7 +315,7 @@ type StatusesDbState() =
                     null
             use cmd = conn.CreateCommand()
             cmd.CommandText <- "INSERT INTO Status(
-                Id, StatusId, App, Account, Text, Date, UserName, UserId, UserProfileImage, ReplyTo, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Source, Inserted, RetweetInfoId
+                Id, StatusId, App, Account, Text, Date, UserName, UserId, UserProfileImage, ReplyTo, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Source, Inserted, RetweetInfoId, Hidden
                 ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23)"
             addCmdParameter cmd "@p1" (sprintf "%s-%d" s.App s.StatusId)
             addCmdParameter cmd "@p2" s.StatusId
@@ -336,11 +336,12 @@ type StatusesDbState() =
             addCmdParameter cmd "@p17" s.UserUrl
             addCmdParameter cmd "@p18" s.UserStatusesCount
             addCmdParameter cmd "@p19" s.UserIsFollowing
-            addCmdParameter cmd "@p21" (StatusSource2Int source)
-            addCmdParameter cmd "@p22" DateTime.Now.Ticks
-            addCmdParameter cmd "@p23" retweetInfoId
+            addCmdParameter cmd "@p20" (StatusSource2Int source)
+            addCmdParameter cmd "@p21" DateTime.Now.Ticks
+            addCmdParameter cmd "@p22" retweetInfoId
+            addCmdParameter cmd "@p23" false    // remove from db
             cmd.ExecuteNonQuery() |> ignore
-        useDb (fun conn ->                
+        useDb file (fun conn ->                
             for sInfo in statuses do 
                 let source = sInfo.Source
                 let status = sInfo.Status
@@ -363,8 +364,13 @@ type StatusesDbState() =
     let deleteStatus (statusInfo: statusInfo) = 
         let status = statusInfo.Status
         linfop2 "Deleting db status {0} - {1}" status.UserName status.StatusId
-        useDb (fun conn ->
+        useDb file (fun conn ->
             use cmd = conn.CreateCommand()
+            if statusInfo.Status.RetweetInfo.IsSome then
+                cmd.CommandText <- "delete from RetweetInfo where Id = @p0"
+                addCmdParameter cmd "@p0" status.RetweetInfo.Value.Id
+                cmd.ExecuteNonQuery() |> ignore
+            
             cmd.CommandText <- "delete from Status where StatusId = @p0"
             addCmdParameter cmd "@p0" status.StatusId
             cmd.ExecuteNonQuery() |> ignore
@@ -459,4 +465,4 @@ type StatusesDbState() =
 
         member x.ReadStatusReplies(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusReplies(id, reply))
 
-let statusesDb = new StatusesDbState()
+let statusesDb = new StatusesDbState(fileName)
