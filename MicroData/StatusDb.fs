@@ -138,7 +138,7 @@ type StatusesDbMessages =
 | GetStatusesFromSql of string * AsyncReplyChannel<statusInfo list>
 | SaveStatus of statusInfo
 | SaveStatuses of statusInfo list
-| DeleteStatus of statusInfo
+| DeleteStatus of statusInfo * AsyncReplyChannel<Int64>
 
 type StatusesDbState(file) =
 
@@ -375,6 +375,7 @@ type StatusesDbState(file) =
             addCmdParameter cmd "@p0" status.StatusId
             cmd.ExecuteNonQuery() |> ignore
         )
+        statusInfo.Status.StatusId
 
     let mbox = MailboxProcessor.Start(fun mbox ->
             printfn "starting statuses db"
@@ -388,8 +389,8 @@ type StatusesDbState(file) =
                 | SaveStatuses(statuses) -> 
                     saveStatuses statuses
                     return! loop()
-                | DeleteStatus(status) -> 
-                    deleteStatus status
+                | DeleteStatus(status, chnl) -> 
+                    deleteStatus status |> chnl.Reply
                     return! loop()
 //                | LoadStatuses(chnl) -> 
 //                    chnl.Reply(loadStatuses())
@@ -435,7 +436,7 @@ type StatusesDbState(file) =
         mbox.Error.Add(fun exn -> printfn "exception: %A" exn
                                   lerrp "{0}" exn)
 
-    member x.DeleteStatus(status) = mbox.Post(DeleteStatus(status))
+    member x.DeleteStatus(status) = mbox.PostAndReply(fun reply -> DeleteStatus(status, reply))
     //member x.LoadStatuses() = mbox.PostAndReply(LoadStatuses)
     member x.GetRootStatusesHavingReplies(maxCount) = mbox.PostAndReply(fun reply -> GetRootStatusesHavingReplies(maxCount, reply))
     member x.GetTimelineStatusesBefore(count:int, fromId:Int64) = mbox.PostAndReply(fun reply -> GetTimelineStatusesBefore(count, fromId, reply))
