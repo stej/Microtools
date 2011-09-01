@@ -1,7 +1,7 @@
 import System
 from StatusesReplies import *
 
-statuses = db.GetRootStatusesHavingReplies(200)
+statuses = db.GetRootStatusesHavingReplies(400)
 res = []
 i = 0
 while i < statuses.Length:
@@ -14,7 +14,7 @@ while i < statuses.Length:
   if not limits.IsSafeToQueryTwitter():
     print '[{0}] {1} - {2}'.format(i, limits.GetLimitsString(), System.DateTime.Now)
     #System.Threading.Thread.Sleep(5000)
-    System.Threading.Thread.CurrentThread.Join(1000*60)
+    System.Threading.Thread.CurrentThread.Join(1000*60*5)
     continue
   print "\n----- [{0}] - {1}\n".format(i, limits.GetLimitsString())
   status = statuses[i]

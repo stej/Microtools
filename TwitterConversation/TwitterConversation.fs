@@ -165,7 +165,7 @@ twitterLimits.Start()
 
 window.Loaded.Add(fun _ ->
     // status added to tree
-    StatusesReplies.StatusAdded |> Event.add ImagesSource.ensureStatusImageNoRet
+    StatusesReplies.StatusAdded |> Event.add (ImagesSource.ensureStatusImage >> ignore)
     // show what status is loaded
     //StatusesReplies.LoadingStatusReplyTree 
     //    |> Event.add (fun status -> setState (sprintf "Loading %s - %d" status.UserName status.StatusId))
