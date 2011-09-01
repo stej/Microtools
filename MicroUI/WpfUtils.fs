@@ -24,7 +24,7 @@ let (fontSize, pictureSize) =
     linfop "UI size is {0}" s
     s
 
-let private createPictureX imagePath size margin = 
+let private createPicture imagePath size margin = 
     let source = new Imaging.BitmapImage()
     source.BeginInit();
     source.UriSource <- new Uri(imagePath, System.UriKind.Relative);
@@ -38,11 +38,11 @@ let private createPictureX imagePath size margin =
               VerticalAlignment = VerticalAlignment.Top)
               //Stretch <- Media.Stretch.Uniform
 let private createStatusPicture size margin (status:status) = 
-    let pic = createPictureX (ImagesSource.getImagePath status) pictureSize margin
+    let pic = createPicture (ImagesSource.getImagePath status) pictureSize margin
     pic.ToolTip <- new ToolTip(Content = (sprintf "%s %A\n%s" status.UserName (status.Date.ToLocalTime()) status.Text))
     pic
 let private getRetweetImage () =
-    createPictureX "retweet.png" 14. (new Thickness(1.5, 5., 0., 0.))    
+    createPicture "retweet.png" 14. (new Thickness(1.5, 5., 0., 0.))    
 
 let private BrowseHlClick (e:Navigation.RequestNavigateEventArgs) =
     Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)) |> ignore
