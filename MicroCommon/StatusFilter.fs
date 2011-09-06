@@ -8,6 +8,8 @@ type filterType =
    | Text
    | RTs
    | TimelineStatuses
+   | RTByUser
+   | TimelineByUser
 
 
 type statusFilter = (filterType * string) list 
@@ -45,6 +47,10 @@ let matchesFilter (filter:statusFilter) (sInfo:statusInfo) =
                         | _ -> status.RetweetInfo.IsSome
                     | (TimelineStatuses, _) -> 
                         status.RetweetInfo.IsNone
+                    | (RTByUser, username) ->
+                        status.RetweetInfo.IsSome && status.RetweetInfo.Value.UserName = username
+                    | (TimelineByUser, username) ->
+                        status.RetweetInfo.IsNone && status.UserName = username
     let rec matchrec filter =
         match filter with
         | head::tail -> if matchItem head then true
@@ -60,6 +66,8 @@ let rec parseFilter (text:string) =
             if configFiltersMap.ContainsKey(part) then yield! parseFilter configFiltersMap.[part]
             else if part = "allRT" then yield (RTs, null)
             else if part = "allTimeline" then yield (TimelineStatuses, null)
-            else if part.StartsWith("@") then  yield (UserName, (if part.Length > 0 then part.Substring(1) else ""))
+            else if part.StartsWith("@") then yield (UserName, (if part.Length > 0 then part.Substring(1) else ""))
+            else if part.StartsWith("RT@") then yield (RTByUser, (if part.Length > 3 then part.Substring(3) else ""))
+            else if part.StartsWith("Timeline@") then yield (TimelineByUser, (if part.Length > 9 then part.Substring(9) else ""))
             else yield (Text, part)
     } |> Seq.toList
