@@ -30,6 +30,7 @@ let details = window.FindName("statusDetails") :?> StackPanel
 let limitCtl = window.FindName("limit") :?> TextBlock
 let appStateCtl = window.FindName("appState") :?> TextBlock
 let filterCtl = window.FindName("filter") :?> TextBox
+//let contentGrid = window.FindName("content") :?> Grid
 
 let setAppState state = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
 let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, [|p1|]))
@@ -129,7 +130,10 @@ clear.Click.Add( fun _ ->
 )
 
 switcher.Click.Add(fun _ -> switchPanes () )
-window.MouseDoubleClick.Add(fun _ -> switchPanes () )
+//contentGrid.MouseDoubleClick.Add(fun _ -> switchPanes () )
+//contentGrid.PreviewDoubleClick.Add(fun _ -> switchPanes () )
+imagesHolder.MouseRightButtonUp.Add(fun _ -> switchPanes () )
+detailsHolder.MouseRightButtonUp.Add(fun _ -> switchPanes () )
 
 let negateShowHide (menuItem:MenuItem) =
     showHiddenStatuses <- not showHiddenStatuses
@@ -137,10 +141,10 @@ let negateShowHide (menuItem:MenuItem) =
 
 // bind context menu
 do
+    //detailsHolder.ContextMenu <- new ContextMenu()
     window.ContextMenu <- new ContextMenu()
      
     let menuItem = new MenuItem()
-    //menuItem.Width = 50
     menuItem.Header <- "Show filtered"
     menuItem.Click.Add(fun _ -> negateShowHide menuItem
                                 refresh () |> ignore)
