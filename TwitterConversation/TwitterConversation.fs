@@ -135,12 +135,18 @@ let addConversationCtls addTo rootStatus =
     rootStatus
     
 let freshStatusColorer = (fun sInfo -> sInfo.Status.Inserted >= lastUpdateall), Brushes.Yellow
+
+let updateConversation controls rootStatus =
+    // fun _ -> true = show all statuses, no filtering there..
+    let filterInfo = WpfUtils.convertToFilterInfo true (fun _ -> false) rootStatus
+    WpfUtils.updateConversation controls (fun _ -> true) filterInfo
+
 /// refreshes the status (all the conversation)
 /// @fnShouldColor = function that returns true if @color should be applied
 let refreshOneConversationEx (colorers:((statusInfo->bool)*SolidColorBrush) list) rootStatus =
     let controls = controlsCache.[rootStatus.Status.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
-        for detailCtl in WpfUtils.updateConversation controls rootStatus do
+        for detailCtl in updateConversation controls rootStatus do
             let color = colorers |> List.tryPick (fun (fn,color) -> if fn detailCtl.StatusInfo then Some(color) else None)
             match color with
             | None -> ()
@@ -152,7 +158,7 @@ let refreshOneConversation rootStatus =
 let setNewConversationContent rootStatus =
     let controls = controlsCache.[rootStatus.Status.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
-        WpfUtils.setNewConversation controls rootStatus |> ignore
+        updateConversation controls rootStatus |> ignore
     )
 
 StatusUpdated.Add(fun (controls, updatedStatus) ->

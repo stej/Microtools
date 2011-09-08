@@ -12,6 +12,32 @@ open System.Diagnostics
 open Status
 open Utils
 
+type StatusInfoToDisplay = {
+    StatusInfo : statusInfo
+    Filtered : bool
+    Children : StatusInfoToDisplay list
+    HasUnfilteredDescendant : bool
+    HasSomeDescendantsToShow : bool
+}
+/// Adds information about filtering
+///  @filterDoesntHideStatuses - user requested to show hidden statuses
+///  @filterer - returns true if the status is filtered out (matches the filter)
+let rec convertToFilterInfo filterDoesntHideStatuses (filterer: statusInfo->bool) (statusInfo:statusInfo) =
+    let children = 
+        statusInfo.Children 
+        |> Seq.map (fun c -> convertToFilterInfo filterDoesntHideStatuses filterer c) 
+        |> Seq.toList
+    let existsUnfilteredDescendant = 
+        children |> List.exists (fun c -> not c.Filtered || c.HasUnfilteredDescendant)
+    let hasSomeVisibleDescendant =
+        existsUnfilteredDescendant || (filterDoesntHideStatuses && statusInfo.Children.Count > 0)
+
+    { StatusInfo = statusInfo
+      Filtered = filterer statusInfo
+      Children = children
+      HasUnfilteredDescendant = existsUnfilteredDescendant 
+      HasSomeDescendantsToShow = hasSomeVisibleDescendant }
+      
 let regexUrl = new System.Text.RegularExpressions.Regex("(?<user>@\w+)|" + 
                                                         "(?<hash>#\w+)|" +
                                                         "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
@@ -152,7 +178,13 @@ type conversationControls = {
 type conversationNodeControlsInfo = {
     Detail : StackPanel
     Img : Border
-    StatusInfo: statusInfo
+    // rest is copied from StatusInfoToDisplay - otherwise if I add field
+    // StatusInfo : StatusInfoToDisplay - there would be too many dots in other code like detailCtl.StatusInfo.StatusInfo.Status.LogicalStatusId
+    StatusInfo : statusInfo
+    Filtered : bool
+    Children : StatusInfoToDisplay list
+    HasUnfilteredDescendant : bool
+    HasSomeDescendantsToShow : bool
 }
 
 type ConversationControlPlacement =
@@ -189,22 +221,28 @@ let addUpdateButton (controls:conversationControls) =
     controls.Wrapper.Children.Add(update) |> ignore
     { controls with UpdateButton = update }
     
-let updateConversation (controls:conversationControls) (updatedStatus:statusInfo) =
+let updateConversation (controls:conversationControls) (isStatusVisible:StatusInfoToDisplay->bool) (updatedStatus:StatusInfoToDisplay) =
     controls.Statuses.Children.Clear()
 
     let conversationCtl = new ResizeArray<_>()
 
-    let rec addTweets depth currentStatus =
-        let detail, img = createDetail currentStatus.Status
+    let rec addTweets depth (currentStatus:StatusInfoToDisplay) =
+        let detail, img = createDetail currentStatus.StatusInfo.Status
         img.Margin <- new Thickness(depth * (pictureSize+2.), 0., 0., 5.)
         controls.Statuses.Children.Add(detail) |> ignore
         currentStatus.Children 
-            |> Seq.map (fun sInfo -> (sInfo, sInfo.Status.StatusId))
+            |> Seq.filter isStatusVisible
+            |> Seq.map (fun sInfo -> (sInfo, sInfo.StatusInfo.StatusId()))
             |> Seq.sortBy (fun (_,id) -> id) 
             |> Seq.iter (fun s -> addTweets (depth+1.) (fst s))
         conversationCtl.Add({ Detail = detail
                               Img = img
-                              StatusInfo = currentStatus})
+                              StatusInfo = currentStatus.StatusInfo
+                              Filtered = currentStatus.Filtered
+                              Children = currentStatus.Children
+                              HasUnfilteredDescendant = currentStatus.HasUnfilteredDescendant
+                              HasSomeDescendantsToShow = currentStatus.HasSomeDescendantsToShow})
+    // top level status should be visible, no need to test it; let's do it on descendants inside addTweets
     addTweets 0. updatedStatus
     conversationCtl |> Seq.toList
 

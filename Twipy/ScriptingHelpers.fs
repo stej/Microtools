@@ -16,7 +16,7 @@ open System.Windows.Data
 open System.Windows.Documents
 
 type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) = 
-    let fillDetails statuses = DisplayStatus.fillDetails window details "" statuses
+    let fillDetails statuses = DisplayStatus.fillDetails window details "" true statuses
     let fillPictures = DisplayStatus.fillPictures wrapContent
 
     member x.loadTree status = StatusesReplies.loadSavedReplyTree status

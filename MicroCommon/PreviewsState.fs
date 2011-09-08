@@ -45,6 +45,8 @@ type UserStatusesState() =
                 | ClearStatuses ->
                     return! loop [] []
                 | GetStatuses(chnl) ->
+                    // debug - show only conversations
+                    //chnl.Reply(statuses |> List.filter(fun s -> s.Children.Count > 0), statusesWithRoots |> List.filter(fun s -> s.Children.Count > 0))
                     chnl.Reply(statuses, statusesWithRoots)
                     return! loop statuses statusesWithRoots
                 | GetFirstStatusId(chnl) ->

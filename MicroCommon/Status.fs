@@ -84,6 +84,8 @@ and statusInfo = {
                  override x.ToString() = String.Format("{0}-{1}", x.Status, (statusSource2String x.Source))
                  member x.ChildrenIds () =
                     x.Children |> Seq.map (fun s -> s.Status.StatusId)
+                 member inline x.StatusId () =
+                    x.Status.StatusId
         
 let getEmptyStatus() =
     { Id = null; 

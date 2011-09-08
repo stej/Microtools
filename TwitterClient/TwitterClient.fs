@@ -36,6 +36,7 @@ let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appS
 let setAppState2 (format:string) p1 p2 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1, p2))
 let setAppStateCount count = setAppState (sprintf "Done.. Count: %d" count)
 
+let mutable showHiddenStatuses = false
 filterCtl.Text <- StatusFilter.defaultConfigFilter
 DbFunctions.dbAccess <- StatusDb.statusesDb
 
@@ -46,8 +47,22 @@ Twitter.NewStatusDownloaded
 
 twitterLimits.Start()
 
-let fillDetails statuses = DisplayStatus.fillDetails window details filterCtl.Text statuses
+let fillDetails statuses = DisplayStatus.fillDetails window details filterCtl.Text showHiddenStatuses statuses
 let fillPictures = DisplayStatus.fillPictures wrap
+
+let switchPanes () =
+    if imagesHolder.Visibility = Visibility.Visible then
+      imagesHolder.Visibility <- Visibility.Collapsed
+      detailsHolder.Visibility <- Visibility.Visible
+    else
+      imagesHolder.Visibility <- Visibility.Visible
+      detailsHolder.Visibility <- Visibility.Collapsed
+      
+let refresh () =
+    let list,tree = PreviewsState.userStatusesState.GetStatuses()
+    WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
+                                            fillDetails tree)
+    list,tree
 
 window.Loaded.Add(
     fun _ ->
@@ -102,9 +117,7 @@ up.Click.Add(fun _ ->
         StatusDb.statusesDb.GetTimelineStatusesBefore(50,firstStatusId)
             |> ImagesSource.ensureStatusesImages
             |> PreviewsState.userStatusesState.AddStatuses
-        let list,tree =  PreviewsState.userStatusesState.GetStatuses()
-        WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
-                                                fillDetails tree)
+        let list,_ = refresh() 
         setAppStateCount list.Length
     } |> Async.Start
 )
@@ -115,14 +128,24 @@ clear.Click.Add( fun _ ->
     setAppStateCount 0
 )
 
-switcher.Click.Add(fun _ ->
-  if imagesHolder.Visibility = Visibility.Visible then
-    imagesHolder.Visibility <- Visibility.Collapsed
-    detailsHolder.Visibility <- Visibility.Visible
-  else
-    imagesHolder.Visibility <- Visibility.Visible
-    detailsHolder.Visibility <- Visibility.Collapsed
-)
+switcher.Click.Add(fun _ -> switchPanes () )
+window.MouseDoubleClick.Add(fun _ -> switchPanes () )
+
+let negateShowHide (menuItem:MenuItem) =
+    showHiddenStatuses <- not showHiddenStatuses
+    menuItem.Header <- if showHiddenStatuses then "Hide filtered" else "Show filtered"
+
+// bind context menu
+do
+    window.ContextMenu <- new ContextMenu()
+     
+    let menuItem = new MenuItem()
+    //menuItem.Width = 50
+    menuItem.Header <- "Show filtered"
+    menuItem.Click.Add(fun _ -> negateShowHide menuItem
+                                refresh () |> ignore)
+    window.ContextMenu.Items.Add(menuItem) |> ignore
+
 [<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]
 [<assembly: System.Runtime.InteropServices.Guid("b607f47b-df94-4c4c-a7ff-1a182bf8d8bb3")>]
 ()
