@@ -30,7 +30,7 @@ let details = window.FindName("statusDetails") :?> StackPanel
 let limitCtl = window.FindName("limit") :?> TextBlock
 let appStateCtl = window.FindName("appState") :?> TextBlock
 let filterCtl = window.FindName("filter") :?> TextBox
-//let contentGrid = window.FindName("content") :?> Grid
+//let contentGrid = window.FindName("content") :?> Panel
 
 let setAppState state = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
 let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, [|p1|]))
@@ -132,8 +132,28 @@ clear.Click.Add( fun _ ->
 switcher.Click.Add(fun _ -> switchPanes () )
 //contentGrid.MouseDoubleClick.Add(fun _ -> switchPanes () )
 //contentGrid.PreviewDoubleClick.Add(fun _ -> switchPanes () )
-imagesHolder.MouseRightButtonUp.Add(fun _ -> switchPanes () )
-detailsHolder.MouseRightButtonUp.Add(fun _ -> switchPanes () )
+//imagesHolder.MouseRightButtonUp.Add(fun _ -> switchPanes () )
+//detailsHolder.MouseRightButtonUp.Add(fun _ -> switchPanes () )
+
+//http://stackoverflow.com/questions/5228364/reactive-framework-doubleclick
+//http://stackoverflow.com/questions/1274378/cleanest-single-click-double-click-handling-in-silverlight
+// nefunguje
+//(contentGrid.PreviewMouseDown :> IObservable<_>)
+//   .TimeInterval()
+//   .Subscribe(fun (evt:TimeInterval<Input.MouseButtonEventArgs>) -> if evt.Interval.TotalMilliseconds < 300. then switchPanes ())
+//   |> ignore
+//(window.PreviewMouseDown :> IObservable<_>)
+//   .TimeInterval()
+//   .Subscribe(fun (evt:TimeInterval<Input.MouseButtonEventArgs>) -> if evt.Interval.TotalMilliseconds < 300. then switchPanes ())
+//   |> ignore
+//(imagesHolder.MouseLeftButtonDown :> IObservable<_>).Merge(
+//(detailsHolder.MouseLeftButtonDown :> IObservable<_>))
+//   .TimeInterval()
+//   .Subscribe(
+//      fun (evt:TimeInterval<Input.MouseButtonEventArgs>) -> 
+//         if evt.Interval.TotalMilliseconds < 300. then switchPanes ()
+//   )
+//   |> ignore
 
 let negateShowHide (menuItem:MenuItem) =
     showHiddenStatuses <- not showHiddenStatuses
@@ -148,6 +168,11 @@ do
     menuItem.Header <- "Show filtered"
     menuItem.Click.Add(fun _ -> negateShowHide menuItem
                                 refresh () |> ignore)
+    window.ContextMenu.Items.Add(menuItem) |> ignore
+
+    let menuItem = new MenuItem()
+    menuItem.Header <- "Switch"
+    menuItem.Click.Add(fun _ -> switchPanes ())
     window.ContextMenu.Items.Add(menuItem) |> ignore
 
 [<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]
