@@ -72,13 +72,13 @@ let requestTwitter url =
             let response = req0.GetResponse() :?> System.Net.HttpWebResponse    // by reflector
             Some(DevDefined.OAuth.Utility.StreamExtensions.ReadToEnd(response), response.StatusCode, response.Headers)
         with
-          | :? System.Net.WebException as ex -> lerrp "{0}" ex
+          | :? System.Net.WebException as ex -> lerrex ex "Unable to download string"
                                                 let response = ex.Response :?> System.Net.HttpWebResponse
                                                 match response with 
                                                 | null -> None
                                                 | instance -> Some("", instance.StatusCode, instance.Headers)
     with 
-        ex -> lerrp "{0}" ex
+        ex -> lerrex ex "Error when querying url"
               None
 
 let registerOnTwitter() =

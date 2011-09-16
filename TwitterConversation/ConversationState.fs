@@ -51,7 +51,7 @@ type ConversationsState() =
             (*match exn with
             | :? System.TimeoutException as exn -> ...
             | _ -> printfn "Unknown exception.")*)
-            lerrp "{0}" exn)
+            lerrex exn "Conversation state error")
     member x.AddConversation(s) = mbox.Post(AddConversation(s)); s
     member x.UpdateConversation(s) = mbox.Post(UpdateConversation(s)); s
     member x.RemoveConversation(s) = mbox.Post(RemoveConversation(s))

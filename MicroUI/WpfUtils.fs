@@ -99,7 +99,7 @@ let private textToTextblock (text:string) =
                 let hl = linkFromText part
                 ret.Inlines.Add(hl)
             with ex ->
-                lerrp "Url {0} parsed incorrectly" part
+                lerrex ex (sprintf "Url %s parsed incorrectly" part)
                 ret.Inlines.Add(new Run(part))
         else
             ret.Inlines.Add(new Run(part))

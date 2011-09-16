@@ -11,6 +11,14 @@ let private newStatusDownloaded = new Event<statusInfo>()
 let NewStatusDownloaded = newStatusDownloaded.Publish
 
 let getStatus source (id:Int64) =
+    let convertToStatus source node = 
+        let ret = { Status = OAuthFunctions.xml2Status node
+                    Children = new ResizeArray<statusInfo>()
+                    Source = source }
+        newStatusDownloaded.Trigger(ret)
+        ldbgp "Downloaded {0}" id
+        Some(ret)
+
     ldbgp "Get status {0}" id
     match dbAccess.ReadStatusWithId(id) with
      | Some(sInfo) -> 
@@ -36,14 +44,14 @@ let getStatus source (id:Int64) =
                                    Some(ret)
              | Some(text, _, _) -> let xml = text |> convertJsonToXml
                                    match xml.SelectSingleNode("/root") with
-                                   |null -> log Error (sprintf "status for %d is empty!" id)
+                                   |null -> lerrp "status for {0} is empty!" id
                                             None
-                                   |node -> let ret = { Status = OAuthFunctions.xml2Status node
-                                                        Children = new ResizeArray<statusInfo>()
-                                                        Source = source }
-                                            newStatusDownloaded.Trigger(ret)
-                                            ldbgp "Downloaded {0}" id
-                                            Some(ret)
+                                   |node -> try 
+                                                convertToStatus source node 
+                                            with ex -> 
+                                                lerrex ex (sprintf "Unable to parse status %s" text)
+                                                None
+                                            
              | None -> None
 let getStatusOrEmpty source (id:Int64) =
     match getStatus source id with

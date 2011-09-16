@@ -266,7 +266,7 @@ type StatusesDbState(file) =
             else
                 None
         with ex -> 
-            lerrp2 "Unable to read source of {0} {1}" statusId ex
+            lerrex ex (sprintf "Unable to read source of %d" statusId)
             None
         
     let saveStatuses (statuses: statusInfo seq) = 
@@ -358,7 +358,7 @@ type StatusesDbState(file) =
                 | None -> 
                     ldbgp2 "Storing status {0} - {1}" status.UserName status.StatusId
                     try addStatus conn status source
-                    with ex -> lerrp "{0}" ex
+                    with ex -> lerrex ex "Error when storing status"
         )
 
     let deleteStatus (statusInfo: statusInfo) = 
@@ -434,7 +434,7 @@ type StatusesDbState(file) =
         )
     do
         mbox.Error.Add(fun exn -> printfn "exception: %A" exn
-                                  lerrp "{0}" exn)
+                                  lerrex exn "Error in status db mailbox")
 
     member x.DeleteStatus(status) = mbox.PostAndReply(fun reply -> DeleteStatus(status, reply))
     //member x.LoadStatuses() = mbox.PostAndReply(LoadStatuses)

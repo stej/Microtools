@@ -41,7 +41,7 @@ type TwitterLimits() =
              | Some(text, _, _)  -> xml.LoadXml(text)
             Some(xml2rateInfo xml)
         with ex ->
-            lerrp "{0}" ex
+            lerrex ex "Get rate limit error"
             None
 
     let mbox = 
@@ -88,7 +88,7 @@ type TwitterLimits() =
                                     lerrp "Unable to parse response Retry-After {0}" headers
                                     return! loop limits
                         with ex ->
-                            lerrp "Excepting when parsing search limit {0}" ex
+                            lerrex ex "Excepting when parsing search limit."
                             return! loop(limits)
                     | UpdateStandarsLimitFromResponse(_, headers) ->
                         try 
@@ -105,7 +105,7 @@ type TwitterLimits() =
                                                 resetTimeSec = resetTime 
                                             } |> Some }
                         with ex ->
-                            lerrp "Excepting when parsing search limit {0}" ex
+                            lerrex ex "Excepting when parsing search limit."
                             return! loop(limits)
                     | GetLimits(chnl) ->
                         //ldbg "Get limits"
@@ -121,7 +121,7 @@ type TwitterLimits() =
                 | StartLimitChecking -> 
                     Some(async{
                         printfn "Starting Twitter limits mailbox"
-                        log Debug "Starting Twitter limits mailbox"
+                        ldbg "Starting Twitter limits mailbox"
                         async { asyncUpdateLoop() } |> Async.Start
                         return! loop( { StandardRequest = getRateLimit(); SearchLimit = None })
                     })
@@ -138,7 +138,7 @@ type TwitterLimits() =
             | _  -> "search ok"
         standard + search
     do
-        mbox.Error.Add(fun exn -> lerrp "{0}" exn)
+        mbox.Error.Add(fun exn -> lerrex exn "Error in limits mailbox" )
     member x.Start() = mbox.Post(StartLimitChecking)
     member x.Stop() = mbox.Post(Stop)
     member x.UpdateLimit() = mbox.Post(UpdateLimit)

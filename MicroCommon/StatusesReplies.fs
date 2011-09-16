@@ -62,7 +62,7 @@ type NewlyFoundReplies() =
             loop (new Dictionary<int64, statusInfo>())
         )
     do
-        mbox.Error.Add(fun exn -> lerrp "{0}" exn)
+        mbox.Error.Add(fun exn -> lerrex exn "Error in statuses replies mailbox")
     member x.AddStatus(s) = mbox.Post(AddStatus(s)); s
     member x.GetNewReplies(statusInfo, withoutIds) = mbox.PostAndReply(fun reply -> GetNewReplies(statusInfo, withoutIds, reply))
     member x.GetCachedStatus(statusId) = mbox.PostAndReply(fun reply -> GetCachedStatus(statusId, reply))

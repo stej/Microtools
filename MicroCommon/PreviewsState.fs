@@ -60,7 +60,7 @@ type UserStatusesState() =
             loop [] []
         )
     do
-        mbox.Error.Add(fun exn -> lerrp "{0}" exn)
+        mbox.Error.Add(fun exn -> lerrex exn "Error in previews mailbox")
     member x.AddStatuses(s) = mbox.PostAndReply(fun reply -> AddStatuses(s, reply))
     member x.GetStatuses() = mbox.PostAndReply(GetStatuses)
     member x.GetFirstStatusId() = mbox.PostAndReply(GetFirstStatusId)

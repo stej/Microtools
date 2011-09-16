@@ -21,8 +21,7 @@ let private downloadImage (url:string) user =
       let imagePath = getImagePathFromUrl url user
       File.WriteAllBytes(imagePath, wc.DownloadData(url))
     with ex -> 
-      lerrp "Unable to download image {0}" url
-      lerrp "{0}" ex
+      lerrex ex (sprintf "Unable to download image %s" url)
     
 //let getImagePathByParams url user =
 //    getImagePathFromUrl url user

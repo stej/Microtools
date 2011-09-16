@@ -10,7 +10,7 @@ type LogLevel =
     | Debug
     | Info
     | Error
-let log level str =
+let private log level str =
     //ILog logger = LogManager.GetLogger("notes");
     if level = Debug && logger.IsDebugEnabled then 
         logger.Debug(str)
@@ -20,6 +20,9 @@ let log level str =
     if level = Error && logger.IsErrorEnabled then 
         logger.Error(str)
         printfn "%s" str
+let private logex anexception str =
+    logger.Error(str, anexception) 
+
 let ldbg str = log Debug str
 let ldbgp format (p1:obj) = log Debug (String.Format(format, [p1]))
 let ldbgp2 format (p1:obj) (p2:obj) = log Debug (String.Format(format, p1, p2))
@@ -29,6 +32,7 @@ let linfop2 format (p1:obj) (p2:obj) = log Info (String.Format(format, p1, p2))
 let lerr str = log Error str
 let lerrp format (p1:obj) = log Error (String.Format(format, [p1]))
 let lerrp2 format (p1:obj) (p2:obj) = log Error (String.Format(format, p1, p2))
+let lerrex exc str = logex exc str
 
 let convertJsonToXml (json:string) = 
   match json with
