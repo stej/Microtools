@@ -42,15 +42,15 @@ let getStatus source (id:Int64) =
                                    newStatusDownloaded.Trigger(ret)
                                    ldbg "Downloaded forbidden status"
                                    Some(ret)
-             | Some(text, _, _) -> let xml = text |> convertJsonToXml
-                                   match xml.SelectSingleNode("/root") with
-                                   |null -> lerrp "status for {0} is empty!" id
-                                            None
-                                   |node -> try 
-                                                convertToStatus source node 
-                                            with ex -> 
-                                                lerrex ex (sprintf "Unable to parse status %s" text)
+             | Some(text, _, _) -> try 
+                                       let xml = text |> convertJsonToXml
+                                       match xml.SelectSingleNode("/root") with
+                                       |null -> lerrp "status for {0} is empty!" id
                                                 None
+                                       |node -> convertToStatus source node 
+                                   with ex -> 
+                                       lerrex ex (sprintf "Unable to parse status %s" text)
+                                       None
                                             
              | None -> None
 let getStatusOrEmpty source (id:Int64) =
