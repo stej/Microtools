@@ -12,12 +12,16 @@ let NewStatusDownloaded = newStatusDownloaded.Publish
 
 let getStatus source (id:Int64) =
     let convertToStatus source node = 
-        let ret = { Status = OAuthFunctions.xml2Status node
-                    Children = new ResizeArray<statusInfo>()
-                    Source = source }
-        newStatusDownloaded.Trigger(ret)
-        ldbgp "Downloaded {0}" id
-        Some(ret)
+        let parsedStatus = OAuthFunctions.xml2Status node
+        match parsedStatus with
+        | Some(status) ->
+            let ret = { Status = status
+                        Children = new ResizeArray<statusInfo>()
+                        Source = source }
+            newStatusDownloaded.Trigger(ret)
+            ldbgp "Downloaded {0}" id
+            Some(ret)
+        | None -> None
 
     ldbgp "Get status {0}" id
     match dbAccess.ReadStatusWithId(id) with
@@ -125,6 +129,7 @@ let retweets (fromStatusId:Int64) =
      | Some(text, statusCode, headers)  -> 
         twitterLimits.UpdateStandarsLimitFromResponse(statusCode, headers)
         xml.LoadXml(text)
+    linfop "Get retweets from {0} done" fromStatusId
     xml
 
 let publicStatuses() = 
@@ -161,11 +166,16 @@ let private extractStatuses xpath statusesXml =
        |> xpathNodes xpath
        |> Seq.cast<XmlNode> 
        |> Seq.map OAuthFunctions.xml2Status
+       |> Seq.filter (fun s -> s.IsSome)
+       |> Seq.map (fun s -> s.Value)
+       
 let extractRetweets xpath retweetsXml =
     retweetsXml
        |> xpathNodes xpath
        |> Seq.cast<XmlNode> 
        |> Seq.map OAuthFunctions.xml2Retweet
+       |> Seq.filter (fun s -> s.IsSome)
+       |> Seq.map (fun s -> s.Value)
 
 let private loadNewFriendsStatuses maxId =
     friendsStatuses maxId |> extractStatuses "//statuses/status"  |> Seq.toList

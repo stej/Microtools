@@ -48,19 +48,26 @@ let convertJsonToXml (json:string) =
             reader.Close()
 
 let xpathValue path (xml:XmlNode) =
-    xml.SelectSingleNode(path).InnerText
+    try 
+        xml.SelectSingleNode(path).InnerText
+    with e ->
+        lerrex e (sprintf "Unable to parse %s" path)
+        ""
 
 let xpathNodes path (xml:XmlNode) =
     xml.SelectNodes(path)
 
+let Int64Default = -1L
+let IntDefault = -1
+
 let Int64OrDefault (value:string) =
     match Int64.TryParse(value) with
         | (true, i) -> i
-        | _ -> -1L
+        | _ -> Int64Default
 let IntOrDefault (value:string) =
     match Int32.TryParse(value) with
         | (true, i) -> i
-        | _ -> -1
+        | _ -> IntDefault
 let monthsMap = 
   Map ([("Jan", 1); ("Feb", 2); ("Mar", 3); ("Apr", 4); ("May", 5); ("Jun", 6);
         ("Jul", 7); ("Aug", 8); ("Sep", 9); ("Oct", 10); ("Nov", 11); ("Dec", 12)])
