@@ -57,6 +57,7 @@
     <Compile Include="OAuthFunctions.fs" />
     <Compile Include="DbFunctions.fs" />
     <Compile Include="TwitterLimits.fs" />
+    <Compile Include="TwitterStatusesChecker.fs" />
     <Compile Include="Twitter.fs" />
     <Compile Include="StatusesReplies.fs" />
     <Compile Include="AssemblyInfo.fs" />
