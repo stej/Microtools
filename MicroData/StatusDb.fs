@@ -269,7 +269,7 @@ type StatusesDbState(file) =
             lerrex ex (sprintf "Unable to read source of %d" statusId)
             None
         
-    let saveStatuses (statuses: statusInfo seq) = 
+    let saveStatuses (statuses: statusInfo seq) =   
         let saveRetweetInfo (conn:SQLiteConnection) info =
             //alter table Status add Column RetweetInfoId varchar(128) default null
             //http://dev.twitter.com/doc/get/statuses/retweeted_to_me
@@ -302,6 +302,15 @@ type StatusesDbState(file) =
                 addCmdParameter cmd "@p16" DateTime.Now.Ticks
                 cmd.ExecuteNonQuery() |> ignore
             recordId
+
+        let udpateStatusRetweetInfo (conn:SQLiteConnection) status =
+            let retweetInfoId = saveRetweetInfo conn status.RetweetInfo.Value
+            use cmd = conn.CreateCommand()
+            cmd.CommandText <- "Update Status SET RetweetInfoId = @p0 where StatusId = @p1"
+            addCmdParameter cmd "@p0" retweetInfoId
+            addCmdParameter cmd "@p1" status.StatusId
+            cmd.ExecuteNonQuery() |> ignore
+
         let addStatus (conn:SQLiteConnection) status source = 
             ldbg (sprintf "Save status %d - %s - %s" status.StatusId status.UserName status.Text)
             let s = status
@@ -348,13 +357,19 @@ type StatusesDbState(file) =
                 match readStatusWithIdUseConn conn status.StatusId with
                 | Some(statusDb) ->
                     let status = statusDb.Status
-                    // kdyz je status ulozeny, je timelinovy a byl ulozeny nejak jinak, pak mu to nastavim - timeline je nejvyssi priorita
+                    // when status is stored, and wasn't marked as "from Timeline" and now I got request to save it as Timeline, I'll
+                    // update the source; Timeline has the highest priority
                     ldbgp2 "Found source {0}, request source is {1}" statusDb.Source source
                     if source = Status.Timeline && statusDb.Source <> Status.Timeline then
                         linfop2 "Stored with other source {0} - {1}. Updating.." status.UserName status.StatusId
                         updateStatusSource source status
                     else
                         linfop "Already stored {0}" (status.ToString())
+
+                    // in cases that the stored status doesn't have retweet info and the current one to save has it, let's add it
+                    if statusDb.Status.RetweetInfo.IsNone && sInfo.Status.RetweetInfo.IsSome then
+                        linfo "Stored status doesn't have retweet info. New one has, updating"
+                        udpateStatusRetweetInfo conn (sInfo.Status)
                 | None -> 
                     ldbgp2 "Storing status {0} - {1}" status.UserName status.StatusId
                     try addStatus conn status source

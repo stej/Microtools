@@ -70,7 +70,22 @@ window.Loaded.Add(
         async {
           let rec asyncloop() = 
             setAppState "Loading.."
-            Twitter.loadNewPersonalStatuses twitterLimits.IsSafeToQueryTwitterStatuses (Twitter.getLastStoredIds())    // or StatusesReplies.loadPublicStatuses
+            let newStatuses = 
+                [async { let! statuses = Twitter.PersonalStatuses.friendsChecker.Check()
+                         Twitter.PersonalStatuses.saveStatuses Twitter.FriendsStatuses statuses
+                         return statuses }
+                 async { let! statuses = Twitter.PersonalStatuses.mentionsChecker.Check()
+                         Twitter.PersonalStatuses.saveStatuses Twitter.MentionsStatuses statuses
+                         return statuses }
+                 async { let! statuses = Twitter.PersonalStatuses.retweetsChecker.Check()
+                         Twitter.PersonalStatuses.saveStatuses Twitter.RetweetsStatuses statuses
+                         return statuses }
+                ]
+                |> Async.Parallel
+                |> Async.RunSynchronously
+
+            pridat statusy do preview
+            Twitter.loadNewPersonalStatuses twitterLimits.IsSafeToQueryTwitterStatuses
                 |> Twitter.saveDownloadedStatuses
                 |> fun downloaded -> downloaded.NewStatuses
                 |> PreviewsState.userStatusesState.AddStatuses

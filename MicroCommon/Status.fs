@@ -110,6 +110,14 @@ let getEmptyStatus() =
       Inserted = DateTime.Now
       RetweetInfo = None
     }
+let status2StatusInfo source maybeStatus =
+    match maybeStatus with
+    | None -> None
+    | Some(s) ->
+        { Status = s
+          Children = new  ResizeArray<statusInfo>()
+          Source = source
+        } |> Some
 
 let extractStatus statusInfo = 
     statusInfo.Status

@@ -10,7 +10,7 @@ open TwitterLimits
 let private newStatusDownloaded = new Event<statusInfo>()
 let NewStatusDownloaded = newStatusDownloaded.Publish
 
-let getStatusXXX source (id:Int64) =
+let getStatus source (id:Int64) =
     let convertToStatus source node = 
         let parsedStatus = OAuthFunctions.xml2Status node
         match parsedStatus with
@@ -57,8 +57,8 @@ let getStatusXXX source (id:Int64) =
                                        None
                                             
              | None -> None
-let getStatusOrEmptyXXX source (id:Int64) =
-    match getStatusXXX source id with
+let getStatusOrEmpty source (id:Int64) =
+    match getStatus source id with
     |Some(s) -> s
     |None -> { Status = Status.getEmptyStatus()
                Children = new ResizeArray<statusInfo>()
@@ -92,53 +92,51 @@ let search userName (sinceId:Int64) =
         linfo "Search limit reached. Stopped..."
         emptyResult()
 
-let friendsChecker, mentionsChecker, retweetsChecker = 
-    let normalizeId idGetter = 
-        match idGetter() with 
-        | id when id < 1000L -> 1000L
-        | id -> id
-    // todo: dependency on db
-    let getFriendsUrl () = sprintf "http://api.twitter.com/1/statuses/friends_timeline.xml?since_id=%d&count=3200" (normalizeId dbAccess.GetLastTimelineId)
-    let getMentionsUrl () = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d" (normalizeId dbAccess.GetLastMentionsId)
-    let getRetweetsUrl () = sprintf "http://api.twitter.com/1/statuses/retweeted_to_me.xml?since_id=%d&count=100" (normalizeId dbAccess.GetLastRetweetsId)
-    new TwitterStatusesChecker.Checker("friends", getFriendsUrl),
-    new TwitterStatusesChecker.Checker("mentions", getMentionsUrl),
-    new TwitterStatusesChecker.Checker("retweets", getRetweetsUrl)
+type PersonalStatusesType =
+    | FriendsStatuses
+    | MentionsStatuses
+    | RetweetsStatuses
 
-let private loadStatuses extractFce (checker:TwitterStatusesChecker.Checker) =
-    let extractStatuses (statusParser: XmlNode-> status option) xpath retweetsXml =
-        retweetsXml
-           |> xpathNodes xpath
-           |> Seq.cast<XmlNode> 
-           |> Seq.map statusParser
-           |> Seq.filter (fun s -> s.IsSome)
-           |> Seq.map (fun s -> s.Value)
-    async { 
-        let! res = checker.Check() 
-        return match res with
-        | None -> []
-        | Some((xml, statusCode, headers)) -> 
-             twitterLimits.UpdateSearchLimitFromResponse(statusCode, headers)
-             xml |> extractStatuses extractFce "//statuses/status"  |> Seq.toList
-    }
-let loadNewFriendsStatuses = loadStatuses OAuthFunctions.xml2Status friendsChecker
-let loadNewMentionsStatuses = loadStatuses OAuthFunctions.xml2Status mentionsChecker
-let loadNewRetweets = loadStatuses OAuthFunctions.xml2Retweet retweetsChecker
+module PersonalStatuses = 
+    let friendsChecker, mentionsChecker, retweetsChecker = 
+        let normalizeId idGetter = 
+            match idGetter() with 
+            | id when id < 1000L -> 1000L
+            | id -> id
+        // todo: dependency on db
+        let getFriendsUrl () = sprintf "http://api.twitter.com/1/statuses/friends_timeline.xml?since_id=%d&count=3200" (normalizeId dbAccess.GetLastTimelineId)
+        let getMentionsUrl () = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d" (normalizeId dbAccess.GetLastMentionsId)
+        let getRetweetsUrl () = sprintf "http://api.twitter.com/1/statuses/retweeted_to_me.xml?since_id=%d&count=100" (normalizeId dbAccess.GetLastRetweetsId)
+        new TwitterStatusesChecker.Checker(FriendsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getFriendsUrl),
+        new TwitterStatusesChecker.Checker(MentionsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getMentionsUrl),
+        new TwitterStatusesChecker.Checker(RetweetsStatuses, (OAuthFunctions.xml2Retweet >> (status2StatusInfo Retweet)), getRetweetsUrl)
 
-type LoadedPersonalStatuses = {
+    let saveStatuses requestType statuses =
+        let getLogicalStatusId (sInfo:statusInfo) = sInfo.Status.LogicalStatusId
+        match statuses with
+        | None -> ()
+        | Some(slist) -> 
+            dbAccess.SaveStatuses(slist)
+            let latestStatus = slist |> List.maxBy getLogicalStatusId
+            match requestType with
+            | FriendsStatuses -> dbAccess.UpdateLastTimelineId(latestStatus)
+            | MentionsStatuses -> dbAccess.UpdateLastMentionsId(latestStatus)
+            | RetweetsStatuses -> dbAccess.UpdateLastRetweetsId(latestStatus)
+
+(*type LoadedPersonalStatuses = {
     NewStatuses : statusInfo list
     LastFriendStatus : statusInfo option
     LastMentionStatus : statusInfo option
     LastRetweet : statusInfo option
 }
 
-let loadNewPersonalStatuses fIsSaveToQueryStatuses (lastTimelineId, lastMentionId, lastRetweetId) =
+let loadNewPersonalStatuses fIsSaveToQueryStatuses =
     linfo "Loading new personal statuses"
 
     let getStatusId (status:status) = status.LogicalStatusId
-    let loadSomeStatuses lastId (loader:Int64 -> status list) = 
+    let loadSomeStatuses (loader:Async<status list>) = 
         if fIsSaveToQueryStatuses() then
-            let ret = loader lastId
+            let ret = loader |> Async.RunSynchronously
             if ret.Length > 0 then 
                 ret, Some({ Status = ret |> List.maxBy getStatusId
                             Children = new ResizeArray<statusInfo>()
@@ -147,9 +145,9 @@ let loadNewPersonalStatuses fIsSaveToQueryStatuses (lastTimelineId, lastMentionI
                 ret, None
         else
             [], None
-    let friends, lastF  = loadSomeStatuses lastTimelineId loadNewFriendsStatuses
-    let mentions, lastM = loadSomeStatuses lastMentionId loadNewMentionsStatuses
-    let retweets, lastR = loadSomeStatuses lastRetweetId loadNewRetweets
+    let friends, lastF  = loadSomeStatuses loadNewFriendsStatuses
+    let mentions, lastM = loadSomeStatuses loadNewMentionsStatuses
+    let retweets, lastR = loadSomeStatuses loadNewRetweets
 
     let statusesCache = new System.Collections.Generic.Dictionary<Int64, status*StatusSource>()
     let statusToCache source status =
@@ -177,8 +175,8 @@ let loadNewPersonalStatuses fIsSaveToQueryStatuses (lastTimelineId, lastMentionI
         LastMentionStatus = lastM
         LastRetweet = lastR
     }
-
-let saveDownloadedStatuses (statuses: LoadedPersonalStatuses) =
+*)
+(*let saveDownloadedStatuses (statuses: LoadedPersonalStatuses) =
     dbAccess.SaveStatuses(statuses.NewStatuses)
     if statuses.LastFriendStatus.IsSome then dbAccess.UpdateLastTimelineId(statuses.LastFriendStatus.Value)
     if statuses.LastMentionStatus.IsSome then dbAccess.UpdateLastMentionsId(statuses.LastMentionStatus.Value)
@@ -186,6 +184,7 @@ let saveDownloadedStatuses (statuses: LoadedPersonalStatuses) =
     // this print is not necessary, but ensures that all commands are executed in db agent
     printfn "Last timeline status ids: %A" (dbAccess.GetLastTimelineId())
     statuses
+*)
 
 let getStatusId status =
     status.StatusId
