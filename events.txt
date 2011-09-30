@@ -1,0 +1,33 @@
+http://www.asciiflow.com/#8655051366888423880/1019043458
+
+   +---------------------+
+   | TwitterClient timer |+------------> * download statuses
+   |   -mentions         |               * parse statuses
+   |   -retweets         |                 * update limits
+   |   -timeline         |               x trigger event
+   +---------------------+
+                                            x   xx
+                                            x  x x
+                                            x x  x
+                                            x    x
+                                                 x
+                                                 x
+                                               xxxxx
+                                                 x
+                                         Event handler
+                                         * save statuses
+                                         * download parent if necc
+                                           (create conversation)
+                                         * add to previous statuses
+                                         * add to GUI
+
+
+
+
+
+
+
+
+
+
+
