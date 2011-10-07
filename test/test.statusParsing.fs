@@ -8,22 +8,7 @@ open Utils
 open Status
 open OAuthFunctions
 
-(*
 type ``Given status xml document`` ()=
-    let xml = new XmlDocument()
-    do
-      let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testStatus.xml")
-      printfn "%s" path
-      xml.Load(path)
-      
-
-    [<Test>] member test.
-      ``parse status`` () =
-            let s = xml2Status xml
-            s.Id |> should equal 4L
-*)
-[<TestFixture>] 
-type Givenstatusxmldocument ()=
     let xml = new XmlDocument()
     do
       let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testStatus.xml")
@@ -31,7 +16,7 @@ type Givenstatusxmldocument ()=
       xml.Load(path)
 
     [<Test>] 
-    member test.parsestatus () =
+    member test.``parse status`` () =
         let s = xml2Status (xml.SelectSingleNode("status"))
         //printfn "status %A" s
         s |> should not (equal None)
@@ -43,7 +28,7 @@ type Givenstatusxmldocument ()=
         s.Value.UserStatusesCount |> should equal 18763
         
 [<TestFixture>] 
-type Givenretweetxmldocument ()=
+type ``Given retweet xml document`` ()=
     let xml = new XmlDocument()
     do
       let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testRetweet.xml")
@@ -51,7 +36,7 @@ type Givenretweetxmldocument ()=
       xml.Load(path)
 
     [<Test>] 
-    member test.parseretweet () =
+    member test.``parse retweet`` () =
         let s = xml2Retweet (xml.SelectSingleNode("status"))
         //printfn "status %A" s
         s |> should not (equal None)

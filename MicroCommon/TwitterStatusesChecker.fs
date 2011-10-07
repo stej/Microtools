@@ -11,7 +11,7 @@ type TwitterStatusesCheckerMessages =
 | Stop
 | CheckForStatuses of AsyncReplyChannel<(statusInfo list) option>
 
-type Checker(checkerType, statusNodeConvertor:XmlNode->statusInfo option, getUrl) =
+type Checker(checkerType, statusNodeConvertor:XmlNode->statusInfo option, getUrl, isItSaveToQuery) =
     let extractStatuses statusesXml =
         statusesXml
             |> xpathNodes "//statuses/status"
@@ -27,23 +27,27 @@ type Checker(checkerType, statusNodeConvertor:XmlNode->statusInfo option, getUrl
                 match msg with
                 | Stop -> ()
                 | CheckForStatuses(chnl) ->
-                    let url = getUrl()
-                    linfop "Check {0}" url
-                    let xml = new XmlDocument()
-                    match OAuth.requestTwitter url with
-                     | None ->
-                        chnl.Reply(None)
-                     | Some(sentXml, statusCode, headers) ->
-                        twitterLimits.UpdateSearchLimitFromResponse(statusCode, headers)
-                        match sentXml with
-                        | ""   -> xml.LoadXml("<statuses type=\"array\"></statuses>")
-                        | text -> xml.LoadXml(text)
-                        let statuses = xml |> extractStatuses
-                                           |> Seq.toList
+                    if isItSaveToQuery() then
+                        let url = getUrl()
+                        linfop "Check {0}" url
+                        let xml = new XmlDocument()
+                        match OAuth.requestTwitter url with
+                         | None ->
+                            chnl.Reply(None)
+                         | Some(sentXml, statusCode, headers) ->
+                            twitterLimits.UpdateSearchLimitFromResponse(statusCode, headers)
+                            match sentXml with
+                            | ""   -> xml.LoadXml("<statuses type=\"array\"></statuses>")
+                            | text -> xml.LoadXml(text)
+                            let statuses = xml |> extractStatuses
+                                               |> Seq.toList
                         
-                        chnl.Reply(Some(statuses))
+                            chnl.Reply(Some(statuses))
 
-                    linfop2 "Check {0} - {1} done" checkerType url
+                        linfop2 "Check {0} - {1} done" checkerType url
+                    else
+                        chnl.Reply(None)
+                        linfop "Twitter limits exceeded. Type: {0}" checkerType
 
                     return! loop()
             }

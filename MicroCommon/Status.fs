@@ -82,10 +82,12 @@ and statusInfo = {
                    Source : StatusSource
                  }
                  override x.ToString() = String.Format("{0}-{1}", x.Status, (statusSource2String x.Source))
-                 member x.ChildrenIds () =
-                    x.Children |> Seq.map (fun s -> s.Status.StatusId)
                  member inline x.StatusId () =
                     x.Status.StatusId
+                 member x.ChildrenIds () =
+                    x.Children |> Seq.map (fun s -> s.StatusId())
+                 member x.IsRetweet() =
+                    x.Status.RetweetInfo.IsSome
         
 let getEmptyStatus() =
     { Id = null; 
@@ -109,6 +111,24 @@ let getEmptyStatus() =
       UserIsFollowing = false
       Inserted = DateTime.Now
       RetweetInfo = None
+    }
+let getEmptyRetweetInfo() =
+    { Id = null
+      RetweetId = -1L
+      Date     = DateTime.MinValue
+      UserName = "empty"
+      UserId = "empty"
+      UserProfileImage = ".jpg"
+      UserProtected = false
+      UserFollowersCount = -1
+      UserFriendsCount = -1
+      UserCreationDate = DateTime.MinValue
+      UserFavoritesCount = -1
+      UserOffset = -1
+      UserUrl = ""
+      UserStatusesCount = -1
+      UserIsFollowing = false
+      Inserted = DateTime.Now
     }
 let status2StatusInfo source maybeStatus =
     match maybeStatus with

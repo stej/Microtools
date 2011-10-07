@@ -107,21 +107,22 @@ module PersonalStatuses =
         let getFriendsUrl () = sprintf "http://api.twitter.com/1/statuses/friends_timeline.xml?since_id=%d&count=3200" (normalizeId dbAccess.GetLastTimelineId)
         let getMentionsUrl () = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d" (normalizeId dbAccess.GetLastMentionsId)
         let getRetweetsUrl () = sprintf "http://api.twitter.com/1/statuses/retweeted_to_me.xml?since_id=%d&count=100" (normalizeId dbAccess.GetLastRetweetsId)
-        new TwitterStatusesChecker.Checker(FriendsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getFriendsUrl),
-        new TwitterStatusesChecker.Checker(MentionsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getMentionsUrl),
-        new TwitterStatusesChecker.Checker(RetweetsStatuses, (OAuthFunctions.xml2Retweet >> (status2StatusInfo Retweet)), getRetweetsUrl)
+        let canQuery = twitterLimits.IsSafeToQueryTwitterStatuses
+        new TwitterStatusesChecker.Checker(FriendsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getFriendsUrl, canQuery),
+        new TwitterStatusesChecker.Checker(MentionsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getMentionsUrl, canQuery),
+        new TwitterStatusesChecker.Checker(RetweetsStatuses, (OAuthFunctions.xml2Retweet >> (status2StatusInfo Retweet)), getRetweetsUrl, canQuery)
 
     let saveStatuses requestType statuses =
         let getLogicalStatusId (sInfo:statusInfo) = sInfo.Status.LogicalStatusId
         match statuses with
-        | None -> ()
-        | Some(slist) -> 
+        | Some(slist) when slist |> Seq.isEmpty |> not -> 
             dbAccess.SaveStatuses(slist)
             let latestStatus = slist |> List.maxBy getLogicalStatusId
             match requestType with
             | FriendsStatuses -> dbAccess.UpdateLastTimelineId(latestStatus)
             | MentionsStatuses -> dbAccess.UpdateLastMentionsId(latestStatus)
             | RetweetsStatuses -> dbAccess.UpdateLastRetweetsId(latestStatus)
+        | _ -> ()
 
 (*type LoadedPersonalStatuses = {
     NewStatuses : statusInfo list

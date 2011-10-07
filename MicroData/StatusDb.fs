@@ -350,8 +350,10 @@ type StatusesDbState(file) =
             addCmdParameter cmd "@p22" retweetInfoId
             addCmdParameter cmd "@p23" false    // remove from db
             cmd.ExecuteNonQuery() |> ignore
-        useDb file (fun conn ->                
+        useDb file (fun conn ->
+            ldbg "Save statuses start"
             for sInfo in statuses do 
+                ldbgp "Save {0}" sInfo.Status
                 let source = sInfo.Source
                 let status = sInfo.Status
                 match readStatusWithIdUseConn conn status.StatusId with
@@ -390,7 +392,7 @@ type StatusesDbState(file) =
             addCmdParameter cmd "@p0" status.StatusId
             cmd.ExecuteNonQuery() |> ignore
         )
-        statusInfo.Status.StatusId
+        statusInfo.StatusId()
 
     let mbox = MailboxProcessor.Start(fun mbox ->
             printfn "starting statuses db"

@@ -205,9 +205,9 @@ window.Loaded.Add(fun _ ->
 // all the searches
 let addNewlyFoundConversations() =
     readStatuses() 
-        |> Seq.filter (fun sInfo -> not (ConversationState.conversationsState.ContainsStatus(sInfo.Status.StatusId)))
+        |> Seq.filter (fun sInfo -> not (ConversationState.conversationsState.ContainsStatus(sInfo.StatusId())))
         |> ImagesSource.ensureStatusesImages
-        |> Seq.sortBy (fun sInfo -> sInfo.Status.StatusId)   // sort ascending, because the statuses are added to the beginning -> makes descending order
+        |> Seq.sortBy (fun sInfo -> sInfo.StatusId())   // sort ascending, because the statuses are added to the beginning -> makes descending order
         |> Seq.iter (fun sInfo -> sInfo |> addConversationCtls WpfUtils.Beginning
                                         |> (StatusesReplies.loadSavedReplyTree
                                             >> ConversationState.conversationsState.AddConversation
@@ -312,7 +312,7 @@ updateAll.Click.Add(fun _ ->
                         return! update statusIds
         }
         let ids = ConversationState.conversationsState.GetConversations()
-                    |> List.map (fun s -> s.Status.StatusId)
+                    |> List.map (fun s -> s.StatusId())
                     |> List.sortBy (fun s -> -s)
         for id in ids do showConversationWillBeProcessed (controlsCache.[id].Wrapper)
         do! update ids

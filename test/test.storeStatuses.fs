@@ -8,29 +8,14 @@ open Utils
 open Status
 open OAuthFunctions
 open StatusDb
+open testDbUtils
 
 [<TestFixture>] 
-type Givenemptydatabase ()=
-    let dbPath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\statuses.db")
-    let retweet =
-        let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testRetweet.xml")
-        printfn "%s" path
-        let xml = new XmlDocument()
-        xml.Load(path)
-        (xml2Retweet (xml.SelectSingleNode("status"))).Value
-    let getDbObject() = 
-        new StatusesDbState(dbPath)
-    let dbInterface() =
-        getDbObject() :> DbFunctions.IStatusesDatabase
-    let deleteDbContent() =
-        useDb dbPath (fun conn ->
-            use cmd = conn.CreateCommand(CommandText = "delete from Status; delete from RetweetInfo")
-            cmd.ExecuteNonQuery()
-        )
+type ``Given empty database`` () =
 
     [<Test>] 
-    member test.StoreRetweetAndCheckThatItExistsInDb () =
-        printfn "StoreRetweetAndCheckThatItExistsInDb"
+    member test.``Store Retweet and check that it exists in db`` () =
+        printfn "Store Retweet and check that it exists in db"
         printfn "Deleted rows: %A" (deleteDbContent())
         
         let db = dbInterface()
@@ -41,8 +26,8 @@ type Givenemptydatabase ()=
         readStatus.Value.Status.Text |> should equal "Happening now - September 29th the Streaming API is turning SSL only - http://t.co/mlBeUUSQ"
         
     [<Test>] 
-    member test.StoreStatusAsSearchThenAsTimelineThenShouldBeStoredAsTimeline () =
-        printfn "StoreStatusAsSearchThenAsTimelineThenShouldBeStoredAsTimeline"
+    member test.``Store status from search then from timeline then should be stored as from timeline`` () =
+        printfn "Store status from search then from timeline then should be stored as from timeline"
         printfn "Deleted rows: %A" (deleteDbContent())
         
         let db = dbInterface()
@@ -55,8 +40,8 @@ type Givenemptydatabase ()=
         | _ -> Assert.Fail()
         
     [<Test>] 
-    member test.StoreStatusAsTimelineThenAsSearchThenShouldBeStoredAsTimeline () =
-        printfn "StoreStatusAsTimelineThenAsSearchThenShouldBeStoredAsTimeline"
+    member test.``Store status from timeline then from search then should be stored as from timeline``  () =
+        printfn "Store status from timeline then from search then should be stored as from timeline"
         printfn "Deleted rows: %A" (deleteDbContent())
         
         let db = dbInterface()
@@ -69,8 +54,8 @@ type Givenemptydatabase ()=
         | _ -> Assert.Fail()
         
     [<Test>] 
-    member test.StoreStatusWithoutRetweetInfoAndStoreLaterWithRetweetInfo_shouldBeSaved () =
-        printfn "StoreStatusWithoutRetweetInfoAndStoreLaterWithRetweetInfo_shouldBeSaved"
+    member test.``Store status without retweet info and then store later with retweet info. The retweet info should be saved`` () =
+        printfn "Store status without retweet info and then store later with retweet info. The retweet info should be saved"
         printfn "Deleted rows: %A" (deleteDbContent())
         
         let db = dbInterface()

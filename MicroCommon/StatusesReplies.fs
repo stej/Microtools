@@ -38,11 +38,11 @@ type NewlyFoundReplies() =
                 | Clear ->
                     return! loop (new Dictionary<int64, statusInfo>())
                 | AddStatus(toAdd) ->
-                    if replies.ContainsKey(toAdd.Status.StatusId) then
+                    if replies.ContainsKey(toAdd.StatusId()) then
                         return! loop replies
                     else
                         ldbgp "Added. Count of replies collected: {0}" (replies.Count+1)
-                        replies.[toAdd.Status.StatusId] <- toAdd
+                        replies.[toAdd.StatusId()] <- toAdd
                         return! loop replies
                 | GetNewReplies(parent, withoutChildrenIds, chnl) ->
                     let childrenSet = withoutChildrenIds |> Set.ofSeq
@@ -52,7 +52,7 @@ type NewlyFoundReplies() =
                     chnl.Reply(ret)
                     return! loop replies
                 | GetCachedStatus(statusId, chnl) ->
-                    //let status = replies |> List.filter (fun s -> s.Status.StatusId = statusId) // use
+                    //let status = replies |> List.filter (fun s -> s.StatusId() = statusId) // use
                     match replies.TryGetValue(statusId) with
                     | true, sInfo -> chnl.Reply(Some(sInfo))
                     | false, _ -> chnl.Reply(None)
@@ -78,8 +78,8 @@ let private loadingStatusReplyTree = new Event<status>()
 let LoadingStatusReplyTree = loadingStatusReplyTree.Publish
                 
 let loadSavedReplyTree initialStatusInfo = 
-    let rec addReplies sInfo = 
-        let replies = dbAccess.ReadStatusReplies sInfo.Status.StatusId
+    let rec addReplies (sInfo:statusInfo) = 
+        let replies = dbAccess.ReadStatusReplies (sInfo.StatusId())
         replies |> Seq.iter (fun reply -> sInfo.Children.Add(reply)
                                           statusAdded.Trigger(reply.Status))
         someChildrenLoaded.Trigger(initialStatusInfo)
@@ -121,13 +121,13 @@ let findReplies initialStatus =
             |> List.filter (fun sInfo -> sInfo.Status.ReplyTo = id)                               //get only reply to current status
         let countBefore = sInfo.Children.Count
         statuses |> List.iter (fun s -> let processedStatus = s.Status
-                                        if sInfo.Children.Exists(fun s0 -> s0.Status.StatusId = processedStatus.StatusId) then
+                                        if sInfo.Children.Exists(fun s0 -> s0.StatusId() = processedStatus.StatusId) then
                                            lerrp2 "ERROR: exists {0} {1}" processedStatus.StatusId processedStatus.Text
                                         ldbgp "Add {0}" processedStatus.StatusId
                                         sInfo.Children.Add(s)
                                         statusAdded.Trigger(processedStatus))
         someChildrenLoaded.Trigger(initialStatus)
-        sInfo.Children |> Seq.iter (fun s -> ldbgp "Call fn {0}" s.Status.StatusId
+        sInfo.Children |> Seq.iter (fun s -> ldbgp "Call fn {0}" (s.StatusId())
                                              findRepliesIn (depth+1) s)
 
     findRepliesIn 0 initialStatus
@@ -147,7 +147,7 @@ let rootConversation (sInfo:statusInfo) =
     
 // takes list of statuses
 // for each status checks if it is placed in conversation. If it is, it finds the root
-let rootConversations (statusDownloader: int64 -> statusInfo) baseStatuses (toRoot: statusInfo list) =
+let rootConversations (statusDownloader: int64 -> statusInfo) (baseStatuses:statusInfo list) toRoot =
     // function that processes one status that is reply to other status and 
     // 2) or if there is no reply parent in resStatuses, loads reply parent (and its parent, ...) and adds it to the list
     // 3) or if there is reply parent, adds the status as a child
@@ -160,7 +160,7 @@ let rootConversations (statusDownloader: int64 -> statusInfo) baseStatuses (toRo
             let currSubtreeStatus = currentSubtree.Status
             if currSubtreeStatus.ReplyTo = -1L then
                 ldbgp2 "Subtree {0} {1} is whole branch->adding to list" currSubtreeStatus.UserName currSubtreeStatus.StatusId
-                List.append resStatuses [currentSubtree]     // the subtree is aded to the top, because we reached root of the conversation and it wasn't rooted yet anywhere else
+                currentSubtree::resStatuses     // the subtree is aded to the top, because we reached root of the conversation and it wasn't rooted yet anywhere else
             else
                 // currSubtreeStatus is a status with some children, but the status has not been rooted yet
                 let parent = StatusFunctions.FindStatusInConversationsById currSubtreeStatus.ReplyTo resStatuses       // is somewhere in resStatuses current status?
@@ -170,29 +170,31 @@ let rootConversations (statusDownloader: int64 -> statusInfo) baseStatuses (toRo
                          newRoot.Children.Add(currentSubtree)
                          append newRoot
                 |Some(p) ->
-                         ldbg (sprintf "Subtree %s %d found parent %s %d" currSubtreeStatus.UserName currSubtreeStatus.StatusId p.Status.UserName p.Status.StatusId)
+                         ldbg (sprintf "Subtree %s %d found parent %s %d" currSubtreeStatus.UserName currSubtreeStatus.StatusId p.Status.UserName (p.StatusId()))
                          p.Children.Add(currentSubtree)
                          resStatuses // return unchanged resStatuses
-        match StatusFunctions.FindStatusInConversationsById currStatus.Status.StatusId resStatuses with
-        |None    -> append currStatus
-        |Some(_) -> ldbgp2 "Status {0} {1} already added. Skipping" currStatus.Status.UserName currStatus.Status.StatusId
+        match StatusFunctions.FindStatusInConversationsById (currStatus.StatusId()) resStatuses with
+        |None    -> ldbgp2 "Status {0} {1} will be added to conversations" currStatus.Status.UserName (currStatus.StatusId())
+                    append currStatus
+        |Some(_) -> ldbgp2 "Status {0} {1} already added. Skipping" currStatus.Status.UserName (currStatus.StatusId())
                     resStatuses
+
+    let noParent, withParent = toRoot |> Seq.toList  |> List.partition (fun sInfo -> sInfo.Status.ReplyTo = -1L)
     // first add root statuses (statuses that aren't replies, ReplyTo is -1)
     // thats because the algorithm is quite simple when first non-replies are added and possible replies bound later
-    let baseWithPlainStatuses =
-        toRoot
-        |> Seq.filter (fun s -> s.Status.ReplyTo = -1L)
-        |> Seq.fold (fun currStatuses currStatus -> currStatus::currStatuses) baseStatuses
+    let baseNonParentStatuses =
+        noParent |> Seq.fold (fun sInfos sInfo -> sInfo::sInfos) baseStatuses
     // and then root replies
-    toRoot 
-        |> Seq.filter (fun s -> s.Status.ReplyTo <> -1L) 
-        |> Seq.fold rootConversation baseWithPlainStatuses
+    withParent |> Seq.fold rootConversation baseNonParentStatuses
         
 // prepared function that downloads status if needed
-let rootConversationsWithDownload = rootConversations (getStatusOrEmpty Status.RequestedConversation)
-let rootConversationsWithNoDownload = rootConversations (fun id ->
-    match dbAccess.ReadStatusWithId(id) with
-     | Some(status) -> status
-     | None -> { Status = Status.getEmptyStatus()
-                 Children = new ResizeArray<statusInfo>()
-                 Source = Undefined })
+// the type annotation is needed, otherwise:  error FS0030: Value restriction. The value 'rootConversationsWithNoDownload' has been inferred to have generic type ... Either make the arguments to 'rootConversationsWithNoDownload' explicit or, if you do not intend for it to be generic, add a type annotation.
+let rootConversationsWithDownload  : statusInfo list -> seq<statusInfo> -> statusInfo list = 
+    rootConversations (getStatusOrEmpty Status.RequestedConversation)
+let rootConversationsWithNoDownload: statusInfo list -> seq<statusInfo> -> statusInfo list = 
+    rootConversations (fun id ->
+        match dbAccess.ReadStatusWithId(id) with
+         | Some(status) -> status
+         | None -> { Status = Status.getEmptyStatus()
+                     Children = new ResizeArray<statusInfo>()
+                     Source = Undefined })

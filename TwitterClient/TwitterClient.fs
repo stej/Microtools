@@ -59,43 +59,48 @@ let switchPanes () =
       imagesHolder.Visibility <- Visibility.Visible
       detailsHolder.Visibility <- Visibility.Collapsed
       
-let refresh () =
-    let list,tree = PreviewsState.userStatusesState.GetStatuses()
-    WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
-                                            fillDetails tree)
-    list,tree
+let refresh =
+    let refresher = 
+        MailboxProcessor.Start(fun mbox ->
+            let rec loop () = async {
+                let! msg = mbox.Receive()
+                let list,trees = PreviewsState.userStatusesState.GetStatuses()
+                ldbgp2 "CLI: Count of statuses: {0}/{1}" list.Length trees.Length
+                ImagesSource.ensureStatusesImages trees |> ignore
+                WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
+                                                        fillDetails trees)
+                setAppStateCount list.Length
+                ldbg "CLI: Refresh done"
+                return! loop()
+            }
+            loop ())
+    fun () -> refresher.Post("")
 
+let StatusesLoadedEvent = new Event<statusInfo list option>()
+let StatusesLoadedPublished = StatusesLoadedEvent.Publish
+
+StatusesLoadedPublished |> Event.add (fun list ->
+    if list.IsSome then
+        list.Value |> PreviewsState.userStatusesState.AddStatuses
+        refresh()
+)
 window.Loaded.Add(
     fun _ ->
         async {
           let rec asyncloop() = 
             setAppState "Loading.."
-            let newStatuses = 
-                [async { let! statuses = Twitter.PersonalStatuses.friendsChecker.Check()
-                         Twitter.PersonalStatuses.saveStatuses Twitter.FriendsStatuses statuses
-                         return statuses }
-                 async { let! statuses = Twitter.PersonalStatuses.mentionsChecker.Check()
-                         Twitter.PersonalStatuses.saveStatuses Twitter.MentionsStatuses statuses
-                         return statuses }
-                 async { let! statuses = Twitter.PersonalStatuses.retweetsChecker.Check()
-                         Twitter.PersonalStatuses.saveStatuses Twitter.RetweetsStatuses statuses
-                         return statuses }
-                ]
-                |> Async.Parallel
-                |> Async.RunSynchronously
+            [async { let! statuses = Twitter.PersonalStatuses.friendsChecker.Check()
+                     statuses |> Twitter.PersonalStatuses.saveStatuses Twitter.FriendsStatuses
+                     statuses |> StatusesLoadedEvent.Trigger }
+             async { let! statuses = Twitter.PersonalStatuses.mentionsChecker.Check()
+                     statuses |> Twitter.PersonalStatuses.saveStatuses Twitter.MentionsStatuses
+                     statuses |> StatusesLoadedEvent.Trigger }
+             async { let! statuses = Twitter.PersonalStatuses.retweetsChecker.Check()
+                     statuses |> Twitter.PersonalStatuses.saveStatuses Twitter.RetweetsStatuses
+                     statuses |> StatusesLoadedEvent.Trigger }
+            ]
+            |> Async.Parallel |> Async.RunSynchronously |> ignore
 
-            pridat statusy do preview
-            Twitter.loadNewPersonalStatuses twitterLimits.IsSafeToQueryTwitterStatuses
-                |> Twitter.saveDownloadedStatuses
-                |> fun downloaded -> downloaded.NewStatuses
-                |> PreviewsState.userStatusesState.AddStatuses
-            let list,trees = PreviewsState.userStatusesState.GetStatuses()
-            
-            ImagesSource.ensureStatusesImages trees |> ignore
-            
-            WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
-                                                    fillDetails trees)
-            setAppStateCount list.Length
             async { do! Async.Sleep(1000*60*3) } |> Async.RunSynchronously
             asyncloop()
           asyncloop()
@@ -133,8 +138,7 @@ up.Click.Add(fun _ ->
         StatusDb.statusesDb.GetTimelineStatusesBefore(50,firstStatusId)
             |> ImagesSource.ensureStatusesImages
             |> PreviewsState.userStatusesState.AddStatuses
-        let list,_ = refresh() 
-        setAppStateCount list.Length
+        refresh() 
     } |> Async.Start
 )
 clear.Click.Add( fun _ ->
@@ -182,7 +186,7 @@ do
     let menuItem = new MenuItem()
     menuItem.Header <- "Show filtered"
     menuItem.Click.Add(fun _ -> negateShowHide menuItem
-                                refresh () |> ignore)
+                                refresh ())
     window.ContextMenu.Items.Add(menuItem) |> ignore
 
     let menuItem = new MenuItem()

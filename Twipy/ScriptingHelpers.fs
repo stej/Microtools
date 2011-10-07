@@ -97,10 +97,18 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
         </html>")
         System.Diagnostics.Process.Start(file)
     member x.DownloadAndSavePersonalStatuses() = 
-        Twitter.getLastStoredIds()
-            |> Twitter.loadNewPersonalStatuses twitterLimits.IsSafeToQueryTwitterStatuses
-            |> Twitter.saveDownloadedStatuses
-            |> fun downloaded -> downloaded.NewStatuses
+        [async { let! statuses = Twitter.PersonalStatuses.friendsChecker.Check()
+                 Twitter.PersonalStatuses.saveStatuses Twitter.FriendsStatuses statuses
+                 return statuses }
+         async { let! statuses = Twitter.PersonalStatuses.mentionsChecker.Check()
+                 Twitter.PersonalStatuses.saveStatuses Twitter.MentionsStatuses statuses
+                 return statuses }
+         async { let! statuses = Twitter.PersonalStatuses.retweetsChecker.Check()
+                 Twitter.PersonalStatuses.saveStatuses Twitter.RetweetsStatuses statuses
+                 return statuses }
+        ]
+        |> Async.Parallel
+        |> Async.RunSynchronously
     member x.LoadConversations(maxConversations) = StatusDb.statusesDb.GetRootStatusesHavingReplies(maxConversations)
     member x.LoadChildren(status) = StatusesReplies.loadSavedReplyTree(status)
     member x.LoadLastStatuses(maxStatuses) = StatusDb.statusesDb.GetTimelineStatusesBefore(maxStatuses, Int64.MaxValue)
