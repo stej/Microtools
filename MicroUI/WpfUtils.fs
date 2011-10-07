@@ -106,7 +106,10 @@ let private textToTextblock (text:string) =
     ret
 
 let createLittlePicture status = 
-    createStatusPicture 30. (new Thickness(2.)) status 
+    ldbgp "UI: Little picture for {0}" status
+    let ret = createStatusPicture pictureSize (new Thickness(2.)) status 
+    ldbgp "UI: Little picture for {0} done" status
+    ret
               
 let createDetail (status:status) =
     let row = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,

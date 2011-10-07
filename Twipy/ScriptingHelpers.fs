@@ -16,19 +16,20 @@ open System.Windows.Data
 open System.Windows.Documents
 
 type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) = 
-    let fillDetails statuses = DisplayStatus.fillDetails window details "" true statuses
-    let fillPictures = DisplayStatus.fillPictures wrapContent
+    let neverFilterer = fun _ -> false
+    let fillDetails statuses = DisplayStatus.fillDetails window details neverFilterer true statuses
+    let fillPictures = DisplayStatus.fillPictures wrapContent neverFilterer true
 
     member x.loadTree status = StatusesReplies.loadSavedReplyTree status
     member x.show (statuses: statusInfo seq) = 
-        WpfUtils.dispatchMessage window (fun _ -> fillPictures statuses
+        WpfUtils.dispatchMessage window (fun _ -> fillPictures statuses |> ignore
                                                   fillDetails statuses)
 
     // print and show status together
     member x.show (o: Object) = 
         match o with
         | :? statusInfo as sInfo-> 
-            WpfUtils.dispatchMessage window (fun _ -> fillPictures [sInfo]
+            WpfUtils.dispatchMessage window (fun _ -> fillPictures [sInfo] |> ignore
                                                       fillDetails [sInfo])
         | _ -> 
             WpfUtils.dispatchMessage window (fun _ -> 

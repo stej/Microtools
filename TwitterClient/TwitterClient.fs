@@ -35,7 +35,9 @@ let filterCtl = window.FindName("filter") :?> TextBox
 let setAppState state = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
 let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, [|p1|]))
 let setAppState2 (format:string) p1 p2 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1, p2))
-let setAppStateCount count = setAppState (sprintf "Done.. Count: %d" count)
+let setAppStateCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) = 
+    let filtered = filterStatusInfos |> List.fold (fun count curr -> if curr.Filtered then count+1 else count) 0
+    setAppState (sprintf "Done.. Count: %d/%d" count filtered)
 
 let mutable showHiddenStatuses = false
 filterCtl.Text <- StatusFilter.defaultConfigFilter
@@ -48,8 +50,8 @@ Twitter.NewStatusDownloaded
 
 twitterLimits.Start()
 
-let fillDetails statuses = DisplayStatus.fillDetails window details filterCtl.Text showHiddenStatuses statuses
-let fillPictures = DisplayStatus.fillPictures wrap
+let fillDetails filterer statuses = DisplayStatus.fillDetails window details filterer showHiddenStatuses statuses
+let fillPictures filterer = DisplayStatus.fillPictures wrap filterer showHiddenStatuses
 
 let switchPanes () =
     if imagesHolder.Visibility = Visibility.Visible then
@@ -67,9 +69,11 @@ let refresh =
                 let list,trees = PreviewsState.userStatusesState.GetStatuses()
                 ldbgp2 "CLI: Count of statuses: {0}/{1}" list.Length trees.Length
                 ImagesSource.ensureStatusesImages trees |> ignore
-                WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
-                                                        fillDetails trees)
-                setAppStateCount list.Length
+                ldbg "CLI: Refreshing panels"
+                WpfUtils.dispatchMessage wrap (fun _ -> let statusFilterer = StatusFilter.getStatusFilterer filterCtl.Text
+                                                        let filterStatusInfos = fillPictures statusFilterer list
+                                                        fillDetails statusFilterer trees
+                                                        setAppStateCount list.Length filterStatusInfos)
                 ldbg "CLI: Refresh done"
                 return! loop()
             }
@@ -121,11 +125,7 @@ window.Loaded.Add(
 (filterCtl.TextChanged :> IObservable<_>)
     .Throttle(TimeSpan.FromMilliseconds(800.))
     .DistinctUntilChanged()
-    .Subscribe(fun _ -> 
-        let list,tree = PreviewsState.userStatusesState.GetStatuses()
-        WpfUtils.dispatchMessage wrap (fun _ -> fillPictures list
-                                                fillDetails tree)
-    ) |> ignore
+    .Subscribe(fun _ -> refresh()) |> ignore
 
 up.Click.Add(fun _ -> 
     async {
@@ -143,9 +143,7 @@ up.Click.Add(fun _ ->
 )
 clear.Click.Add( fun _ ->
     PreviewsState.userStatusesState.ClearStatuses()
-    WpfUtils.dispatchMessage wrap (fun _ -> fillPictures []
-                                            fillDetails [])
-    setAppStateCount 0
+    refresh()
 )
 
 switcher.Click.Add(fun _ -> switchPanes () )

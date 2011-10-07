@@ -71,3 +71,9 @@ let rec parseFilter (text:string) =
             else if part.StartsWith("Timeline@") then yield (TimelineByUser, (if part.Length > 9 then part.Substring(9) else ""))
             else yield (Text, part)
     } |> Seq.toList
+    
+// @filterText - text with filter definition
+// returns - statusInfo -> bool (true = filter match)
+let getStatusFilterer filterText = 
+  let parsed = parseFilter filterText
+  matchesFilter parsed
