@@ -32,12 +32,15 @@ let appStateCtl = window.FindName("appState") :?> TextBlock
 let filterCtl = window.FindName("filter") :?> TextBox
 //let contentGrid = window.FindName("content") :?> Panel
 
-let setAppState state = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
-let setAppState1 format p1 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, [|p1|]))
-let setAppState2 (format:string) p1 p2 = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- String.Format(format, p1, p2))
+let setAppState state = 
+    WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
+let setAppState1 format p1 = 
+    String.Format(format, [|p1|]) |> setAppState
+let setAppState2 (format:string) p1 p2 = 
+    String.Format(format, p1, p2) |> setAppState
 let setAppStateCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) = 
     let filtered = filterStatusInfos |> List.fold (fun count curr -> if curr.Filtered then count+1 else count) 0
-    setAppState (sprintf "Done.. Count: %d/%d" count filtered)
+    setAppState (sprintf "%s.. Count: %d/%d" (UIState.getAppStrState()) count filtered)
 
 let mutable showHiddenStatuses = false
 filterCtl.Text <- StatusFilter.defaultConfigFilter
@@ -80,10 +83,13 @@ let refresh =
             loop ())
     fun () -> refresher.Post("")
 
+
+
 let StatusesLoadedEvent = new Event<statusInfo list option>()
 let StatusesLoadedPublished = StatusesLoadedEvent.Publish
 
 StatusesLoadedPublished |> Event.add (fun list ->
+    UIState.addDone() 
     if list.IsSome then
         list.Value |> PreviewsState.userStatusesState.AddStatuses
         refresh()
@@ -93,13 +99,16 @@ window.Loaded.Add(
         async {
           let rec asyncloop() = 
             setAppState "Loading.."
-            [async { let! statuses = Twitter.PersonalStatuses.friendsChecker.Check()
+            [async { UIState.addWorking()
+                     let! statuses = Twitter.PersonalStatuses.friendsChecker.Check()
                      statuses |> Twitter.PersonalStatuses.saveStatuses Twitter.FriendsStatuses
                      statuses |> StatusesLoadedEvent.Trigger }
-             async { let! statuses = Twitter.PersonalStatuses.mentionsChecker.Check()
+             async { UIState.addWorking()
+                     let! statuses = Twitter.PersonalStatuses.mentionsChecker.Check()
                      statuses |> Twitter.PersonalStatuses.saveStatuses Twitter.MentionsStatuses
                      statuses |> StatusesLoadedEvent.Trigger }
-             async { let! statuses = Twitter.PersonalStatuses.retweetsChecker.Check()
+             async { UIState.addWorking()
+                     let! statuses = Twitter.PersonalStatuses.retweetsChecker.Check()
                      statuses |> Twitter.PersonalStatuses.saveStatuses Twitter.RetweetsStatuses
                      statuses |> StatusesLoadedEvent.Trigger }
             ]
