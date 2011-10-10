@@ -14,8 +14,9 @@ type private MsgType =
     | State of AsyncReplyChannel<UIStateDescriptor>
     | StrState of AsyncReplyChannel<string>
     | Counts of int * int
+    | Exit
 
-let getAppState, getAppStrState, addWorking, addDone, setCounts =
+let getUIStateFunctions () =
     let mp = 
         MailboxProcessor.Start(fun mbox ->
             let rec loop active listLen filtered = async {
@@ -33,6 +34,7 @@ let getAppState, getAppStrState, addWorking, addDone, setCounts =
                                        return! loop active listLen filtered
                 | Counts(newlen, newfiltered) -> 
                                        return! loop active newlen newfiltered
+                | Exit -> ()
             }
             loop 0 0 0
         )
@@ -40,4 +42,7 @@ let getAppState, getAppStrState, addWorking, addDone, setCounts =
     (fun () -> mp.PostAndReply(fun channel -> StrState(channel))),
     (fun () -> mp.Post(Working)),
     (fun () -> mp.Post(Done)),
-    (fun len filtered -> mp.Post(Counts(len, filtered)))
+    (fun len filtered -> mp.Post(Counts(len, filtered))),
+    (fun () -> mp.Post(Exit))
+    
+let getAppState, getAppStrState, addWorking, addDone, setCounts, setExit = getUIStateFunctions()
