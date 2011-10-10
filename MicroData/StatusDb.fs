@@ -461,9 +461,9 @@ type StatusesDbState(file) =
 
     //member x.AsyncLoadStatuses() = mbox.PostAndAsyncReply(LoadStatuses)
     member x.AsyncGetLastTwitterStatusId() = mbox.PostAndAsyncReply(GetLastTimelineId)
-    member x.AsyncGetLastMentionsId() = mbox.PostAndAsyncReply(GetLastMentionsId)
-    member x.AsyncGetLastRetweetsId() = mbox.PostAndAsyncReply(GetLastRetweetsId)
-    member x.AsyncReadStatusWithId(id:Int64) = mbox.PostAndAsyncReply(fun reply -> ReadStatusWithId(id, reply))
+    //member x.AsyncGetLastMentionsId() = mbox.PostAndAsyncReply(GetLastMentionsId)
+    //member x.AsyncGetLastRetweetsId() = mbox.PostAndAsyncReply(GetLastRetweetsId)
+    //member x.AsyncReadStatusWithId(id:Int64) = mbox.PostAndAsyncReply(fun reply -> ReadStatusWithId(id, reply))
     member x.AsyncReadStatusReplies(id:Int64) = mbox.PostAndAsyncReply(fun reply -> ReadStatusReplies(id, reply))
     member x.AsyncGetRootStatusesHavingReplies(maxCount) = mbox.PostAndAsyncReply(fun reply -> GetRootStatusesHavingReplies(maxCount, reply))
     member x.AsyncGetTimelineStatusesBefore(count, fromId) = mbox.PostAndAsyncReply(fun reply -> GetTimelineStatusesBefore(count, fromId, reply))

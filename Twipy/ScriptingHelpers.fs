@@ -98,6 +98,7 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
         </html>")
         System.Diagnostics.Process.Start(file)
     member x.DownloadAndSavePersonalStatuses() = 
+        let statusesState = new PreviewsState.UserStatusesState();
         [async { let! statuses = Twitter.PersonalStatuses.friendsChecker.Check()
                  Twitter.PersonalStatuses.saveStatuses Twitter.FriendsStatuses statuses
                  return statuses }
@@ -110,6 +111,13 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
         ]
         |> Async.Parallel
         |> Async.RunSynchronously
+        |> Array.choose Operators.id
+        |> Array.iter statusesState.AddStatuses
+        |> ignore
+        printf "Waiting until all statuses are saved.."
+        DbFunctions.dbAccess.GetLastTimelineId() |> ignore //ensure waiting until all statuses are saved
+        printfn "done"
+        statusesState.GetStatuses() |> fst
     member x.LoadConversations(maxConversations) = StatusDb.statusesDb.GetRootStatusesHavingReplies(maxConversations)
     member x.LoadChildren(status) = StatusesReplies.loadSavedReplyTree(status)
     member x.LoadLastStatuses(maxStatuses) = StatusDb.statusesDb.GetTimelineStatusesBefore(maxStatuses, Int64.MaxValue)
