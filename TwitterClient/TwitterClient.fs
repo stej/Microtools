@@ -38,9 +38,11 @@ let setAppState1 format p1 =
     String.Format(format, [|p1|]) |> setAppState
 let setAppState2 (format:string) p1 p2 = 
     String.Format(format, p1, p2) |> setAppState
-let setAppStateCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) = 
+let setAppStateCount () = 
+    setAppState (UIState.getAppStrState())
+let setCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) = 
     let filtered = filterStatusInfos |> List.fold (fun count curr -> if curr.Filtered then count+1 else count) 0
-    setAppState (sprintf "%s.. Count: %d/%d" (UIState.getAppStrState()) count filtered)
+    UIState.setCounts count filtered
 
 let mutable showHiddenStatuses = false
 filterCtl.Text <- StatusFilter.defaultConfigFilter
@@ -76,7 +78,8 @@ let refresh =
                 WpfUtils.dispatchMessage wrap (fun _ -> let statusFilterer = StatusFilter.getStatusFilterer filterCtl.Text
                                                         let filterStatusInfos = fillPictures statusFilterer list
                                                         fillDetails statusFilterer trees
-                                                        setAppStateCount list.Length filterStatusInfos)
+                                                        setCount list.Length filterStatusInfos)
+                setAppStateCount ()
                 ldbg "CLI: Refresh done"
                 return! loop()
             }
