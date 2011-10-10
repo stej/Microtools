@@ -124,69 +124,6 @@ module PersonalStatuses =
             | RetweetsStatuses -> dbAccess.UpdateLastRetweetsId(latestStatus)
         | _ -> ()
 
-(*type LoadedPersonalStatuses = {
-    NewStatuses : statusInfo list
-    LastFriendStatus : statusInfo option
-    LastMentionStatus : statusInfo option
-    LastRetweet : statusInfo option
-}
-
-let loadNewPersonalStatuses fIsSaveToQueryStatuses =
-    linfo "Loading new personal statuses"
-
-    let getStatusId (status:status) = status.LogicalStatusId
-    let loadSomeStatuses (loader:Async<status list>) = 
-        if fIsSaveToQueryStatuses() then
-            let ret = loader |> Async.RunSynchronously
-            if ret.Length > 0 then 
-                ret, Some({ Status = ret |> List.maxBy getStatusId
-                            Children = new ResizeArray<statusInfo>()
-                            Source = Timeline })
-            else
-                ret, None
-        else
-            [], None
-    let friends, lastF  = loadSomeStatuses loadNewFriendsStatuses
-    let mentions, lastM = loadSomeStatuses loadNewMentionsStatuses
-    let retweets, lastR = loadSomeStatuses loadNewRetweets
-
-    let statusesCache = new System.Collections.Generic.Dictionary<Int64, status*StatusSource>()
-    let statusToCache source status =
-        statusesCache.[status.StatusId] <- (status,source)
-
-    // store statuses i cache
-    friends @ mentions |> List.iter (statusToCache Status.Timeline)
-
-    // store retweets in cache; if there is the status already contained, that means that there is the status on timeline and somebody retweeted
-    // this status will be stored with source Timeline and retweet info will be appended; retweet that is not in timeline has source Retweet
-    retweets 
-    |> List.iter (fun retweet -> if statusesCache.ContainsKey(retweet.StatusId) then
-                                    statusToCache Status.Timeline retweet
-                                    else
-                                    statusToCache Status.Retweet retweet)
-
-    { 
-        // publish collection without duplicates
-        NewStatuses = statusesCache.Values |> Seq.toList 
-                                           |> List.sortBy (fun (status,_) -> status.DisplayDate)
-                                           |> List.map (fun (status, source) -> { Status = status
-                                                                                  Children = new ResizeArray<statusInfo>()
-                                                                                  Source = source })
-        LastFriendStatus = lastF
-        LastMentionStatus = lastM
-        LastRetweet = lastR
-    }
-*)
-(*let saveDownloadedStatuses (statuses: LoadedPersonalStatuses) =
-    dbAccess.SaveStatuses(statuses.NewStatuses)
-    if statuses.LastFriendStatus.IsSome then dbAccess.UpdateLastTimelineId(statuses.LastFriendStatus.Value)
-    if statuses.LastMentionStatus.IsSome then dbAccess.UpdateLastMentionsId(statuses.LastMentionStatus.Value)
-    if statuses.LastRetweet.IsSome then dbAccess.UpdateLastRetweetsId(statuses.LastRetweet.Value)
-    // this print is not necessary, but ensures that all commands are executed in db agent
-    printfn "Last timeline status ids: %A" (dbAccess.GetLastTimelineId())
-    statuses
-*)
-
 let getStatusId status =
     status.StatusId
 let sameId status1 status2 =
