@@ -90,9 +90,10 @@ let StatusesLoadedPublished = StatusesLoadedEvent.Publish
 
 StatusesLoadedPublished |> Event.add (fun list ->
     UIState.addDone() 
-    if list.IsSome then
-        list.Value |> PreviewsState.userStatusesState.AddStatuses
-        refresh()
+    match list with
+    | Some(l) -> l |> PreviewsState.userStatusesState.AddStatuses
+                 refresh()
+    | _       -> setAppStateCount ()    // at least show that we are done..
 )
 window.Loaded.Add(
     fun _ ->
