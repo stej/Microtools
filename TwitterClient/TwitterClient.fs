@@ -20,9 +20,6 @@ open System.Windows.Data
 open System.Windows.Media
 
 let window = WpfUtils.createXamlWindow "TwitterClient.xaml"
-let switcher = window.FindName("switchView") :?> Button
-let up = window.FindName("up") :?> Button
-let clear = window.FindName("clear") :?> Button
 let wrap = window.FindName("images") :?> WrapPanel
 let imagesHolder = window.FindName("imagesHolder") :?> UIElement
 let detailsHolder = window.FindName("detailsHolder") :?> UIElement
@@ -139,7 +136,7 @@ window.Loaded.Add(
     .DistinctUntilChanged()
     .Subscribe(fun _ -> refresh()) |> ignore
 
-up.Click.Add(fun _ -> 
+let goUp () = 
     async {
         let firstStatusId:Int64 = 
             match PreviewsState.userStatusesState.GetFirstStatusId() with
@@ -152,13 +149,7 @@ up.Click.Add(fun _ ->
             |> PreviewsState.userStatusesState.AddStatuses
         refresh() 
     } |> Async.Start
-)
-clear.Click.Add( fun _ ->
-    PreviewsState.userStatusesState.ClearStatuses()
-    refresh()
-)
 
-switcher.Click.Add(fun _ -> switchPanes () )
 //contentGrid.MouseDoubleClick.Add(fun _ -> switchPanes () )
 //contentGrid.PreviewDoubleClick.Add(fun _ -> switchPanes () )
 //imagesHolder.MouseRightButtonUp.Add(fun _ -> switchPanes () )
@@ -186,22 +177,29 @@ switcher.Click.Add(fun _ -> switchPanes () )
 
 let negateShowHide (menuItem:MenuItem) =
     showHiddenStatuses <- not showHiddenStatuses
-    menuItem.Header <- if showHiddenStatuses then "Hide filtered" else "Show filtered"
+    menuItem.IsChecked <- showHiddenStatuses
 
 // bind context menu
 do
     //detailsHolder.ContextMenu <- new ContextMenu()
     window.ContextMenu <- new ContextMenu()
      
-    let menuItem = new MenuItem()
-    menuItem.Header <- "Show filtered"
+    let menuItem = new MenuItem(Header = "Show filtered", IsCheckable = true, ToolTip = "Show/hide filtered items")
     menuItem.Click.Add(fun _ -> negateShowHide menuItem
                                 refresh ())
     window.ContextMenu.Items.Add(menuItem) |> ignore
 
-    let menuItem = new MenuItem()
-    menuItem.Header <- "Switch"
+    let menuItem = new MenuItem(Header = "Switch", ToolTip = "Switch to list/tree view")
     menuItem.Click.Add(fun _ -> switchPanes ())
+    window.ContextMenu.Items.Add(menuItem) |> ignore
+
+    let menuItem = new MenuItem(Header = "Clear", ToolTip = "Clear view")
+    menuItem.Click.Add(fun _ -> PreviewsState.userStatusesState.ClearStatuses()
+                                refresh())
+    window.ContextMenu.Items.Add(menuItem) |> ignore
+
+    let menuItem = new MenuItem(Header = "Go up", ToolTip = "Get older statuses")
+    menuItem.Click.Add(fun _ -> goUp ())
     window.ContextMenu.Items.Add(menuItem) |> ignore
 
 [<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]

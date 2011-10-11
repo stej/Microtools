@@ -22,8 +22,6 @@
         DockPanel.Dock="Bottom"
         Orientation="horizontal"
         Background="Gray">
-      <Button HorizontalAlignment="right" x:Name="switchView" Margin="0">Switch</Button>
-      <Button HorizontalAlignment="right" x:Name="up" Margin="0">Up</Button>
       <Label 
             Padding="0"
             Margin="5 0 5 0" 
@@ -37,7 +35,6 @@
       <TextBlock 
             x:Name="appState" 
             Height="20"></TextBlock>
-      <Button HorizontalAlignment="right" x:Name="clear" Margin="10 0 0 0">Clear</Button>
     </StackPanel>
     <!-- strange, ugly, working
       only one of the borders is visible - what panel should I use? -->
