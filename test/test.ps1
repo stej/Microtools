@@ -21,8 +21,9 @@ if (!$runOnly) {
 	"$rootDir\MicroCommon\StatusFilter.fs" `
 	"$rootDir\MicroCommon\StatusFunctions.fs" `
 	"$rootDir\MicroCommon\OAuth.fs" `
+	"$rootDir\MicroCommon\OAuthInterface.fs" `
 	"$rootDir\MicroCommon\OAuthFunctions.fs" `
-	"$rootDir\MicroCommon\DbFunctions.fs" `
+	"$rootDir\MicroCommon\DbInterface.fs" `
 	"$rootDir\MicroCommon\TwitterLimits.fs" `
 	"$rootDir\MicroCommon\TwitterStatusesChecker.fs" `
 	"$rootDir\MicroCommon\Twitter.fs" `
@@ -40,6 +41,7 @@ if (!$runOnly) {
 	"$rootDir\test\test.storeStatuses.fs" `
 	"$rootDir\test\test.previewState.fs" `
 	"$rootDir\test\test.previewStateAccessingDb.fs" `
+	"$rootDir\test\test.statusesChecker.fs" `
 	"$rootDir\test\test.UIState.fs" `
   --target:library --platform:x86 --out:$res `
   --reference:$rootDir\lib\DevDefined.OAuth.dll `

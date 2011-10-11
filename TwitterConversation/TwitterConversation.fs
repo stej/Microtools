@@ -7,7 +7,6 @@ open OAuth
 open Status
 open System.Windows.Threading
 open System.Threading
-open DbFunctions
 open TwitterLimits
 
 let args = System.Environment.GetCommandLineArgs()
@@ -39,7 +38,7 @@ let pauseUpdate = window.FindName("pause") :?> Button
 let continueUpdate = window.FindName("continue") :?> Button
 let cancelUpdate = window.FindName("cancel") :?> Button
 
-DbFunctions.dbAccess <- StatusDb.statusesDb
+DbInterface.dbAccess <- StatusDb.statusesDb
 
 let mutable (lastUpdateall:DateTime) = DateTime.MinValue
 
@@ -177,7 +176,7 @@ window.Loaded.Add(fun _ ->
     //    |> Event.add (fun status -> setState (sprintf "Loading %s - %d" status.UserName status.StatusId))
     // status downloaded from Twitter
     Twitter.NewStatusDownloaded 
-        |> Event.add (fun sInfo -> dbAccess.SaveStatus(sInfo)
+        |> Event.add (fun sInfo -> DbInterface.dbAccess.SaveStatus(sInfo)
                                    linfop "Downloaded {0}" sInfo)
     // some children loaded; slows dowhn loading quite significantly in some cases -> removed
     // StatusesReplies.SomeChildrenLoaded 

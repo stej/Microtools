@@ -115,7 +115,7 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
         |> Array.iter statusesState.AddStatuses
         |> ignore
         printf "Waiting until all statuses are saved.."
-        DbFunctions.dbAccess.GetLastTimelineId() |> ignore //ensure waiting until all statuses are saved
+        DbInterface.dbAccess.GetLastTimelineId() |> ignore //ensure waiting until all statuses are saved
         printfn "done"
         statusesState.GetStatuses() |> fst
     member x.LoadConversations(maxConversations) = StatusDb.statusesDb.GetRootStatusesHavingReplies(maxConversations)

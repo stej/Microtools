@@ -31,13 +31,13 @@ let clearScope = window.FindName("clearScope") :?> Button
 let setAppState state = 
     WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
 
-DbFunctions.dbAccess <- StatusDb.statusesDb
+DbInterface.dbAccess <- StatusDb.statusesDb
 
 twitterLimits.Start()
 
 // events
 Twitter.NewStatusDownloaded 
-        |> Event.add (fun statusInfo -> DbFunctions.dbAccess.SaveStatus(statusInfo)
+        |> Event.add (fun statusInfo -> DbInterface.dbAccess.SaveStatus(statusInfo)
                                         linfop "Downloaded {0}" statusInfo
                                         setAppState (sprintf "Status downloaded %A" statusInfo))
     

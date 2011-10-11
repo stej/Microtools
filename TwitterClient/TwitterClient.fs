@@ -7,7 +7,6 @@ open OAuth
 open Status
 open System.Windows.Threading
 open System.Linq
-open DbFunctions
 open TwitterLimits
 
 OAuth.checkAccessTokenFile()
@@ -43,11 +42,11 @@ let setCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) =
 
 let mutable showHiddenStatuses = false
 filterCtl.Text <- StatusFilter.defaultConfigFilter
-DbFunctions.dbAccess <- StatusDb.statusesDb
+DbInterface.dbAccess <- StatusDb.statusesDb
 
 // status downloaded from Twitter
 Twitter.NewStatusDownloaded 
-    |> Event.add (fun sInfo -> dbAccess.SaveStatus(sInfo)
+    |> Event.add (fun sInfo -> DbInterface.dbAccess.SaveStatus(sInfo)
                                setAppState1 "Saving status {0}" sInfo)
 
 twitterLimits.Start()

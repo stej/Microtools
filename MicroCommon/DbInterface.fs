@@ -1,4 +1,4 @@
-﻿module DbFunctions
+﻿module DbInterface
 
 open Status
 

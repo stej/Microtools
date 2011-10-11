@@ -19,7 +19,7 @@ let retweet =
 let getDbObject() = 
     new StatusesDbState(dbPath)
 let dbInterface() =
-    getDbObject() :> DbFunctions.IStatusesDatabase
+    getDbObject() :> DbInterface.IStatusesDatabase
 let deleteDbContent() =
     useDb dbPath (fun conn ->
         use cmd = conn.CreateCommand(CommandText = "delete from Status; delete from RetweetInfo")

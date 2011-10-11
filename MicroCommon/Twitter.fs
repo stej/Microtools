@@ -4,8 +4,8 @@ open System
 open System.Xml
 open Status
 open Utils
-open DbFunctions
 open TwitterLimits
+open DbInterface
 
 let private newStatusDownloaded = new Event<statusInfo>()
 let NewStatusDownloaded = newStatusDownloaded.Publish
@@ -38,7 +38,7 @@ let getStatus source (id:Int64) =
         | Some(rateInfo) -> 
             ldbgp "Downloading {0}" id // todo: store status in db!
             let formatter = sprintf "http://api.twitter.com/1/statuses/show/%d.json"
-            match OAuth.requestTwitter (formatter id) with
+            match OAuthInterface.oAuthAccess.requestTwitter (formatter id) with
              | Some(text, System.Net.HttpStatusCode.Forbidden, _) -> 
                                    let ret = { Status = { getEmptyStatus() with StatusId = id; Text = "forbidden" }
                                                Children = new ResizeArray<statusInfo>()
@@ -74,7 +74,7 @@ let search userName (sinceId:Int64) =
         //unreliable - Twitter doesn't index all tweets, to:... not working well
         //let url = sprintf "http://search.twitter.com/search.json?to=%s&since_id=%d&rpp=100&result_type=recent" userName sinceId
         let url = sprintf "http://search.twitter.com/search.json?q=%%40%s&since_id=%d&rpp=100&result_type=recent" userName sinceId
-        match OAuth.requestTwitter url with
+        match OAuthInterface.oAuthAccess.requestTwitter url with
          | Some(text, statusCode, headers) -> twitterLimits.UpdateSearchLimitFromResponse(statusCode, headers)
                                               convertJsonToXml text
          | None -> emptyResult()
@@ -136,7 +136,7 @@ let isParentOf parentInfo statusInfo =
 (*let publicStatuses() = 
     let url = "http://api.twitter.com/1/statuses/public_timeline.xml"
     let xml = new XmlDocument()
-    match OAuth.requestTwitter url with
+    match OAuthInterface.oAuthAccess.requestTwitter url with
      | None -> xml.LoadXml("<statuses type=\"array\"></statuses>")
      | Some(text, statusCode, headers)  -> 
         twitterLimits.UpdateStandarsLimitFromResponse(statusCode, headers)
@@ -146,7 +146,7 @@ let isParentOf parentInfo statusInfo =
 let currentUser() =
     let url = "http://api.twitter.com/1/account/verify_credentials.xml"
     let xml = new XmlDocument()
-    match OAuth.requestTwitter url with
+    match OAuthInterface.oAuthAccess.requestTwitter url with
      | None -> failwith "Unable to get info for current user"
      | Some(text, statusCode, headers)  -> 
         twitterLimits.UpdateStandarsLimitFromResponse(statusCode, headers)
@@ -158,7 +158,7 @@ let currentUser() =
     let user = xpathValue "/user/screen_name" (currentUser())
     let url = sprintf "http://api.twitter.com/1/%s/lists.xml" user
     let xml = new XmlDocument()
-    match OAuth.requestTwitter url with
+    match OAuthInterface.oAuthAccess.requestTwitter url with
      | None -> xml.LoadXml("<lists_list><lists type=\"array\"/></lists_list>")
      | Some(text, _, _)  -> xml.LoadXml(text)
     xml

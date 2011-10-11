@@ -5,19 +5,19 @@ open System.IO
 open DevDefined.OAuth
 open Utils
 
-let consumerKey = "8Zb9ZmCKaLAJ3dqsArStA" 
-let consumerSecret = "PfqnoKucLZZO8jX8ghVIHeLsjOvs5uZhrmdsTtZAOss"
+let private consumerKey = "8Zb9ZmCKaLAJ3dqsArStA" 
+let private consumerSecret = "PfqnoKucLZZO8jX8ghVIHeLsjOvs5uZhrmdsTtZAOss"
 
-let accessTokenPath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "twitter.accesstoken.txt")
-let mutable (accessToken:Framework.IToken) = null
+let private accessTokenPath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "twitter.accesstoken.txt")
+let mutable private accessToken:Framework.IToken = null
 
-let createToken consumerKey realm token tokenSecret =
+let private createToken consumerKey realm token tokenSecret =
     new Framework.TokenBase(ConsumerKey = consumerKey,
                             Realm = realm,
                             Token = token,
                             TokenSecret = tokenSecret)
 
-let readToken path =
+let private readToken path =
     linfo "reading token.."
     if File.Exists(path) then
         match File.ReadAllLines(path) with
@@ -26,7 +26,7 @@ let readToken path =
     else
         failwith (sprintf "File %s doesn't exist." path)
 
-let saveToken (path:string) token =
+let private saveToken (path:string) token =
     linfo "saving token.."
     use file = new StreamWriter(path)
     file.WriteLine(accessToken.ConsumerKey)
@@ -43,10 +43,10 @@ accessToken <-
         //failwith (sprintf "%s doesn't exist, so the request will not be handled.\nEither call the function again or register on Twitter" accessTokenPath)
         null
 
-let getAccessToken() =
+let private getAccessToken() =
     createToken accessToken.ConsumerKey accessToken.Realm accessToken.Token accessToken.TokenSecret
 
-let getNewSession() =
+let private getNewSession() =
     let cons = new Consumer.OAuthConsumerContext(
                         ConsumerKey = consumerKey,
                         ConsumerSecret = consumerSecret,

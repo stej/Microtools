@@ -4,7 +4,6 @@ open System
 open System.Xml
 open Status
 open Utils
-open DbFunctions
 open TwitterLimits
 
 type TwitterStatusesCheckerMessages =
@@ -31,7 +30,7 @@ type Checker(checkerType, statusNodeConvertor:XmlNode->statusInfo option, getUrl
                         let url = getUrl()
                         linfop "Check {0}" url
                         let xml = new XmlDocument()
-                        match OAuth.requestTwitter url with
+                        match OAuthInterface.oAuthAccess.requestTwitter url with
                          | None ->
                             chnl.Reply(None)
                          | Some(sentXml, statusCode, headers) ->

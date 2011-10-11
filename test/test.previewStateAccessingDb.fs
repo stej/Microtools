@@ -42,7 +42,7 @@ type ``Given object that holds preview state`` ()=
         printfn "Deleted rows: %A" (deleteDbContent())
         let previewCache = new UserStatusesState()
         let db = dbInterface()
-        DbFunctions.dbAccess <- db  // todo: remove :(
+        DbInterface.dbAccess <- db  // todo: remove :(
         
         let s1 = newStatus 1L -1L "I am root"
         let s2 = newStatus 2L 1L "I am envy! :("

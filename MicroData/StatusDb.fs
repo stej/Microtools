@@ -468,7 +468,7 @@ type StatusesDbState(file) =
     member x.AsyncGetRootStatusesHavingReplies(maxCount) = mbox.PostAndAsyncReply(fun reply -> GetRootStatusesHavingReplies(maxCount, reply))
     member x.AsyncGetTimelineStatusesBefore(count, fromId) = mbox.PostAndAsyncReply(fun reply -> GetTimelineStatusesBefore(count, fromId, reply))
 
-    interface DbFunctions.IStatusesDatabase with
+    interface DbInterface.IStatusesDatabase with
         member x.SaveStatus(sInfo) = mbox.Post(SaveStatus(sInfo))
         member x.SaveStatuses(statuses) = mbox.Post(SaveStatuses(statuses))
 

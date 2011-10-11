@@ -4,7 +4,6 @@ open System
 open System.Xml
 open Status
 open Utils
-open DbFunctions
 
 type rateInfo = {
     remainingHits : int
@@ -36,7 +35,7 @@ type TwitterLimits() =
         try 
             let url = "http://api.twitter.com/1/account/rate_limit_status.xml"
             let xml = new XmlDocument()
-            match OAuth.requestTwitter url with
+            match OAuthInterface.oAuthAccess.requestTwitter url with
              | None -> xml.LoadXml("")
              | Some(text, _, _)  -> xml.LoadXml(text)
             Some(xml2rateInfo xml)

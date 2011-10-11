@@ -6,7 +6,6 @@ open Microsoft.FSharp.Collections
 open Status
 open Utils
 open Twitter
-open DbFunctions
 open System.Collections.Generic
 
 type NewlyFoundRepliesMessages =
@@ -79,7 +78,7 @@ let LoadingStatusReplyTree = loadingStatusReplyTree.Publish
                 
 let loadSavedReplyTree initialStatusInfo = 
     let rec addReplies (sInfo:statusInfo) = 
-        let replies = dbAccess.ReadStatusReplies (sInfo.StatusId())
+        let replies = DbInterface.dbAccess.ReadStatusReplies (sInfo.StatusId())
         replies |> Seq.iter (fun reply -> sInfo.Children.Add(reply)
                                           statusAdded.Trigger(reply.Status))
         someChildrenLoaded.Trigger(initialStatusInfo)
@@ -193,7 +192,7 @@ let rootConversationsWithDownload  : statusInfo list -> seq<statusInfo> -> statu
     rootConversations (getStatusOrEmpty Status.RequestedConversation)
 let rootConversationsWithNoDownload: statusInfo list -> seq<statusInfo> -> statusInfo list = 
     rootConversations (fun id ->
-        match dbAccess.ReadStatusWithId(id) with
+        match DbInterface.dbAccess.ReadStatusWithId(id) with
          | Some(status) -> status
          | None -> { Status = Status.getEmptyStatus()
                      Children = new ResizeArray<statusInfo>()
