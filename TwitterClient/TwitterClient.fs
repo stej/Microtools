@@ -88,47 +88,43 @@ let refresh =
 let StatusesLoadedEvent = new Event<statusInfo list option>()
 let StatusesLoadedPublished = StatusesLoadedEvent.Publish
 
+// event is not neede actually, maybe convert back..
 StatusesLoadedPublished |> Event.add (fun list ->
     UIState.addDone() 
     match list with
     | Some(l) -> l |> PreviewsState.userStatusesState.AddStatuses
                  refresh()
-    | _       -> setAppStateCount ()    // at least show that we are done..
+    | _       -> ()
 )
-window.Loaded.Add(
-    fun _ ->
-        async {
-          let rec asyncloop() = 
-            setAppState "Loading.."
-            [async { UIState.addWorking()
-                     let! statuses = Twitter.PersonalStatuses.friendsChecker.Check()
-                     statuses |> Twitter.PersonalStatuses.saveStatuses Twitter.FriendsStatuses
-                     statuses |> StatusesLoadedEvent.Trigger }
-             async { UIState.addWorking()
-                     let! statuses = Twitter.PersonalStatuses.mentionsChecker.Check()
-                     statuses |> Twitter.PersonalStatuses.saveStatuses Twitter.MentionsStatuses
-                     statuses |> StatusesLoadedEvent.Trigger }
-             async { UIState.addWorking()
-                     let! statuses = Twitter.PersonalStatuses.retweetsChecker.Check()
-                     statuses |> Twitter.PersonalStatuses.saveStatuses Twitter.RetweetsStatuses
-                     statuses |> StatusesLoadedEvent.Trigger }
-            ]
-            |> Async.Parallel |> Async.RunSynchronously |> ignore
+window.Loaded.Add(fun _ ->
+    setAppState "Loading.."
+    let rec asyncloop checkerfce statusesType = 
+        async { 
+            UIState.addWorking()
+            setAppStateCount ()    // at least show that we are done..
 
-            async { do! Async.Sleep(1000*60*3) } |> Async.RunSynchronously
-            asyncloop()
-          asyncloop()
-        } |> Async.Start
+            let! statuses = checkerfce() 
+            statuses |> Twitter.PersonalStatuses.saveStatuses statusesType
+            statuses |> StatusesLoadedEvent.Trigger 
+
+            setAppStateCount ()    // at least show that we are done..
+            do! Async.Sleep(1000*60*3)
+            return! asyncloop checkerfce statusesType
+        }
+
+    asyncloop Twitter.PersonalStatuses.friendsChecker.Check Twitter.FriendsStatuses |> Async.Start
+    asyncloop Twitter.PersonalStatuses.mentionsChecker.Check Twitter.MentionsStatuses |> Async.Start
+    asyncloop Twitter.PersonalStatuses.retweetsChecker.Check Twitter.RetweetsStatuses |> Async.Start
         
-        async {
-            let rec asyncLoop() =
-                let limits = twitterLimits.GetLimitsString()
-                ldbgp "limits: {0}" limits
-                WpfUtils.dispatchMessage limitCtl (fun r -> limitCtl.Text <- limits)
-                async { do! Async.Sleep(2500) } |> Async.RunSynchronously
-                asyncLoop()
+    async {
+        let rec asyncLoop() =
+            let limits = twitterLimits.GetLimitsString()
+            ldbgp "limits: {0}" limits
+            WpfUtils.dispatchMessage limitCtl (fun r -> limitCtl.Text <- limits)
+            async { do! Async.Sleep(2500) } |> Async.RunSynchronously
             asyncLoop()
-        } |> Async.Start
+        asyncLoop()
+    } |> Async.Start
 )
 
 // react on changes in filter; what is this cast? http://stackoverflow.com/questions/5131372/how-to-convert-a-wpf-button-click-event-into-observable-using-rx-and-f
