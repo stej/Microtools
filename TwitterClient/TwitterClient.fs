@@ -100,7 +100,7 @@ window.Loaded.Add(fun _ ->
     let rec asyncloop checkerfce statusesType = 
         async { 
             UIState.addWorking()
-            setAppStateCount ()    // at least show that we are done..
+            setAppStateCount ()
 
             let! statuses = checkerfce() 
             statuses |> Twitter.PersonalStatuses.saveStatuses statusesType
