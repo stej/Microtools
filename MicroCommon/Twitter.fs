@@ -104,8 +104,8 @@ module PersonalStatuses =
             | id when id < 1000L -> 1000L
             | id -> id
         // todo: dependency on db
-        let getFriendsUrl () = sprintf "http://api.twitter.com/1/statuses/friends_timeline.xml?since_id=%d&count=3200" (normalizeId dbAccess.GetLastTimelineId)
-        let getMentionsUrl () = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d" (normalizeId dbAccess.GetLastMentionsId)
+        let getFriendsUrl () = sprintf "http://api.twitter.com/1/statuses/home_timeline.xml?since_id=%d&count=200&include_rts=0" (normalizeId dbAccess.GetLastTimelineId)
+        let getMentionsUrl () = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d&include_rts=1&count=200" (normalizeId dbAccess.GetLastMentionsId)
         let getRetweetsUrl () = sprintf "http://api.twitter.com/1/statuses/retweeted_to_me.xml?since_id=%d&count=100" (normalizeId dbAccess.GetLastRetweetsId)
         let canQuery = twitterLimits.IsSafeToQueryTwitterStatuses
         new TwitterStatusesChecker.Checker(FriendsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getFriendsUrl, canQuery),
