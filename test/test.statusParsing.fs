@@ -52,3 +52,26 @@ type ``Given retweet xml document`` ()=
         retweet.UserName           |> should equal "twitterapi"
         retweet.UserFavoritesCount |> should equal 22
         retweet.UserStatusesCount  |> should equal 3119
+
+[<TestFixture>] 
+type ``Given some xml status that might be Retweet or STatus`` ()=
+    let rxml = new XmlDocument()
+    let sxml = new XmlDocument()
+    do
+      let rpath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testRetweet.xml")
+      let spath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testStatus.xml")
+      printfn "%s / %s" rpath spath
+      rxml.Load(rpath)
+      sxml.Load(spath)
+
+    [<Test>] 
+    member test.``try to use xml2StatusOrRetweet on Retweet`` () =
+        let s = xml2StatusOrRetweet (rxml.SelectSingleNode("status"))
+        s.Value.RetweetInfo |> should not (equal None)
+        //s.Value.RetweetInfo |> should equal None
+
+    [<Test>] 
+    member test.``try to use xml2StatusOrRetweet on Status`` () =
+        let s = xml2StatusOrRetweet (sxml.SelectSingleNode("status"))
+        s.Value.RetweetInfo |> should equal None
+        //s.Value.RetweetInfo |> should not (equal None)

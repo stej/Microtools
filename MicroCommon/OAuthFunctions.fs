@@ -83,3 +83,9 @@ let xml2Retweet (xml:XmlNode) =
         None 
     else 
         Some(parsed)
+
+let xml2StatusOrRetweet (xml:XmlNode) = 
+    if xml.SelectSingleNode("retweeted_status") <> null then
+        xml2Retweet xml
+    else
+        xml2Status xml

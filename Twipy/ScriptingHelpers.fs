@@ -105,9 +105,9 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
          async { let! statuses = Twitter.PersonalStatuses.mentionsChecker.Check()
                  Twitter.PersonalStatuses.saveStatuses Twitter.MentionsStatuses statuses
                  return statuses }
-         async { let! statuses = Twitter.PersonalStatuses.retweetsChecker.Check()
-                 Twitter.PersonalStatuses.saveStatuses Twitter.RetweetsStatuses statuses
-                 return statuses }
+         //async { let! statuses = Twitter.PersonalStatuses.retweetsChecker.Check()
+         //        Twitter.PersonalStatuses.saveStatuses Twitter.RetweetsStatuses statuses
+         //        return statuses }
         ]
         |> Async.Parallel
         |> Async.RunSynchronously

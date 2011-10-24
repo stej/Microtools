@@ -139,5 +139,13 @@ let status2StatusInfo source maybeStatus =
           Source = source
         } |> Some
 
+let status2StatusInfoWithUnknownTimelineSource maybeStatus =
+    match maybeStatus with
+    | None -> None
+    | Some(s) ->
+        match s.RetweetInfo with
+        | None    -> { Status = s; Children = new  ResizeArray<statusInfo>(); Source = Timeline } |> Some
+        | Some(_) -> { Status = s; Children = new  ResizeArray<statusInfo>(); Source = Retweet } |> Some
+
 let extractStatus statusInfo = 
     statusInfo.Status
