@@ -29,6 +29,7 @@ if (!$runOnly) {
 	"$rootDir\MicroCommon\Twitter.fs" `
 	"$rootDir\MicroCommon\StatusesReplies.fs" `
 	"$rootDir\MicroCommon\PreviewsState.fs" `
+	"$rootDir\MicroCommon\UrlShortener.fs" `
 	"$rootDir\MicroData\StatusDb.fs" `
 	"$rootDir\MicroUI\ImagesSource.fs" `
 	"$rootDir\Twipy\Cmdline.fs" `
@@ -43,6 +44,7 @@ if (!$runOnly) {
 	"$rootDir\test\test.previewStateAccessingDb.fs" `
 	"$rootDir\test\test.statusesChecker.fs" `
 	"$rootDir\test\test.UIState.fs" `
+	"$rootDir\test\test.urlShortening.fs" `
   --target:library --platform:x86 --out:$res `
   --reference:$rootDir\lib\DevDefined.OAuth.dll `
   --reference:$rootDir\lib\log4net.dll `
