@@ -5,18 +5,10 @@ open Status
 open System.Data.SQLite
 open Utils
 open StatusFunctions
+open DbCommon
 
 let mutable fileName = "statuses.db"
-let private doNothingHandler _ = ()
-let private doNothingHandler2 _ _ = ()
 
-let str (rd:SQLiteDataReader) (id:string)  = 
-    let o = rd.[id]; 
-    match o with | null -> null | s -> s.ToString()
-let long (rd:SQLiteDataReader) (id:string) = Convert.ToInt64(rd.[id])
-let intt (rd:SQLiteDataReader) (id:string) = Convert.ToInt32(rd.[id])
-let date (rd:SQLiteDataReader) (id:string) = new DateTime(long rd id)
-let bol (rd:SQLiteDataReader) (id:string)  = Convert.ToBoolean(rd.[id])
 type statusFromDb = {
     DbStatus: status
     DbRetweetInfoId: string
@@ -71,17 +63,6 @@ let dbStatus2statusInfo dbStatus =
     { Status = dbStatus.DbStatus
       Children = new ResizeArray<statusInfo>()
       Source = dbStatus.DbSource }
-
-let useDb file useFce = 
-    use conn = new System.Data.SQLite.SQLiteConnection()
-    conn.ConnectionString <- sprintf "Data Source=\"%s\"" file
-    conn.Open()
-    let result = useFce conn 
-    conn.Close()
-    result
-    
-let addCmdParameter (cmd:SQLiteCommand) (name:string) value = 
-    cmd.Parameters.Add(new SQLiteParameter(name, (value :> System.Object))) |> ignore
 
 let executeSelect readFce (cmd:SQLiteCommand) = 
     use rd = cmd.ExecuteReader()

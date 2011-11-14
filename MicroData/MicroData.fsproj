@@ -47,7 +47,9 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DbCommon.fs" />
     <Compile Include="StatusDb.fs" />
+    <Compile Include="UrlDb.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>

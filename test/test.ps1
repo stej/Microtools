@@ -23,14 +23,17 @@ if (!$runOnly) {
 	"$rootDir\MicroCommon\OAuth.fs" `
 	"$rootDir\MicroCommon\OAuthInterface.fs" `
 	"$rootDir\MicroCommon\OAuthFunctions.fs" `
-	"$rootDir\MicroCommon\DbInterface.fs" `
+	"$rootDir\MicroCommon\StatusDbInterface.fs" `
+	"$rootDir\MicroCommon\ShortenerDbInterface.fs" `
 	"$rootDir\MicroCommon\TwitterLimits.fs" `
 	"$rootDir\MicroCommon\TwitterStatusesChecker.fs" `
 	"$rootDir\MicroCommon\Twitter.fs" `
 	"$rootDir\MicroCommon\StatusesReplies.fs" `
 	"$rootDir\MicroCommon\PreviewsState.fs" `
-	"$rootDir\MicroCommon\UrlShortener.fs" `
+	"$rootDir\MicroCommon\UrlShortenerFunctions.fs" `
+	"$rootDir\MicroData\DbCommon.fs" `
 	"$rootDir\MicroData\StatusDb.fs" `
+	"$rootDir\MicroData\UrlDb.fs" `
 	"$rootDir\MicroUI\ImagesSource.fs" `
 	"$rootDir\Twipy\Cmdline.fs" `
 	"$rootDir\TwitterClient\UIState.fs" `
@@ -59,9 +62,9 @@ if (!$runOnly) {
 }
 
 if ($? -or $runOnly) {
-  copy-item $rootDir\test\testRetweet.xml $rootDir\bin\test
-  copy-item $rootDir\test\testStatus.xml $rootDir\bin\test
-  copy-item $rootDir\statuses.db $rootDir\bin\test
+  copy-item $rootDir\test\testRetweet.xml $rootDir\bin
+  copy-item $rootDir\test\testStatus.xml $rootDir\bin
+  copy-item $rootDir\statuses.db $rootDir\bin\test.statuses.db
   copy-item $rootDir\test\app.config $rootDir\bin\MicroTest.dll.config
   
   & $rootDir\lib\nunit\nunit-console-x86.exe $rootDir\bin\MicroTest.dll
