@@ -8,13 +8,13 @@ open Utils
 open Status
 open OAuthFunctions
 open StatusDb
-open testDbUtils
+open testDbHelpers.testStatusesDbUtils
 
 [<TestFixture>] 
 type ``Given statuses checker`` () =
 
     let statusPath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testStatus.xml")
-    
+
     let setupOAuthInterface check register request =
       OAuthInterface.oAuthAccess <- { 
         new OAuthInterface.IOAuth with

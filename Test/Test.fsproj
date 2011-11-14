@@ -106,7 +106,7 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="FsUnit.fs" />
     <Compile Include="test.test.fs" />
     <Compile Include="test.xmlUtil.fs" />
-    <Compile Include="test.testdbUtils.fs" />
+    <Compile Include="test.testDbUtils.fs" />
     <Compile Include="test.statusParsing.fs" />
     <Compile Include="test.storeStatuses.fs" />
     <Compile Include="test.previewState.fs" />
@@ -114,6 +114,7 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="test.statusesChecker.fs" />
     <Compile Include="test.UIState.fs" />
     <Compile Include="test.urlShortening.fs" />
+    <Compile Include="test.testUrlsDb.fs" />
     <Content Include="testRetweet.xml">
       <Link>testRetweet.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -124,7 +125,11 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     </Content>
     <None Include="statuses.db">
       <Link>statuses.db</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="urls.db">
+      <Link>urls.db</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup>

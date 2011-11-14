@@ -9,7 +9,7 @@ open PreviewsState
 open System.Xml
 open OAuthFunctions
 open StatusDb
-open testDbUtils
+open testDbHelpers.testStatusesDbUtils
 
 
 [<TestFixture>] 

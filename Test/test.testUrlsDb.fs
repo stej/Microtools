@@ -1,4 +1,4 @@
-module test.storeStatuses
+﻿module test.testUrlsDb
 
 open NUnit.Framework
 open FsUnit
@@ -8,18 +8,25 @@ open Utils
 open Status
 open OAuthFunctions
 open StatusDb
-open testDbHelpers.testStatusesDbUtils
+open testDbHelpers.testUrlsDbUtils
 
 [<TestFixture>] 
-type ``Given empty database`` () =
+type ``Given empty urls database`` () =
 
     [<Test>] 
-    member test.``Store Retweet and check that it exists in db`` () =
-        printfn "Store Retweet and check that it exists in db"
+    member test.``Response for translation in empty db should return None`` () =
         printfn "Deleted rows: %A" (deleteDbContent())
         
         let db = dbInterface()
-        db.SaveStatus({Status = retweet; Children = new  ResizeArray<statusInfo>(); Source = Timeline})
+        db.TranslateUrl("any").IsNone |> should be True
+
+    (*[<Test>] 
+    member test.``Store short url translation`` () =
+        printfn "Store url translation and check that it exists in db"
+        printfn "Deleted rows: %A" (deleteDbContent())
+        
+        let db = dbInterface()
+        db.TranslateUrl({})
         let readStatus = db.ReadStatusWithId(retweet.StatusId)
         
         readStatus.IsSome |> should be True
@@ -67,3 +74,5 @@ type ``Given empty database`` () =
         retweetInfo.IsSome |> should be True
         retweetInfo.Value.RetweetId |> should equal 119516516159991810L
         retweetInfo.Value.UserName |> should equal "twitterapi"
+
+*)
