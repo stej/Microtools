@@ -13,7 +13,7 @@ open testDbUtils
 [<TestFixture>] 
 type ``Given statuses checker`` () =
 
-    let statusPath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testStatus.xml")
+    let statusPath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testStatus.xml")
     
     let setupOAuthInterface check register request =
       OAuthInterface.oAuthAccess <- { 

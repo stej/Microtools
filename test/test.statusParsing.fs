@@ -11,7 +11,7 @@ open OAuthFunctions
 type ``Given status xml document`` ()=
     let xml = new XmlDocument()
     do
-      let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testStatus.xml")
+      let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testStatus.xml")
       printfn "%s" path
       xml.Load(path)
 
@@ -31,7 +31,7 @@ type ``Given status xml document`` ()=
 type ``Given retweet xml document`` ()=
     let xml = new XmlDocument()
     do
-      let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testRetweet.xml")
+      let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testRetweet.xml")
       printfn "%s" path
       xml.Load(path)
 
@@ -58,8 +58,8 @@ type ``Given some xml status that might be Retweet or STatus`` ()=
     let rxml = new XmlDocument()
     let sxml = new XmlDocument()
     do
-      let rpath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testRetweet.xml")
-      let spath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testStatus.xml")
+      let rpath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testRetweet.xml")
+      let spath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testStatus.xml")
       printfn "%s / %s" rpath spath
       rxml.Load(rpath)
       sxml.Load(spath)

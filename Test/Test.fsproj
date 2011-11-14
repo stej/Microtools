@@ -1,0 +1,163 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{dd0a5dba-3de0-47e7-b4a2-a02a9058e743}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Test</RootNamespace>
+    <AssemblyName>Test</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <Name>Test</Name>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <Tailcalls>false</Tailcalls>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DocumentationFile>bin\Debug\Test.XML</DocumentationFile>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <Tailcalls>true</Tailcalls>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DocumentationFile>bin\Release\Test.XML</DocumentationFile>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
+  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
+  <PropertyGroup>
+    <PostBuildEvent>rem xcopy $(ProjectDir)testRetweet.xml $(TargetDir)
+rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <Compile Include="..\MicroCommon\Utils.fs">
+      <Link>Utils.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\Status.fs">
+      <Link>Status.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\StatusFilter.fs">
+      <Link>StatusFilter.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\StatusFunctions.fs">
+      <Link>StatusFunctions.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\OAuth.fs">
+      <Link>OAuth.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\OAuthInterface.fs">
+      <Link>OAuthInterface.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\OAuthFunctions.fs">
+      <Link>OAuthFunctions.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\StatusDbInterface.fs">
+      <Link>StatusDbInterface.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\ShortenerDbInterface.fs">
+      <Link>ShortenerDbInterface.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\TwitterLimits.fs">
+      <Link>TwitterLimits.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\TwitterStatusesChecker.fs">
+      <Link>TwitterStatusesChecker.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\Twitter.fs">
+      <Link>Twitter.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\StatusesReplies.fs">
+      <Link>StatusesReplies.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\PreviewsState.fs">
+      <Link>PreviewsState.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\UrlShortenerFunctions.fs">
+      <Link>UrlShortenerFunctions.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroData\DbCommon.fs">
+      <Link>DbCommon.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroData\StatusDb.fs">
+      <Link>StatusDb.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroData\UrlDb.fs">
+      <Link>UrlDb.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroUI\ImagesSource.fs">
+      <Link>ImagesSource.fs</Link>
+    </Compile>
+    <Compile Include="..\Twipy\Cmdline.fs">
+      <Link>Cmdline.fs</Link>
+    </Compile>
+    <Compile Include="..\TwitterClient\UIState.fs">
+      <Link>UIState.fs</Link>
+    </Compile>
+    <Compile Include="FsUnit.fs" />
+    <Compile Include="test.test.fs" />
+    <Compile Include="test.xmlUtil.fs" />
+    <Compile Include="test.testdbUtils.fs" />
+    <Compile Include="test.statusParsing.fs" />
+    <Compile Include="test.storeStatuses.fs" />
+    <Compile Include="test.previewState.fs" />
+    <Compile Include="test.previewStateAccessingDb.fs" />
+    <Compile Include="test.statusesChecker.fs" />
+    <Compile Include="test.UIState.fs" />
+    <Compile Include="test.urlShortening.fs" />
+    <Content Include="testRetweet.xml">
+      <Link>testRetweet.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="testStatus.xml">
+      <Link>testStatus.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Include="statuses.db">
+      <Link>statuses.db</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="DevDefined.OAuth">
+      <HintPath>..\lib\DevDefined.OAuth.dll</HintPath>
+    </Reference>
+    <Reference Include="log4net">
+      <HintPath>..\lib\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Monooptions">
+      <HintPath>..\bin\Monooptions.dll</HintPath>
+    </Reference>
+    <Reference Include="mscorlib" />
+    <Reference Include="FSharp.Core" />
+    <Reference Include="nunit.framework">
+      <HintPath>..\lib\nunit\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.SQLite">
+      <HintPath>..\lib\System.Data.SQLite.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+	     Other similar extension points exist, see Microsoft.Common.targets.
+	<Target Name="BeforeBuild">
+	</Target>
+	<Target Name="AfterBuild">
+	</Target>
+	-->
+</Project>

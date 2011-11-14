@@ -8,10 +8,11 @@ open Utils
 open Status
 open OAuthFunctions
 open StatusDb
+open DbCommon
 
-let dbPath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\statuses.db")
+let dbPath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "statuses.db")
 let retweet =
-    let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "test\\testRetweet.xml")
+    let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testRetweet.xml")
     printfn "%s" path
     let xml = new XmlDocument()
     xml.Load(path)
