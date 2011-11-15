@@ -9,6 +9,7 @@ open Status
 open System.Windows.Threading
 open ipy
 open TwitterLimits
+open TextSplitter
 
 open System.Windows
 open System.Windows.Controls
@@ -45,15 +46,14 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
     member x.exportToHtml (statuses: statusInfo seq) =
         let file = System.IO.Path.GetTempFileName().Replace(".tmp", ".html")
         let processText text =
-            let parts = seq { 
-                for part in WpfUtils.regexUrl.Split(text) do
-                    if WpfUtils.regexUrl.IsMatch(part) then
-                        let matchGroups = WpfUtils.regexUrl.Match(part).Groups
-                        if matchGroups.["url"].Success then yield! (sprintf "<a href=\"%s\">%s</a>" part part)
-                        else if matchGroups.["user"].Success then yield! (sprintf "<a href=\"http://twitter.com/%s\">%s</a>" (part.TrimStart('@')) part)
-                    else
-                        yield! part
-            }
+            let convertPart part =
+                let link, text = TextSplitter.urlFragmentToLinkAndName part
+                match part with
+                | FragmentWords(u)       -> u
+                | _                      -> (sprintf "<a href=\"%s\">%s</a>" link text)
+            let parts = 
+                TextSplitter.splitText text
+                |> Array.map convertPart
             String.Join("", parts)
         // h.exportToHtml(h.find('logger'))
         let rec processStatus depth status =

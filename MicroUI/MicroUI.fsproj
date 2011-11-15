@@ -53,6 +53,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TextSplitter.fs" />
     <Compile Include="ImagesSource.fs" />
     <Compile Include="WpfUtils.fs" />
     <Compile Include="AssemblyInfo.fs" />

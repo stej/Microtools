@@ -34,6 +34,7 @@ let private getResponse (url:string) =
     try
         let request = System.Net.WebRequest.Create url :?> System.Net.HttpWebRequest
         request.AllowAutoRedirect <- false
+        request.Timeout <- 1000*30;
         request.UserAgent <- "Mozilla/5.0 (Windows NT 6.0) AppleWebKit/534.30 (KHTML, like Gecko) Chrome/12.0.742.112 Safari/534.30"
         request.Accept <- "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
         request.Headers.["Accept-Encoding"] <- "deflate"

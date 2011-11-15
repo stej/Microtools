@@ -21,6 +21,7 @@ type private UrlsDbMessages =
 
 type UrlsDbState(file) =
     let translateUrl (shortUrl:string) = 
+        printfn "Translate %s" shortUrl
         useDb file (fun conn ->
             let query = "select * from UrlTranslation where ShortUrl = @p0"
             use cmd = conn.CreateCommand(CommandText = query)
@@ -35,13 +36,14 @@ type UrlsDbState(file) =
             ret
         )
     let saveUrl (urlInfo:ShortUrlInfo) = 
+        printfn "Store %s->%s (%d) at %A" urlInfo.ShortUrl urlInfo.LongUrl urlInfo.StatusId urlInfo.Date
         useDb file (fun conn ->
             use cmd = conn.CreateCommand(CommandText = 
                 "INSERT INTO UrlTranslation(ShortUrl, LongUrl, Date, StatusId) VALUES(@p0, @p1, @p2, @p3)"
             )
             addCmdParameter cmd "@p0" urlInfo.ShortUrl
             addCmdParameter cmd "@p1" urlInfo.LongUrl
-            addCmdParameter cmd "@p2" urlInfo.Date
+            addCmdParameter cmd "@p2" urlInfo.Date.Ticks
             addCmdParameter cmd "@p3" urlInfo.StatusId
             cmd.ExecuteNonQuery() |> ignore
         )

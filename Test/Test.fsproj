@@ -103,6 +103,9 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="..\TwitterClient\UIState.fs">
       <Link>UIState.fs</Link>
     </Compile>
+    <Compile Include="..\MicroUI\TextSplitter.fs">
+      <Link>TextSplitter.fs</Link>
+    </Compile>
     <Compile Include="FsUnit.fs" />
     <Compile Include="test.test.fs" />
     <Compile Include="test.xmlUtil.fs" />
@@ -115,6 +118,7 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="test.UIState.fs" />
     <Compile Include="test.urlShortening.fs" />
     <Compile Include="test.testUrlsDb.fs" />
+    <Compile Include="test.textSplitter.fs" />
     <Content Include="testRetweet.xml">
       <Link>testRetweet.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -156,6 +160,7 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     </Reference>
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

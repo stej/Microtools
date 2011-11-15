@@ -11,36 +11,66 @@ open System.Windows.Media
 open System.Diagnostics
 open Status
 open Utils
+open TextSplitter
 
-type StatusInfoToDisplay = {
-    StatusInfo : statusInfo
+type FilterInfo = {
     Filtered : bool
-    Children : StatusInfoToDisplay list
     HasUnfilteredDescendant : bool
     HasSomeDescendantsToShow : bool
+}
+and StatusInfoToDisplay = {
+    StatusInfo : statusInfo
+    Children : StatusInfoToDisplay list
+    FilterInfo : FilterInfo
+    TextFragments : TextFragment []
 }
 /// Adds information about filtering
 ///  @filterDoesntHideStatuses - user requested to show hidden statuses
 ///  @filterer - returns true if the status is filtered out (matches the filter)
-let rec convertToFilterInfo filterDoesntHideStatuses (filterer: statusInfo->bool) (statusInfo:statusInfo) =
+//let rec convertToFilterInfo filterDoesntHideStatuses (filterer: statusInfo->bool) (children:StatusInfoToDisplay list) =
+//    
+//    let existsUnfilteredDescendant = 
+//        children |> List.exists (fun c -> not c.FilterInfo.Filtered || c.FilterInfo.HasUnfilteredDescendant)
+//    let hasSomeVisibleDescendant =
+//        existsUnfilteredDescendant || (filterDoesntHideStatuses && not(children.IsEmpty))
+//
+//    { Filtered = filterer statusInfo
+//      HasUnfilteredDescendant = existsUnfilteredDescendant 
+//      HasSomeDescendantsToShow = hasSomeVisibleDescendant }
+//and convertToStatusDisplayInfo filterDoesntHideStatuses (filterer: statusInfo->bool) (statusInfo:statusInfo) : StatusInfoToDisplay =
+//    let children = 
+//        statusInfo.Children 
+//        |> Seq.map (fun c -> convertToStatusDisplayInfo filterDoesntHideStatuses filterer c) 
+//        |> Seq.toList
+//    {
+//        StatusInfo = statusInfo
+//        Children = children
+//        FilterInfo = convertToFilterInfo filterDoesntHideStatuses filterer children
+//        TextFragments = splitText statusInfo.Status.Text
+//    }
+
+let rec convertToStatusDisplayInfo filterDoesntHideStatuses (filterer: statusInfo->bool) (statusInfo:statusInfo) : StatusInfoToDisplay =
+    let rec convertToFilterInfo (children:StatusInfoToDisplay list) =
+    
+        let existsUnfilteredDescendant = 
+            children |> List.exists (fun c -> not c.FilterInfo.Filtered || c.FilterInfo.HasUnfilteredDescendant)
+        let hasSomeVisibleDescendant =
+            existsUnfilteredDescendant || (filterDoesntHideStatuses && not(children.IsEmpty))
+
+        { Filtered = filterer statusInfo
+          HasUnfilteredDescendant = existsUnfilteredDescendant 
+          HasSomeDescendantsToShow = hasSomeVisibleDescendant }
+
     let children = 
         statusInfo.Children 
-        |> Seq.map (fun c -> convertToFilterInfo filterDoesntHideStatuses filterer c) 
+        |> Seq.map (fun c -> convertToStatusDisplayInfo filterDoesntHideStatuses filterer c) 
         |> Seq.toList
-    let existsUnfilteredDescendant = 
-        children |> List.exists (fun c -> not c.Filtered || c.HasUnfilteredDescendant)
-    let hasSomeVisibleDescendant =
-        existsUnfilteredDescendant || (filterDoesntHideStatuses && statusInfo.Children.Count > 0)
-
-    { StatusInfo = statusInfo
-      Filtered = filterer statusInfo
-      Children = children
-      HasUnfilteredDescendant = existsUnfilteredDescendant 
-      HasSomeDescendantsToShow = hasSomeVisibleDescendant }
-      
-let regexUrl = new System.Text.RegularExpressions.Regex("(?<user>@\w+)|" + 
-                                                        "(?<hash>#\w+)|" +
-                                                        "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
+    {
+        StatusInfo = statusInfo
+        Children = children
+        FilterInfo = convertToFilterInfo children
+        TextFragments = splitText statusInfo.Status.Text
+    }
 
 let (fontSize, pictureSize) = 
     let s = match Settings.Size with
@@ -74,44 +104,33 @@ let private BrowseHlClick (e:Navigation.RequestNavigateEventArgs) =
     Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)) |> ignore
     e.Handled <- true
 
-let private linkFromText text =
-    let matchGroups = regexUrl.Match(text).Groups
-    let url, txt = if matchGroups.["url"].Success then text,text
-                   else if matchGroups.["user"].Success then (sprintf "http://twitter.com/%s" (text.TrimStart('@')), text)
-                   else if matchGroups.["hash"].Success then (sprintf "http://twitter.com/search?q=%s" (System.Web.HttpUtility.UrlEncode(text)), text)
-                   else failwith "unknown regex group"
-    let hl = new Hyperlink(new Run(txt),
-                           NavigateUri = new Uri(url))
+let private linkFromUrl fragment =
+    let link, text = TextSplitter.urlFragmentToLinkAndName fragment
+    let hl = new Hyperlink(new Run(text),
+                           NavigateUri = new Uri(link))
     hl.RequestNavigate.Add(BrowseHlClick)
     hl
-let private textToTextblock (text:string) = 
-    ldbgp "Parsing {0}" text
-    let parts = regexUrl.Split(System.Web.HttpUtility.HtmlDecode(text))
-
+let private textFragmentsToTextblock fragments = 
     let ret = new TextBlock(TextWrapping = TextWrapping.Wrap,
                             Padding = new Thickness(0.),
                             Margin = new Thickness(5., 0., 0., 5.),
                             FontSize = fontSize)
-    for part in parts do
-        if regexUrl.IsMatch(part) then
-            ldbgp "Parsed url: {0}" part
-            try
-                let hl = linkFromText part
-                ret.Inlines.Add(hl)
-            with ex ->
-                lerrex ex (sprintf "Url %s parsed incorrectly" part)
-                ret.Inlines.Add(new Run(part))
-        else
-            ret.Inlines.Add(new Run(part))
+    for f in fragments do
+        match f with
+        | FragmentWords(w) -> ret.Inlines.Add(new Run(w))
+        | _                -> let hl = linkFromUrl f
+                              ret.Inlines.Add(hl)     
     ret
 
-let createLittlePicture status = 
+let createLittlePicture sDisplayInfo = 
+    let status = sDisplayInfo.StatusInfo.Status
     ldbgp "UI: Little picture for {0}" status
-    let ret = createStatusPicture pictureSize (new Thickness(2.)) status 
+    let ret = createStatusPicture pictureSize (new Thickness(2.)) status
     ldbgp "UI: Little picture for {0} done" status
     ret
               
-let createDetail (status:status) =
+let createDetail sDisplayInfo =
+    let status = sDisplayInfo.StatusInfo.Status
     let row = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,
                              VerticalAlignment = VerticalAlignment.Top,
                              Orientation = Orientation.Horizontal,
@@ -163,7 +182,7 @@ let createDetail (status:status) =
                                Width = 500.,
                                Margin = new Thickness(0.))
         s.Children.Add(meta) |> ignore
-        s.Children.Add((textToTextblock status.Text)) |> ignore
+        s.Children.Add((textFragmentsToTextblock sDisplayInfo.TextFragments)) |> ignore
         new Border(BorderBrush = Brushes.LightGray,
                    BorderThickness = new Thickness(0., 0., 0., 1.),
                    Child = s)
@@ -230,9 +249,13 @@ let updateConversation (controls:conversationControls) (isStatusVisible:StatusIn
     let conversationCtl = new ResizeArray<_>()
 
     let rec addTweets depth (currentStatus:StatusInfoToDisplay) =
-        let detail, img = createDetail currentStatus.StatusInfo.Status
+        let filterInfo = currentStatus.FilterInfo
+        let detail, img = createDetail currentStatus
+
         img.Margin <- new Thickness(depth * (pictureSize+2.), 0., 0., 5.)
+
         controls.Statuses.Children.Add(detail) |> ignore
+
         currentStatus.Children 
             |> Seq.filter isStatusVisible
             |> Seq.map (fun sInfo -> (sInfo, sInfo.StatusInfo.StatusId()))
@@ -241,10 +264,10 @@ let updateConversation (controls:conversationControls) (isStatusVisible:StatusIn
         conversationCtl.Add({ Detail = detail
                               Img = img
                               StatusInfo = currentStatus.StatusInfo
-                              Filtered = currentStatus.Filtered
+                              Filtered = filterInfo.Filtered
                               Children = currentStatus.Children
-                              HasUnfilteredDescendant = currentStatus.HasUnfilteredDescendant
-                              HasSomeDescendantsToShow = currentStatus.HasSomeDescendantsToShow})
+                              HasUnfilteredDescendant = filterInfo.HasUnfilteredDescendant
+                              HasSomeDescendantsToShow = filterInfo.HasSomeDescendantsToShow})
     // top level status should be visible, no need to test it; let's do it on descendants inside addTweets
     addTweets 0. updatedStatus
     conversationCtl |> Seq.toList

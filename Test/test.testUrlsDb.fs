@@ -2,6 +2,7 @@
 
 open NUnit.Framework
 open FsUnit
+open System
 open System.Xml
 open System.IO
 open Utils
@@ -19,6 +20,60 @@ type ``Given empty urls database`` () =
         
         let db = dbInterface()
         db.TranslateUrl("any").IsNone |> should be True
+
+    [<Test>] 
+    member test.``Response for translation for given url when there is only other record returns None `` () =
+        printfn "Deleted rows: %A" (deleteDbContent())
+        
+        let db = dbInterface()
+        db.SaveUrl({ ShortUrl = "a"
+                     LongUrl  = "b"
+                     Date     = DateTime.Now
+                     StatusId = 1L})
+        db.TranslateUrl("b").IsNone |> should be True
+
+    [<Test>] 
+    member test.``Response for translation for given url when there is record returns correct translation`` () =
+        printfn "Deleted rows: %A" (deleteDbContent())
+        
+        let db = dbInterface()
+        let now = DateTime.Now
+        db.SaveUrl({ ShortUrl = "a"
+                     LongUrl  = "b"
+                     Date     = now;
+                     StatusId = 5L })
+
+        let record = db.TranslateUrl("a")
+        record.IsSome |> should be True
+        record.Value.ShortUrl |> should equal "a"
+        record.Value.LongUrl |> should equal "b"
+        record.Value.Date |> should equal now
+        record.Value.StatusId |> should equal 5L
+
+    [<Test>] 
+    member test.``Store many urls infos and check that all are stored and have correct translations`` () =
+        printfn "Deleted rows: %A" (deleteDbContent())
+        
+        let db = dbInterface()
+        let now = DateTime.Now
+        [1..100] 
+        |> List.map (fun i -> async {  db.SaveUrl({ ShortUrl = ("a"+i.ToString())
+                                                    LongUrl  = ("b"+i.ToString())
+                                                    Date     = now;
+                                                    StatusId = 5L }) |> ignore })
+        |> Async.Parallel
+        |> Async.RunSynchronously
+        |> ignore
+
+        [100..-1..1] 
+        |> List.iter (fun i -> 
+            let record = db.TranslateUrl("a"+i.ToString())
+            record.IsSome |> should be True
+            record.Value.ShortUrl |> should equal ("a"+i.ToString())
+            record.Value.LongUrl |> should equal ("b"+i.ToString())
+            record.Value.Date |> should equal now
+            record.Value.StatusId |> should equal 5L
+        )
 
     (*[<Test>] 
     member test.``Store short url translation`` () =

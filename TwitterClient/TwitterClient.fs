@@ -37,12 +37,13 @@ let setAppState2 (format:string) p1 p2 =
 let setAppStateCount () = 
     setAppState (UIState.getAppStrState())
 let setCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) = 
-    let filtered = filterStatusInfos |> List.fold (fun count curr -> if curr.Filtered then count+1 else count) 0
+    let filtered = filterStatusInfos |> List.fold (fun count curr -> if curr.FilterInfo.Filtered then count+1 else count) 0
     UIState.setCounts count filtered
 
 let mutable showHiddenStatuses = false
 filterCtl.Text <- StatusFilter.defaultConfigFilter
 DbInterface.dbAccess <- StatusDb.statusesDb
+ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
 
 // status downloaded from Twitter
 Twitter.NewStatusDownloaded 
@@ -181,21 +182,26 @@ do
     //detailsHolder.ContextMenu <- new ContextMenu()
     window.ContextMenu <- new ContextMenu()
      
-    let menuItem = new MenuItem(Header = "Show filtered", IsCheckable = true, ToolTip = "Show/hide filtered items")
+    let menuItem = new MenuItem(Header = "Show filtered", 
+                                IsCheckable = true, 
+                                ToolTip = "Show/hide filtered items")
     menuItem.Click.Add(fun _ -> negateShowHide menuItem
                                 refresh ())
     window.ContextMenu.Items.Add(menuItem) |> ignore
 
-    let menuItem = new MenuItem(Header = "Switch", ToolTip = "Switch to list/tree view")
+    let menuItem = new MenuItem(Header = "Switch", 
+                                ToolTip = "Switch to list/tree view")
     menuItem.Click.Add(fun _ -> switchPanes ())
     window.ContextMenu.Items.Add(menuItem) |> ignore
 
-    let menuItem = new MenuItem(Header = "Clear", ToolTip = "Clear view")
+    let menuItem = new MenuItem(Header = "Clear", 
+                                ToolTip = "Clear view")
     menuItem.Click.Add(fun _ -> PreviewsState.userStatusesState.ClearStatuses()
                                 refresh())
     window.ContextMenu.Items.Add(menuItem) |> ignore
 
-    let menuItem = new MenuItem(Header = "Go up", ToolTip = "Get older statuses")
+    let menuItem = new MenuItem(Header = "Go up", 
+                                ToolTip = "Get older statuses")
     menuItem.Click.Add(fun _ -> goUp ())
     window.ContextMenu.Items.Add(menuItem) |> ignore
 
