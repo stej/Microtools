@@ -1,8 +1,14 @@
-module UrlShortener
+module UrlShortenerFunctions
+
 open System.Text.RegularExpressions
 open Utils
 open System.Net
 open System.IO
+
+type ExtractedUrlsType = 
+    | Extracted of string
+    | NotNeeded of string
+    | Failed
 
 let private textFromResponse (response:WebResponse option) =
     match response with
@@ -52,29 +58,36 @@ let private tco (url:string) =
     //printfn "Parsed from tco: %A" parsedUrl
     //File.AppendAllLines(@"log.log", ["from tco"; parsedUrl.ToString()])
     match parsedUrl with
-    |Some(u) -> u
-    |None    -> url
+    |Some(u) -> Extracted(u)
+    |None    -> Failed
 
 let private generalExtract (url:string) =
     match getResponse(url) with
-    | None -> url
+    | None -> Failed
     | Some(response) -> 
         match response.Headers.["Location"] with
         | null 
-        | ""  -> url
+        | ""  -> Failed
         | str -> 
             //File.AppendAllLines(@"D:\backup\github-src\MicroTools\test\log.log", ["from g"; str], System.Text.Encoding.UTF8); 
-            str
+            Extracted(str)
 
-let rec extract (url:string) =
-    //printfn "Extracting %s" url
+let extract (url:string) =
     let regex = "^http://(bit.ly|bitly.com|is.gd|j.mp|cli.gs|tinyurl.com|snurl.com|goo.gl|tr.im|t.co)/"
-    let extracted = 
-        if url.StartsWith("http://t.co") then
-            tco url
-        else if Regex.IsMatch(url, regex) then
-            generalExtract url
-        else
-            url
-    if extracted = url then url
-    else extract extracted
+    let rec _extract (url:string) =
+        let extracted = 
+            if url.StartsWith("http://t.co") then
+                tco url
+            else if Regex.IsMatch(url, regex) then
+                generalExtract url
+            else
+                NotNeeded(url)
+        match extracted with
+        | Failed -> Failed              // finish
+        | Extracted(u) -> _extract u
+        | NotNeeded(u) -> Extracted(u)  // finish
+
+    if Regex.IsMatch(url, regex) then
+        _extract url
+    else
+        NotNeeded(url)

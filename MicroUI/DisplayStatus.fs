@@ -8,6 +8,8 @@ open Utils
 
 let OpacityFiltered, OpacityOld = 0.2, 0.5
 
+// todo: run only needed parts (manipulating with controls) on UI thread.. 
+// currently all the stuff is supposed to run on UI thread
 let fillPictures (wrap:WrapPanel) statusFilterer showHiddenStatuses statuses =
     let setControlOpacity (sDisplayInfo:WpfUtils.StatusInfoToDisplay) (pic:Image) = 
         if sDisplayInfo.FilterInfo.Filtered then pic.Opacity <- OpacityFiltered
@@ -56,15 +58,15 @@ let fillDetails window (details:StackPanel) statusFilterer showHiddenStatuses st
     let visibilityDecider = new StatusVisibilityDecider(showHiddenStatuses, firstLogicalStatusId)
 
     let setControlOpacity (detailCtl:WpfUtils.conversationNodeControlsInfo) =
-        if detailCtl.StatusInfo.Status.LogicalStatusId < firstLogicalStatusId then
+        if detailCtl.GetLogicalStatusId() < firstLogicalStatusId then
             detailCtl.Detail.Opacity <- OpacityOld
-        if detailCtl.Filtered then
+        if detailCtl.StatusToDisplay.FilterInfo.Filtered then
             detailCtl.Detail.Opacity <- OpacityFiltered
 
-    let updateConversation rootFilterInfo =
+    let createConversation rootFilterInfo =
         let controls = WpfUtils.createConversationControls WpfUtils.End details
-        WpfUtils.setNewConversation controls visibilityDecider.isStatusVisible rootFilterInfo
-        |> Seq.iter setControlOpacity
+        WpfUtils.updateConversation controls visibilityDecider.isStatusVisible rootFilterInfo
+        |> Seq.map (doAndRet setControlOpacity)
 
     details.Children.Clear()
     statuses 
@@ -72,5 +74,4 @@ let fillDetails window (details:StackPanel) statusFilterer showHiddenStatuses st
       |> Seq.sortBy (fun (sInfo, displayDate) -> displayDate)
       |> Seq.map (fst >> (WpfUtils.convertToStatusDisplayInfo showHiddenStatuses statusFilterer))
       |> Seq.filter visibilityDecider.isRootStatusVisible
-      |> Seq.iter (fun rootStatusDisplayInfo -> WpfUtils.dispatchMessage window (fun _ -> updateConversation rootStatusDisplayInfo))
-    ldbg "UI: fillDetails done"
+      |> Seq.map (fun rootStatusDisplayInfo -> createConversation rootStatusDisplayInfo)

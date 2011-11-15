@@ -29,7 +29,9 @@ let getUIStateFunctions () =
                                        return! loop active listLen filtered
                 | StrState(channel) -> let s = match active with | 0 -> "Done"
                                                                  | _ -> "Working"
-                                       let ret = sprintf "%s.. Count: %d/%d" s listLen filtered
+                                       let ret = 
+                                            if listLen = 0 then sprintf "%s.. Count: 0" s
+                                            else sprintf "%s.. Count: %d/%d" s listLen filtered
                                        channel.Reply(ret)
                                        return! loop active listLen filtered
                 | Counts(newlen, newfiltered) -> 

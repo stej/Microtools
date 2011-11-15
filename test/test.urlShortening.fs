@@ -2,7 +2,7 @@ module test.urlShortening
 
 open NUnit.Framework
 open FsUnit
-open UrlShortener
+open UrlShortenerFunctions
 
 
 [<TestFixture>] 

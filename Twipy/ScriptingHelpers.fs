@@ -24,14 +24,14 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
     member x.loadTree status = StatusesReplies.loadSavedReplyTree status
     member x.show (statuses: statusInfo seq) = 
         WpfUtils.dispatchMessage window (fun _ -> fillPictures statuses |> ignore
-                                                  fillDetails statuses)
+                                                  fillDetails statuses |> ignore)
 
     // print and show status together
     member x.show (o: Object) = 
         match o with
         | :? statusInfo as sInfo-> 
             WpfUtils.dispatchMessage window (fun _ -> fillPictures [sInfo] |> ignore
-                                                      fillDetails [sInfo])
+                                                      fillDetails [sInfo] |> ignore)
         | _ -> 
             WpfUtils.dispatchMessage window (fun _ -> 
                 wrapContent.Children.Clear()

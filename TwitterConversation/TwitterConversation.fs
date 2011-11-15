@@ -146,7 +146,7 @@ let refreshOneConversationEx (colorers:((statusInfo->bool)*SolidColorBrush) list
     let controls = controlsCache.[rootStatus.Status.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
         for detailCtl in updateConversation controls rootStatus do
-            let color = colorers |> List.tryPick (fun (fn,color) -> if fn detailCtl.StatusInfo then Some(color) else None)
+            let color = colorers |> List.tryPick (fun (fn,color) -> if fn detailCtl.StatusToDisplay.StatusInfo then Some(color) else None)
             match color with
             | None -> ()
             | Some(c) -> detailCtl.Detail.Background <- c

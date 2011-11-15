@@ -18,36 +18,14 @@ type FilterInfo = {
     HasUnfilteredDescendant : bool
     HasSomeDescendantsToShow : bool
 }
-and StatusInfoToDisplay = {
-    StatusInfo : statusInfo
-    Children : StatusInfoToDisplay list
-    FilterInfo : FilterInfo
-    TextFragments : TextFragment []
-}
-/// Adds information about filtering
-///  @filterDoesntHideStatuses - user requested to show hidden statuses
-///  @filterer - returns true if the status is filtered out (matches the filter)
-//let rec convertToFilterInfo filterDoesntHideStatuses (filterer: statusInfo->bool) (children:StatusInfoToDisplay list) =
-//    
-//    let existsUnfilteredDescendant = 
-//        children |> List.exists (fun c -> not c.FilterInfo.Filtered || c.FilterInfo.HasUnfilteredDescendant)
-//    let hasSomeVisibleDescendant =
-//        existsUnfilteredDescendant || (filterDoesntHideStatuses && not(children.IsEmpty))
-//
-//    { Filtered = filterer statusInfo
-//      HasUnfilteredDescendant = existsUnfilteredDescendant 
-//      HasSomeDescendantsToShow = hasSomeVisibleDescendant }
-//and convertToStatusDisplayInfo filterDoesntHideStatuses (filterer: statusInfo->bool) (statusInfo:statusInfo) : StatusInfoToDisplay =
-//    let children = 
-//        statusInfo.Children 
-//        |> Seq.map (fun c -> convertToStatusDisplayInfo filterDoesntHideStatuses filterer c) 
-//        |> Seq.toList
-//    {
-//        StatusInfo = statusInfo
-//        Children = children
-//        FilterInfo = convertToFilterInfo filterDoesntHideStatuses filterer children
-//        TextFragments = splitText statusInfo.Status.Text
-//    }
+and StatusInfoToDisplay =
+    {   StatusInfo : statusInfo
+        Children : StatusInfoToDisplay list
+        FilterInfo : FilterInfo
+        mutable TextFragments : TextFragment []
+    }
+    member x.ExpandUrls() =
+        ()
 
 let rec convertToStatusDisplayInfo filterDoesntHideStatuses (filterer: statusInfo->bool) (statusInfo:statusInfo) : StatusInfoToDisplay =
     let rec convertToFilterInfo (children:StatusInfoToDisplay list) =
@@ -197,16 +175,15 @@ type conversationControls = {
     UpdateButton : Button
     //DeleteButton : Button
 }
-type conversationNodeControlsInfo = {
-    Detail : StackPanel
-    Img : Border
-    // rest is copied from StatusInfoToDisplay - otherwise if I add field
-    // StatusInfo : StatusInfoToDisplay - there would be too many dots in other code like detailCtl.StatusInfo.StatusInfo.Status.LogicalStatusId
-    StatusInfo : statusInfo
-    Filtered : bool
-    Children : StatusInfoToDisplay list
-    HasUnfilteredDescendant : bool
-    HasSomeDescendantsToShow : bool
+type conversationNodeControlsInfo = 
+    { Detail : StackPanel
+      Img : Border
+      StatusToDisplay : StatusInfoToDisplay 
+    }
+    member x.GetLogicalStatusId() =
+        x.StatusToDisplay.StatusInfo.Status.LogicalStatusId
+type detailTagContent = {
+    mutable UrlResolved : bool
 }
 
 type ConversationControlPlacement =
@@ -253,6 +230,7 @@ let updateConversation (controls:conversationControls) (isStatusVisible:StatusIn
         let detail, img = createDetail currentStatus
 
         img.Margin <- new Thickness(depth * (pictureSize+2.), 0., 0., 5.)
+        detail.Tag <- { UrlResolved = false }
 
         controls.Statuses.Children.Add(detail) |> ignore
 
@@ -263,17 +241,10 @@ let updateConversation (controls:conversationControls) (isStatusVisible:StatusIn
             |> Seq.iter (fun s -> addTweets (depth+1.) (fst s))
         conversationCtl.Add({ Detail = detail
                               Img = img
-                              StatusInfo = currentStatus.StatusInfo
-                              Filtered = filterInfo.Filtered
-                              Children = currentStatus.Children
-                              HasUnfilteredDescendant = filterInfo.HasUnfilteredDescendant
-                              HasSomeDescendantsToShow = filterInfo.HasSomeDescendantsToShow})
+                              StatusToDisplay = currentStatus})
     // top level status should be visible, no need to test it; let's do it on descendants inside addTweets
     addTweets 0. updatedStatus
     conversationCtl |> Seq.toList
-
-/// partial, set just the function; remove
-let setNewConversation = updateConversation
     
 let createXamlWindow (file : string) = 
   use xmlReader = System.Xml.XmlReader.Create(file)

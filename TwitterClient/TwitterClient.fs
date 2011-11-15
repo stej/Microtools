@@ -41,6 +41,7 @@ let setCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) =
     UIState.setCounts count filtered
 
 let mutable showHiddenStatuses = false
+let mutable lastRefresh = DateTime.MinValue
 filterCtl.Text <- StatusFilter.defaultConfigFilter
 DbInterface.dbAccess <- StatusDb.statusesDb
 ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
@@ -63,6 +64,16 @@ let switchPanes () =
       imagesHolder.Visibility <- Visibility.Visible
       detailsHolder.Visibility <- Visibility.Collapsed
       
+//let resolveUrls (controls:(WpfUtils.conversationNodeControlsInfo seq) seq) = 
+//    async {
+//        let ctls = Seq.concat controls
+//        for ctl in ctls do
+//            let infoInTag = ctl.Detail.Tag :?> WpfUtils.detailTagContent
+//            if not infoInTag.UrlResolved then
+//                infoInTag.UrlResolved <- true
+//                ctl.StatusToDisplay.
+//    } |> Async.Start
+
 let refresh =
     let refresher = 
         MailboxProcessor.Start(fun mbox ->
@@ -74,7 +85,9 @@ let refresh =
                 ldbg "CLI: Refreshing panels"
                 WpfUtils.dispatchMessage wrap (fun _ -> let statusFilterer = StatusFilter.getStatusFilterer filterCtl.Text
                                                         let filterStatusInfos = fillPictures statusFilterer list
-                                                        fillDetails statusFilterer trees
+                                                        let detailsCtls = fillDetails statusFilterer trees
+                                                        lastRefresh <- DateTime.Now
+                                                        //resolveUrls detailsCtls
                                                         setCount list.Length filterStatusInfos)
                 setAppStateCount ()
                 ldbg "CLI: Refresh done"
