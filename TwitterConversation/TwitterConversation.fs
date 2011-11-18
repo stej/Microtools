@@ -137,7 +137,7 @@ let freshStatusColorer = (fun sInfo -> sInfo.Status.Inserted >= lastUpdateall), 
 
 let updateConversation controls rootStatus =
     // fun _ -> true = show all statuses, no filtering there..
-    let filterInfo = WpfUtils.convertToStatusDisplayInfo true (fun _ -> false) rootStatus
+    let filterInfo = DisplayStatus.convertToStatusDisplayInfo true (fun _ -> false) rootStatus
     WpfUtils.updateConversation controls (fun _ -> true) filterInfo
 
 /// refreshes the status (all the conversation)

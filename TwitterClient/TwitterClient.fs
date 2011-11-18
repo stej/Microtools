@@ -53,8 +53,8 @@ Twitter.NewStatusDownloaded
 
 twitterLimits.Start()
 
-let fillDetails filterer statuses = DisplayStatus.fillDetails window details filterer showHiddenStatuses statuses
-let fillPictures filterer = DisplayStatus.fillPictures wrap filterer showHiddenStatuses
+let fillDetails filterer statuses = DisplayStatus.ConversationPreview.fillDetails window details filterer showHiddenStatuses statuses
+let fillPictures filterer = DisplayStatus.LitlePreview.fillPictures wrap filterer showHiddenStatuses
 
 let switchPanes () =
     if imagesHolder.Visibility = Visibility.Visible then
@@ -71,7 +71,9 @@ let switchPanes () =
 //            let infoInTag = ctl.Detail.Tag :?> WpfUtils.detailTagContent
 //            if not infoInTag.UrlResolved then
 //                infoInTag.UrlResolved <- true
-//                ctl.StatusToDisplay.
+//                ctl.StatusToDisplay.ExpandUrls()
+//                WpfUtils.dispatchMessage wrap (fun _ -> )
+//
 //    } |> Async.Start
 
 let refresh =
@@ -125,8 +127,8 @@ window.Loaded.Add(fun _ ->
             return! asyncloop checkerfce statusesType
         }
 
-    asyncloop Twitter.PersonalStatuses.friendsChecker.Check Twitter.FriendsStatuses |> Async.Start
-    asyncloop Twitter.PersonalStatuses.mentionsChecker.Check Twitter.MentionsStatuses |> Async.Start
+    //asyncloop Twitter.PersonalStatuses.friendsChecker.Check Twitter.FriendsStatuses |> Async.Start
+    //asyncloop Twitter.PersonalStatuses.mentionsChecker.Check Twitter.MentionsStatuses |> Async.Start
     // retweets are handled by FriendsStatuses; leaving here for debugging and for cases that Friends don't work because of a bug...
     //asyncloop Twitter.PersonalStatuses.retweetsChecker.Check Twitter.RetweetsStatuses |> Async.Start
         
