@@ -205,35 +205,10 @@ let addUpdateButton (controls:conversationControls) =
     let update = new Button(Content = "Update", 
                             Width = 60.,
                             HorizontalAlignment = HorizontalAlignment.Left)
-                         //CommandParameter = (sourceStatus.StatusId :> obj)
     controls.Wrapper.Children.Add(update) |> ignore
     { controls with UpdateButton = update }
     
 let updateConversation (controls:conversationControls) (updatedStatuses:ConversationSource list) =
-//    controls.Statuses.Children.Clear()
-//
-//    let conversationCtl = new ResizeArray<_>()
-//
-//    let rec addTweets depth (currentStatus:StatusInfoToDisplay) =
-//        let filterInfo = currentStatus.FilterInfo
-//        let detail, img = createDetail currentStatus
-//
-//        img.Margin <- new Thickness(depth * (pictureSize+2.), 0., 0., 5.)
-//        detail.Tag <- { UrlResolved = false }
-//
-//        controls.Statuses.Children.Add(detail) |> ignore
-//
-//        currentStatus.Children 
-//            |> Seq.filter isStatusVisible
-//            |> Seq.map (fun sInfo -> (sInfo, sInfo.StatusInfo.StatusId()))
-//            |> Seq.sortBy (fun (_,id) -> id) 
-//            |> Seq.iter (fun s -> addTweets (depth+1.) (fst s))
-//        conversationCtl.Add({ Detail = detail
-//                              Img = img
-//                              StatusToDisplay = currentStatus})
-//    // top level status should be visible, no need to test it; let's do it on descendants inside addTweets
-//    addTweets 0. updatedStatus
-//    conversationCtl |> Seq.toList
     let createConversationNode (conversationSource, sDisplayInfo) =
         let filterInfo = sDisplayInfo.FilterInfo
         let detail, img = createDetail sDisplayInfo
@@ -243,10 +218,9 @@ let updateConversation (controls:conversationControls) (updatedStatuses:Conversa
         detail.Opacity <- conversationSource.Opacity
 
         controls.Statuses.Children.Add(detail) |> ignore
-        // todo: pouzit isStatusVisible
         { Detail = detail
           Img = img
-          StatusToDisplay = sDisplayInfo}
+          StatusToDisplay = sDisplayInfo }
 
     controls.Statuses.Children.Clear()
     updatedStatuses |> List.map createConversationNode

@@ -87,38 +87,6 @@ module ConversationPreview =
         member x.isStatusVisible = statusIsNotShownDueToFilter >> not
         member x.firstLogicalStatusId = _firstLogicalStatusId
     
-//    let fillDetails window (details:StackPanel) statusFilterer showHiddenStatuses statuses =    
-//        ldbg "UI: fillDetails"
-//    
-//        // status id of first status (for retweets it is status id of the retweet, not the original status)
-//        let firstLogicalStatusId = 
-//            match PreviewsState.userStatusesState.GetFirstStatusId() with
-//            | Some(value) -> value
-//            | None -> 0L
-//
-//        ldbgp "UI: fillDetails, first is {0}" firstLogicalStatusId
-//        let visibilityDecider = new StatusVisibilityDecider(showHiddenStatuses, firstLogicalStatusId)
-//
-//        let setControlOpacity (detailCtl:WpfUtils.conversationNodeControlsInfo) =
-//            if detailCtl.GetLogicalStatusId() < firstLogicalStatusId then
-//                detailCtl.Detail.Opacity <- OpacityOld
-//            if detailCtl.StatusToDisplay.FilterInfo.Filtered then
-//                detailCtl.Detail.Opacity <- OpacityFiltered
-//
-//        let createConversation rootFilterInfo =
-//            let controls = WpfUtils.createConversationControls WpfUtils.End details
-//            WpfUtils.updateConversation controls visibilityDecider.isStatusVisible rootFilterInfo
-//            |> Seq.map (doAndRet setControlOpacity)
-//
-//        details.Children.Clear()
-//        statuses 
-//          |> Seq.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
-//          |> Seq.sortBy (fun (sInfo, displayDate) -> displayDate)
-//          |> Seq.map (fst 
-//                      >> (convertToStatusDisplayInfo showHiddenStatuses statusFilterer)
-//                      >> convertToConversationSource)
-//          //|> Seq.filter visibilityDecider.isRootStatusVisible
-//          |> Seq.map (fun rootStatusDisplayInfo -> createConversation rootStatusDisplayInfo)
     let private convertToConversationSource (visibilityDecider:StatusVisibilityDecider) sRootDisplayInfo =
         let getControlOpacity sDisplayInfo =
             if sDisplayInfo.StatusInfo.Status.LogicalStatusId < visibilityDecider.firstLogicalStatusId then
@@ -136,9 +104,9 @@ module ConversationPreview =
                 |> Seq.sortBy snd
                 |> Seq.map fst
                 |> Seq.iter (_convert (depth+1))
+        _convert 0 sRootDisplayInfo
         ret |> Seq.toList
         
-
     let fillDetails window (details:StackPanel) statusFilterer showHiddenStatuses statuses =    
         ldbg "UI: fillDetails"
         let visibilityDecider = new StatusVisibilityDecider(showHiddenStatuses)

@@ -127,8 +127,8 @@ window.Loaded.Add(fun _ ->
             return! asyncloop checkerfce statusesType
         }
 
-    //asyncloop Twitter.PersonalStatuses.friendsChecker.Check Twitter.FriendsStatuses |> Async.Start
-    //asyncloop Twitter.PersonalStatuses.mentionsChecker.Check Twitter.MentionsStatuses |> Async.Start
+    asyncloop Twitter.PersonalStatuses.friendsChecker.Check Twitter.FriendsStatuses |> Async.Start
+    asyncloop Twitter.PersonalStatuses.mentionsChecker.Check Twitter.MentionsStatuses |> Async.Start
     // retweets are handled by FriendsStatuses; leaving here for debugging and for cases that Friends don't work because of a bug...
     //asyncloop Twitter.PersonalStatuses.retweetsChecker.Check Twitter.RetweetsStatuses |> Async.Start
         
