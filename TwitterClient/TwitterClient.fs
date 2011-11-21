@@ -8,6 +8,7 @@ open Status
 open System.Windows.Threading
 open System.Linq
 open TwitterLimits
+open DisplayStatus
 
 OAuth.checkAccessTokenFile()
 
@@ -53,8 +54,8 @@ Twitter.NewStatusDownloaded
 
 twitterLimits.Start()
 
-let fillDetails filterer statuses = DisplayStatus.ConversationPreview.fillDetails window details filterer showHiddenStatuses statuses
-let fillPictures filterer = DisplayStatus.LitlePreview.fillPictures wrap filterer showHiddenStatuses
+let fillDetails filter  = DisplayStatus.FilterAwareConversation.fill details filter
+let fillPictures filter =  DisplayStatus.LitlePreview.fill wrap filter
 
 let switchPanes () =
     if imagesHolder.Visibility = Visibility.Visible then
@@ -86,8 +87,9 @@ let refresh =
                 ImagesSource.ensureStatusesImages trees |> ignore
                 ldbg "CLI: Refreshing panels"
                 WpfUtils.dispatchMessage wrap (fun _ -> let statusFilterer = StatusFilter.getStatusFilterer filterCtl.Text
-                                                        let filterStatusInfos = fillPictures statusFilterer list
-                                                        let detailsCtls = fillDetails statusFilterer trees
+                                                        let filter = { ShowHidden = showHiddenStatuses; FilterOutRule = statusFilterer }
+                                                        let filterStatusInfos = fillPictures filter list
+                                                        let detailsCtls = fillDetails filter trees
                                                         lastRefresh <- DateTime.Now
                                                         //resolveUrls detailsCtls
                                                         setCount list.Length filterStatusInfos)

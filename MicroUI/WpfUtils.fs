@@ -35,6 +35,7 @@ type PreviewSource = PreviewFace * StatusInfoToDisplay
 type ConversationFace = { 
     Depth : int
     Opacity : float
+    BackgroundColor: SolidColorBrush
 }
 type ConversationSource = ConversationFace * StatusInfoToDisplay
 
@@ -179,12 +180,11 @@ type ConversationControlPlacement =
   | End
   | Beginning
 
-let createConversationControls (addTo:ConversationControlPlacement) (panel:StackPanel) =
+let createConversationControls updatable (addTo:ConversationControlPlacement) (panel:StackPanel) =
     let conversationPnl = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,
                                          VerticalAlignment = VerticalAlignment.Top)
     let statusesPnl = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,
                                      VerticalAlignment = VerticalAlignment.Top)
-    //conversationPnl.Background <- Brushes.Gray
 
     (*let delete = new Button(Content = "Delete", 
                             Width = 60.,
@@ -197,16 +197,20 @@ let createConversationControls (addTo:ConversationControlPlacement) (panel:Stack
     | End       -> panel.Children.Add(conversationPnl) |> ignore
     | Beginning -> panel.Children.Insert(0, conversationPnl) |> ignore
 
+    let update = 
+        if updatable then
+            let u = new Button(Content = "Update", 
+                                    Width = 60.,
+                                    HorizontalAlignment = HorizontalAlignment.Left)
+            conversationPnl.Children.Add(u) |> ignore
+            u
+        else
+            null
+
     {   Wrapper = conversationPnl
         Statuses = statusesPnl
-        UpdateButton = null }
+        UpdateButton = update }
         //DeleteButton = delete  }
-let addUpdateButton (controls:conversationControls) =
-    let update = new Button(Content = "Update", 
-                            Width = 60.,
-                            HorizontalAlignment = HorizontalAlignment.Left)
-    controls.Wrapper.Children.Add(update) |> ignore
-    { controls with UpdateButton = update }
     
 let updateConversation (controls:conversationControls) (updatedStatuses:ConversationSource list) =
     let createConversationNode (conversationSource, sDisplayInfo) =

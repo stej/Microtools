@@ -8,14 +8,13 @@ open Status
 open System.Windows.Threading
 open System.Threading
 open TwitterLimits
+open DisplayStatus
 
 let args = System.Environment.GetCommandLineArgs()
 let statusId = match args with
                 | [|_; sid |] -> Int64.Parse(sid)
                 //| _ -> failwith "No argument specified. Specify status id to process"
                 | _ -> -1L
-//let statusId = 15703340935544832L
-//let statusId = 16145133250547712L
 
 OAuth.checkAccessTokenFile()
 
@@ -40,7 +39,7 @@ let cancelUpdate = window.FindName("cancel") :?> Button
 
 DbInterface.dbAccess <- StatusDb.statusesDb
 
-let mutable (lastUpdateall:DateTime) = DateTime.MinValue
+let mutable (lastUpdateAll:DateTime) = DateTime.MinValue
 
 let setState text = 
     WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- text)
@@ -126,44 +125,37 @@ let bindUpdate (controls:WpfUtils.conversationControls) status =
 
 let addConversationCtls addTo rootStatus =
     let status = rootStatus.Status
-    WpfUtils.dispatchMessage window (fun _ -> let controls = WpfUtils.createConversationControls addTo panel |> WpfUtils.addUpdateButton
-                                              controlsCache.[status.StatusId] <- controls
-                                              bindUpdate controls status
-                                              //bindDelete controls rootStatus
-                                              )
-    rootStatus
+    WpfUtils.dispatchMessage window (fun _ -> 
+        let mainCtls, subCtls = FullConversation.addOne addTo panel rootStatus
+        controlsCache.[status.StatusId] <- mainCtls
+        bindUpdate mainCtls status)
     
-let freshStatusColorer = (fun sInfo -> sInfo.Status.Inserted >= lastUpdateall), Brushes.Yellow
+//D let freshStatusColorer = (fun sInfo -> sInfo.Status.Inserted >= lastUpdateAll), Brushes.Yellow
 
-let updateConversation controls rootStatus =
-    // fun _ -> true = show all statuses, no filtering there..
-    DisplayStatus.ConversationPreview.fillDetails window controls (fun _ -> true) true rootStatus
+//let updateConversation controls rootStatus =
+//    DisplayStatus.FullConversation.updateOne controls rootStatus
 
 /// refreshes the status (all the conversation)
 /// @fnShouldColor = function that returns true if @color should be applied
-let refreshOneConversationEx (colorers:((statusInfo->bool)*SolidColorBrush) list) rootStatus =
-    let controls = controlsCache.[rootStatus.Status.StatusId]
-    WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
-        for detailCtl in updateConversation controls rootStatus do
-            let color = colorers |> List.tryPick (fun (fn,color) -> if fn detailCtl.StatusToDisplay.StatusInfo then Some(color) else None)
-            match color with
-            | None -> ()
-            | Some(c) -> detailCtl.Detail.Background <- c
-    )
-let refreshOneConversation rootStatus =
-    refreshOneConversationEx [freshStatusColorer] rootStatus
+//D let refreshOneConversationEx (colorers:((statusInfo->bool)*SolidColorBrush) list) rootStatus =
+//    let controls = controlsCache.[rootStatus.Status.StatusId]
+//    WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
+//        for detailCtl in updateConversation controls rootStatus do
+//            let color = colorers |> List.tryPick (fun (fn,color) -> if fn detailCtl.StatusToDisplay.StatusInfo then Some(color) else None)
+//            match color with
+//            | None -> ()
+//            | Some(c) -> detailCtl.Detail.Background <- c
+//    )
+//Dlet refreshOneConversation rootStatus =
+//    refreshOneConversationEx [freshStatusColorer] rootStatus
 
-let setNewConversationContent rootStatus =
-    let controls = controlsCache.[rootStatus.Status.StatusId]
-    WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
-        updateConversation controls rootStatus |> ignore
-    )
-
-StatusUpdated.Add(fun (controls, updatedStatus) ->
+let refreshOneConversation updatedStatus = 
+    let controls = controlsCache.[updatedStatus.Status.StatusId]
     WpfUtils.dispatchMessage controls.Statuses (fun _ ->
-        refreshOneConversation updatedStatus
+        DisplayStatus.FullConversation.updateOneWithColors lastUpdateAll controls updatedStatus |> ignore
     )
-)
+
+StatusUpdated.Add(fun (controls, updatedStatus) -> refreshOneConversation updatedStatus)
 
 twitterLimits.Start()
 
@@ -188,10 +180,9 @@ window.Loaded.Add(fun _ ->
             |> ImagesSource.ensureStatusesImages
             |> Seq.iteri (fun i sInfo -> setState (sprintf "Reading status %i" i)
                                          let status = sInfo.Status
-                                         sInfo  |> addConversationCtls WpfUtils.End
-                                                |> (StatusesReplies.loadSavedReplyTree
-                                                    >> ConversationState.conversationsState.AddConversation
-                                                    >> setNewConversationContent)
+                                         sInfo |> StatusesReplies.loadSavedReplyTree
+                                               |> ConversationState.conversationsState.AddConversation
+                                               |> addConversationCtls WpfUtils.End
             )
         setState (sprintf "Done.. Count: %d" (Seq.length statuses))
     } |> Async.Start
@@ -206,10 +197,9 @@ let addNewlyFoundConversations() =
         |> Seq.filter (fun sInfo -> not (ConversationState.conversationsState.ContainsStatus(sInfo.StatusId())))
         |> ImagesSource.ensureStatusesImages
         |> Seq.sortBy (fun sInfo -> sInfo.StatusId())   // sort ascending, because the statuses are added to the beginning -> makes descending order
-        |> Seq.iter (fun sInfo -> sInfo |> addConversationCtls WpfUtils.Beginning
-                                        |> (StatusesReplies.loadSavedReplyTree
-                                            >> ConversationState.conversationsState.AddConversation
-                                            >> setNewConversationContent))
+        |> Seq.iter (fun sInfo -> sInfo |> StatusesReplies.loadSavedReplyTree
+                                        |> ConversationState.conversationsState.AddConversation
+                                        |> addConversationCtls WpfUtils.Beginning)
 let addNewlyFoundStatuses() =
     linfo "Looking for newly found statuses"
     let checkConversationForNewChildren root =
@@ -236,7 +226,7 @@ let addNewlyFoundStatuses() =
         |> List.map checkConversationForNewChildren
         |> List.filter (fun (root,newstats) -> newstats.Count > 0)
         |> List.map (doAndRet (fun (root,newstats) -> linfo (sprintf "%s %s has NEW STATUSES. Count: %d" root.Status.UserName root.Status.Text newstats.Count)))
-        |> List.iter (fun (root,newstats) -> refreshOneConversationEx [newlyAddedStatusColorer newstats; freshStatusColorer] root)
+        |> List.iter (fun (root,newstats) -> refreshOneConversation root)
     linfo "Looking for newly found statuses.. Done"    
     
 let mutable (cts:CancellationTokenSource) = null
@@ -246,7 +236,7 @@ let updateAllStarted() =
         updateAll.Visibility <- Visibility.Collapsed; pauseUpdate.Visibility <- Visibility.Visible; cancelUpdate.Visibility <- Visibility.Visible)
     paused <- false
     StatusesReplies.newlyAddedStatusesState.Clear()
-    lastUpdateall <- DateTime.Now
+    lastUpdateAll <- DateTime.Now
 let updateAllFinished() =
     setState "Update finished ..."
     WpfUtils.dispatchMessage window (fun _ ->

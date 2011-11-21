@@ -10,6 +10,7 @@ open System.Windows.Threading
 open ipy
 open TwitterLimits
 open TextSplitter
+open DisplayStatus
 
 open System.Windows
 open System.Windows.Controls
@@ -18,8 +19,8 @@ open System.Windows.Documents
 
 type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) = 
     let neverFilterer = fun _ -> false
-    let fillDetails statuses = DisplayStatus.fillDetails window details neverFilterer true statuses
-    let fillPictures = DisplayStatus.fillPictures wrapContent neverFilterer true
+    let fillDetails  = FullConversation.fill details
+    let fillPictures = LitlePreview.fill wrapContent UIFilterDescriptor.NoFilter
 
     member x.loadTree status = StatusesReplies.loadSavedReplyTree status
     member x.show (statuses: statusInfo seq) = 
