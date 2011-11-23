@@ -9,6 +9,7 @@ open System.Windows.Threading
 open System.Linq
 open TwitterLimits
 open DisplayStatus
+open System.Threading
 
 OAuth.checkAccessTokenFile()
 
@@ -71,22 +72,34 @@ let fillCache items =
         let id = item.StatusToDisplay.StatusInfo.StatusId()
         controlsCache.[id] <- item
     controlsCache.Clear()
+    ldbg "CURLS: Clearing ctls cache"
     items |> List.map (fun (mainCtls, statusesCtls) -> statusesCtls)
-            |> List.concat
-            |> List.iter addToCache
+          |> List.concat
+          |> List.iter addToCache
+    lastRefresh <- DateTime.Now
+    ldbgp2 "CURLS: update last refresh to {0}, cache size: {1}" lastRefresh controlsCache.Count
 
 let resolveUrls () = 
     async {
-        linfo "Starting resolving urls"
         let started = DateTime.Now
-        let ids = seq { yield! controlsCache.Keys } |> Seq.takeWhile (fun _ -> started > lastRefresh)
+        linfop2 "CURLS: Starting resolving urls from {0}, thread id: {1}" started Thread.CurrentThread.ManagedThreadId
+        let expandControlUrls id =
+            async { 
+                match controlsCache.TryGetValue(id) with
+                    | true, v when started >= lastRefresh -> 
+                           ldbgp2 "Control {0} was found, thread id {1}" id Thread.CurrentThread.ManagedThreadId
+                           do! v.StatusToDisplay.ExpandUrls()
+                           WpfUtils.dispatchMessage wrap (fun _ -> FilterAwareConversation.updateText v)
+                    | true, _ when started < lastRefresh -> 
+                           ldbgp2 "Control {0} EXPIRED, thread id {1}" id Thread.CurrentThread.ManagedThreadId
+                    | _  -> ldbgp2 "Control {0} NOT found, thread id {1}" id Thread.CurrentThread.ManagedThreadId
+            }
+        let ids = controlsCache.Keys |> Seq.sort |> Seq.toList
+        linfop2 "CURLS: Count of ids to resolve: {0}, thread id {1}" ids.Length Thread.CurrentThread.ManagedThreadId 
         for id in ids do 
-            match controlsCache.TryGetValue(id) with
-            | true, v -> 
-                do! v.StatusToDisplay.ExpandUrls()
-                WpfUtils.dispatchMessage wrap (fun _ -> FilterAwareConversation.updateText v)
-            | _      -> ()
-        linfo "resolving urls ended"
+            do! expandControlUrls id
+            
+        linfop2 "CURLS: resolving urls ended from {0}, thread id: {1}" started Thread.CurrentThread.ManagedThreadId
 
     } |> Async.Start
 
@@ -103,10 +116,9 @@ let refresh =
                                                         let filter = { ShowHidden = showHiddenStatuses; FilterOutRule = statusFilterer }
                                                         let filterStatusInfos = fillPictures filter list
                                                         let detailsCtls = fillDetails filter trees
-                                                        lastRefresh <- DateTime.Now
                                                         fillCache detailsCtls
-                                                        resolveUrls ()
                                                         setCount list.Length filterStatusInfos)
+                resolveUrls ()
                 setAppStateCount ()
                 ldbg "CLI: Refresh done"
                 return! loop()
