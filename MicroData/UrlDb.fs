@@ -70,6 +70,6 @@ type UrlsDbState(file) =
 
     interface ShortenerDbInterface.IShortUrlsDatabase with
         member x.TranslateUrl(shortUrl) = mbox.PostAndReply(fun reply -> TranslateUrl(shortUrl, reply))
-        member x.SaveUrl(shortUrl) = mbox.Post(SaveUrl(shortUrl))
+        member x.SaveUrl(info) = mbox.Post(SaveUrl(info))
 
 let urlsDb = new UrlsDbState(fileName)

@@ -206,6 +206,9 @@ module FilterAwareConversation =
                                                      H.BackgroundColorDecider.DefaultColor)
           |> List.map (fun conversationRows -> H.createConversation details conversationRows)
 
+    let updateText (ctlInfo:WpfUtils.conversationNodeControlsInfo) =
+        WpfUtils.updateTextblockText  ctlInfo.Text ctlInfo.StatusToDisplay.TextFragments
+
 /// Functions for statuses displayed as a tree. Functions are specific for use when conversations updates are performed - 
 /// then different colors are used depending on status state (new, newly found ,..).
 module FullConversation = 

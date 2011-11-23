@@ -12,6 +12,7 @@ open System.Diagnostics
 open Status
 open Utils
 open TextSplitter
+open ShortenerDbInterface
 
 type FilterInfo = {
     Filtered : bool
@@ -22,10 +23,32 @@ and StatusInfoToDisplay =
     {   StatusInfo : statusInfo
         Children : StatusInfoToDisplay list
         FilterInfo : FilterInfo
-        mutable TextFragments : TextFragment []
+        mutable TextFragments : TextFragment array
     }
     member x.ExpandUrls() =
-        ()
+        let expandUrl url =
+            async {
+                match urlsAccess.TranslateUrl(url) with
+                | Some(translated) -> return translated.LongUrl
+                | None             -> let! translated = UrlExpander.urlExpander.AsyncResolveUrl(url, x.StatusInfo.StatusId())
+                                      let toStore = { ShortUrl = url
+                                                      LongUrl  = translated
+                                                      Date     = DateTime.Now
+                                                      StatusId = x.StatusInfo.Status.StatusId }
+                                      urlsAccess.SaveUrl(toStore)
+                                      linfop2 "Translated {0} to {1}" url translated
+                                      return translated
+            }
+        let expand () =
+            async { 
+                let expanded = x.TextFragments |> Array.map (fun f -> match f with |FragmentUrl(u) -> let newu = expandUrl u |> Async.RunSynchronously // eh, todo
+                                                                                                      FragmentUrl(newu)
+                                                                                   | x -> x) 
+                return expanded
+            }
+
+        async { let! expanded = expand ()
+                x.TextFragments <- expanded }
 
 type PreviewFace = { 
     ImageOpacity : float
@@ -77,16 +100,26 @@ let private linkFromUrl fragment =
                            NavigateUri = new Uri(link))
     hl.RequestNavigate.Add(BrowseHlClick)
     hl
+
+type private TextBlockInnerCtl =    // needed to define here, because Run and Hyperlink don't have suitable common base class
+    | CtlRun of Run
+    | CtlHL of Hyperlink
+let private textFragmentsToCtls fragments = 
+    seq {
+        for f in fragments do match f with | FragmentWords(w) -> yield CtlRun(new Run(w))
+                                           | _                -> yield CtlHL((linkFromUrl f))
+    }
+let private fillTextBlock (tb:TextBlock) controls = 
+    controls |> Seq.iter (fun c -> match c with
+                                    | CtlRun(r) -> tb.Inlines.Add(r)
+                                    | CtlHL(h)  -> tb.Inlines.Add(h))
 let private textFragmentsToTextblock fragments = 
     let ret = new TextBlock(TextWrapping = TextWrapping.Wrap,
                             Padding = new Thickness(0.),
                             Margin = new Thickness(5., 0., 0., 5.),
                             FontSize = fontSize)
-    for f in fragments do
-        match f with
-        | FragmentWords(w) -> ret.Inlines.Add(new Run(w))
-        | _                -> let hl = linkFromUrl f
-                              ret.Inlines.Add(hl)     
+    fragments |> textFragmentsToCtls 
+              |> fillTextBlock ret
     ret
 
 let createLittlePicture (previewFace, sDisplayInfo) = 
@@ -143,21 +176,29 @@ let createDetail sDisplayInfo =
                      CornerRadius = new CornerRadius(2.),
                      Child = imgContent)
 
-    let textInfo =
+    let innerTextBlock, textInfo =
         let s = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,
                                VerticalAlignment = VerticalAlignment.Top,
                                Orientation = Orientation.Vertical,
                                Width = 500.,
                                Margin = new Thickness(0.))
+        let textCtls = textFragmentsToTextblock sDisplayInfo.TextFragments
         s.Children.Add(meta) |> ignore
-        s.Children.Add((textFragmentsToTextblock sDisplayInfo.TextFragments)) |> ignore
-        new Border(BorderBrush = Brushes.LightGray,
-                   BorderThickness = new Thickness(0., 0., 0., 1.),
-                   Child = s)
+        s.Children.Add(textCtls) |> ignore
+        (textCtls, 
+         new Border(BorderBrush = Brushes.LightGray,
+                    BorderThickness = new Thickness(0., 0., 0., 1.),
+                    Child = s))
     
     row.Children.Add(img) |> ignore
     row.Children.Add(textInfo) |> ignore
-    (row, img)
+    (row, img, innerTextBlock)
+
+/// Used when content of the textblock changes and should be updated (currently only because urls are extracted)
+let updateTextblockText (tb:TextBlock) fragments = 
+    tb.Inlines.Clear()
+    fragments |> textFragmentsToCtls 
+              |> fillTextBlock tb
 
 type conversationControls = {
     Wrapper : StackPanel
@@ -168,6 +209,7 @@ type conversationControls = {
 type conversationNodeControlsInfo = 
     { Detail : StackPanel
       Img : Border
+      Text : TextBlock
       StatusToDisplay : StatusInfoToDisplay 
     }
     member x.GetLogicalStatusId() =
@@ -217,7 +259,7 @@ let updateConversation (controls:conversationControls) (updatedStatuses:Conversa
     let createConversationNode (conversationSource, sDisplayInfo) =
         ldbgp "Adding {0}" sDisplayInfo.StatusInfo
         let filterInfo = sDisplayInfo.FilterInfo
-        let detail, img = createDetail sDisplayInfo
+        let detail, img, textblock = createDetail sDisplayInfo
 
         img.Margin <- new Thickness(float conversationSource.Depth * (pictureSize+2.), 0., 0., 5.)
         detail.Tag <- { UrlResolved = false }
@@ -227,6 +269,7 @@ let updateConversation (controls:conversationControls) (updatedStatuses:Conversa
         controls.Statuses.Children.Add(detail) |> ignore
         { Detail = detail
           Img = img
+          Text = textblock
           StatusToDisplay = sDisplayInfo }
 
     controls.Statuses.Children.Clear()

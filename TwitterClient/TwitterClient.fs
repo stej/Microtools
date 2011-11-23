@@ -64,18 +64,31 @@ let switchPanes () =
     else
       imagesHolder.Visibility <- Visibility.Visible
       detailsHolder.Visibility <- Visibility.Collapsed
-      
-//let resolveUrls (controls:(WpfUtils.conversationNodeControlsInfo seq) seq) = 
-//    async {
-//        let ctls = Seq.concat controls
-//        for ctl in ctls do
-//            let infoInTag = ctl.Detail.Tag :?> WpfUtils.detailTagContent
-//            if not infoInTag.UrlResolved then
-//                infoInTag.UrlResolved <- true
-//                ctl.StatusToDisplay.ExpandUrls()
-//                WpfUtils.dispatchMessage wrap (fun _ -> )
-//
-//    } |> Async.Start
+   
+let controlsCache = new System.Collections.Concurrent.ConcurrentDictionary<Int64, WpfUtils.conversationNodeControlsInfo>()
+let fillCache items = 
+    let addToCache (item:WpfUtils.conversationNodeControlsInfo) = 
+        let id = item.StatusToDisplay.StatusInfo.StatusId()
+        controlsCache.[id] <- item
+    controlsCache.Clear()
+    items |> List.map (fun (mainCtls, statusesCtls) -> statusesCtls)
+            |> List.concat
+            |> List.iter addToCache
+
+let resolveUrls () = 
+    async {
+        linfo "Starting resolving urls"
+        let started = DateTime.Now
+        let ids = seq { yield! controlsCache.Keys } |> Seq.takeWhile (fun _ -> started > lastRefresh)
+        for id in ids do 
+            match controlsCache.TryGetValue(id) with
+            | true, v -> 
+                do! v.StatusToDisplay.ExpandUrls()
+                WpfUtils.dispatchMessage wrap (fun _ -> FilterAwareConversation.updateText v)
+            | _      -> ()
+        linfo "resolving urls ended"
+
+    } |> Async.Start
 
 let refresh =
     let refresher = 
@@ -91,7 +104,8 @@ let refresh =
                                                         let filterStatusInfos = fillPictures filter list
                                                         let detailsCtls = fillDetails filter trees
                                                         lastRefresh <- DateTime.Now
-                                                        //resolveUrls detailsCtls
+                                                        fillCache detailsCtls
+                                                        resolveUrls ()
                                                         setCount list.Length filterStatusInfos)
                 setAppStateCount ()
                 ldbg "CLI: Refresh done"
