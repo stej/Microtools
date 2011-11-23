@@ -213,13 +213,16 @@ let createConversationControls updatable (addTo:ConversationControlPlacement) (p
         //DeleteButton = delete  }
     
 let updateConversation (controls:conversationControls) (updatedStatuses:ConversationSource list) =
+    ldbgp "Updating conversation, list size: {0}" updatedStatuses.Length
     let createConversationNode (conversationSource, sDisplayInfo) =
+        ldbgp "Adding {0}" sDisplayInfo.StatusInfo
         let filterInfo = sDisplayInfo.FilterInfo
         let detail, img = createDetail sDisplayInfo
 
         img.Margin <- new Thickness(float conversationSource.Depth * (pictureSize+2.), 0., 0., 5.)
         detail.Tag <- { UrlResolved = false }
         detail.Opacity <- conversationSource.Opacity
+        detail.Background <- conversationSource.BackgroundColor
 
         controls.Statuses.Children.Add(detail) |> ignore
         { Detail = detail

@@ -55,7 +55,7 @@ type TwitterLimits() =
                 // first try to process GetLimits messages
                  let! res = mbox.TryScan((function
                     | GetLimits(chnl) -> Some(async {
-                             ldbgp "Twitter mailbox - GetLimits {0}" mbox.CurrentQueueLength
+                             //ldbgp "Twitter mailbox - GetLimits {0}" mbox.CurrentQueueLength
                              chnl.Reply(limits)
                              return limits })
                     | _ -> None
@@ -65,9 +65,9 @@ type TwitterLimits() =
                 | Some limits -> 
                     return! loop limits
                 | None -> 
-                    ldbgp "Twitter mailbox - after GetLimits {0}" mbox.CurrentQueueLength
+                    //ldbgp "Twitter mailbox - after GetLimits {0}" mbox.CurrentQueueLength
                     let! msg = mbox.Receive()
-                    ldbgp "Twitter mailbox message: {0}" msg
+                    //ldbgp "Twitter mailbox message: {0}" msg
                     match msg with
                     | UpdateLimit ->
                         return! loop( { limits with StandardRequest = getRateLimit() })

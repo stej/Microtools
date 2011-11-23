@@ -19,7 +19,7 @@ let private downloadImage (url:string) user =
       let wc = new System.Net.WebClient()
       let image = wc.DownloadData(url)
       let imagePath = getImagePathFromUrl url user
-      File.WriteAllBytes(imagePath, wc.DownloadData(url))
+      File.WriteAllBytes(imagePath, image)
     with ex -> 
       lerrex ex (sprintf "Unable to download image %s" url)
     

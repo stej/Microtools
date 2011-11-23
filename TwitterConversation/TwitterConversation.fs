@@ -123,36 +123,31 @@ let bindUpdate (controls:WpfUtils.conversationControls) status =
         } |> Async.Start
     )*)
 
-let addConversationCtls addTo rootStatus =
+let private addConversationCtlsHelper fn addTo rootStatus =
     let status = rootStatus.Status
     WpfUtils.dispatchMessage window (fun _ -> 
-        let mainCtls, subCtls = FullConversation.addOne addTo panel rootStatus
+        let mainCtls, _ = fn addTo panel rootStatus
         controlsCache.[status.StatusId] <- mainCtls
         bindUpdate mainCtls status)
-    
-//D let freshStatusColorer = (fun sInfo -> sInfo.Status.Inserted >= lastUpdateAll), Brushes.Yellow
 
-//let updateConversation controls rootStatus =
-//    DisplayStatus.FullConversation.updateOne controls rootStatus
+let addConversationCtls addTo rootStatus =
+    addConversationCtlsHelper FullConversation.addOne addTo rootStatus
 
-/// refreshes the status (all the conversation)
-/// @fnShouldColor = function that returns true if @color should be applied
-//D let refreshOneConversationEx (colorers:((statusInfo->bool)*SolidColorBrush) list) rootStatus =
-//    let controls = controlsCache.[rootStatus.Status.StatusId]
-//    WpfUtils.dispatchMessage controls.Statuses (fun _ -> 
-//        for detailCtl in updateConversation controls rootStatus do
-//            let color = colorers |> List.tryPick (fun (fn,color) -> if fn detailCtl.StatusToDisplay.StatusInfo then Some(color) else None)
-//            match color with
-//            | None -> ()
-//            | Some(c) -> detailCtl.Detail.Background <- c
-//    )
-//Dlet refreshOneConversation rootStatus =
-//    refreshOneConversationEx [freshStatusColorer] rootStatus
+let addNewlyFoundConversationCtls addTo rootStatus =
+    let colorOptions = UIColorsDescriptor.StatusAsNew
+    addConversationCtlsHelper (FullConversation.addOneWithColor colorOptions) addTo rootStatus
 
+let refreshAfterNewStatsFound newStatuses updatedStatus = 
+    let controls = controlsCache.[updatedStatus.Status.StatusId]
+    let colorOptions = UIColorsDescriptor.ByNewStatusesAndLastUpdate newStatuses lastUpdateAll
+    WpfUtils.dispatchMessage controls.Statuses (fun _ ->
+        DisplayStatus.FullConversation.updateOneWithColors colorOptions controls updatedStatus |> ignore
+    )
 let refreshOneConversation updatedStatus = 
     let controls = controlsCache.[updatedStatus.Status.StatusId]
+    let colorOptions = UIColorsDescriptor.ByLastUpdate lastUpdateAll
     WpfUtils.dispatchMessage controls.Statuses (fun _ ->
-        DisplayStatus.FullConversation.updateOneWithColors lastUpdateAll controls updatedStatus |> ignore
+        DisplayStatus.FullConversation.updateOneWithColors colorOptions controls updatedStatus |> ignore
     )
 
 StatusUpdated.Add(fun (controls, updatedStatus) -> refreshOneConversation updatedStatus)
@@ -199,7 +194,7 @@ let addNewlyFoundConversations() =
         |> Seq.sortBy (fun sInfo -> sInfo.StatusId())   // sort ascending, because the statuses are added to the beginning -> makes descending order
         |> Seq.iter (fun sInfo -> sInfo |> StatusesReplies.loadSavedReplyTree
                                         |> ConversationState.conversationsState.AddConversation
-                                        |> addConversationCtls WpfUtils.Beginning)
+                                        |> addNewlyFoundConversationCtls WpfUtils.Beginning)
 let addNewlyFoundStatuses() =
     linfo "Looking for newly found statuses"
     let checkConversationForNewChildren root =
@@ -219,14 +214,14 @@ let addNewlyFoundStatuses() =
 
     let statusInNews news sInfo =                                          // returns true if passed status is news list
         news |> Seq.exists (fun childInfo -> childInfo.Status.StatusId = sInfo.Status.StatusId)
-    let newlyAddedStatusColorer news = 
-        statusInNews news, Brushes.LightSalmon                              // fn that takes one param - news and returns tuple; frst is fn taking status
+//    let newlyAddedStatusColorer news = 
+//        statusInNews news, Brushes.LightSalmon                              // fn that takes one param - news and returns tuple; frst is fn taking status
 
     ConversationState.conversationsState.GetConversations()
         |> List.map checkConversationForNewChildren
         |> List.filter (fun (root,newstats) -> newstats.Count > 0)
         |> List.map (doAndRet (fun (root,newstats) -> linfo (sprintf "%s %s has NEW STATUSES. Count: %d" root.Status.UserName root.Status.Text newstats.Count)))
-        |> List.iter (fun (root,newstats) -> refreshOneConversation root)
+        |> List.iter (fun (root,newstats) -> refreshAfterNewStatsFound newstats root)
     linfo "Looking for newly found statuses.. Done"    
     
 let mutable (cts:CancellationTokenSource) = null

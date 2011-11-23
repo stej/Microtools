@@ -1,5 +1,6 @@
 ﻿module DisplayStatus
 
+open System
 open System.Windows
 open System.Windows.Controls
 open System.Windows.Data
@@ -9,12 +10,28 @@ open Utils
 open WpfUtils
 
 let OpacityFiltered, OpacityOld, OpacityVisible = 0.2, 0.5, 1.0
+let StatusDefaultBrush, NewStatusBrush, NewlyFoundStatusBrush = Brushes.Transparent, Brushes.Yellow, Brushes.LightSalmon
 
+/// Description of filtering info.
 type UIFilterDescriptor = 
     { ShowHidden : bool 
-      FilterOutRule : statusInfo -> bool
-    } 
+      FilterOutRule : statusInfo -> bool } 
     with static member NoFilter = { ShowHidden = true; FilterOutRule = fun _ -> false }
+
+/// Used in TwitterConversation. Provides info needed to pick one color for status background.
+type UIColorsDescriptor = 
+    { NewInConversation : statusInfo seq
+      LastUpdate : System.DateTime
+      AlwaysDefault : bool }
+    with 
+        static member UseDefault = 
+            { NewInConversation = []; LastUpdate = DateTime.Now; AlwaysDefault = true }
+        static member ByLastUpdate date = 
+            { NewInConversation = []; LastUpdate = date; AlwaysDefault = false }
+        static member StatusAsNew = 
+            { NewInConversation = []; LastUpdate = DateTime.MinValue; AlwaysDefault = false }
+        static member ByNewStatusesAndLastUpdate parents date = 
+            { NewInConversation = parents; LastUpdate = date; AlwaysDefault = false }
 
 let rec private convertToStatusDisplayInfo filter (statusInfo:statusInfo) : StatusInfoToDisplay =
     let rec convertToFilterInfo (children:StatusInfoToDisplay list) =
@@ -39,6 +56,7 @@ let rec private convertToStatusDisplayInfo filter (statusInfo:statusInfo) : Stat
         TextFragments = TextSplitter.splitText statusInfo.Status.Text
     }
 
+/// Functions for preview consisting only from images.
 module LitlePreview = 
     let private convertToPreviewSource sDisplayInfo =
         ({ ImageOpacity = if sDisplayInfo.FilterInfo.Filtered then OpacityFiltered else OpacityVisible },
@@ -64,6 +82,7 @@ module LitlePreview =
 
         previewSources |> List.map snd
 
+/// Functions for statuses displayed as a tree - common functions.
 module private CommonConversationHelpers = 
     /// Helper type used in situation when conversations should be used and it should be decided whether
     /// the given node (in conversation) should be shown or not (depends also on children)
@@ -100,19 +119,41 @@ module private CommonConversationHelpers =
         with static member AlwaysVisible = { F = fun _ -> OpacityVisible }
     type StatusVisibilityDecider = 
         { F : StatusInfoToDisplay -> bool }
-        with static member AlwaysVisible = { F = fun _ -> false }
+        with static member AlwaysVisible = { F = fun _ -> true }
     type BackgroundColorDecider =
         { F : StatusInfoToDisplay list -> StatusInfoToDisplay -> SolidColorBrush }
-        with static member DefaultColor = { F = fun _ _ -> Brushes.White }
-                            
+        with 
+            static member DefaultColor = { F = fun _ _ -> StatusDefaultBrush }
+            static member FullByDescriptor descriptor = 
+                { F = fun parents status -> 
+                        if descriptor.AlwaysDefault then
+                            StatusDefaultBrush
+                        else if BackgroundColorDecider.statusInNews descriptor.NewInConversation status.StatusInfo then
+                            NewlyFoundStatusBrush
+                        else if status.StatusInfo.Status.Inserted >= descriptor.LastUpdate ||
+                            BackgroundColorDecider.hasAnyNewParent descriptor.LastUpdate parents then
+                            NewStatusBrush
+                        else
+                            StatusDefaultBrush
+                }
+            static member private hasAnyNewParent timeFrom parents =
+                let rec call =  function
+                    | [] -> false
+                    | p::rest when p.StatusInfo.Status.Inserted >= timeFrom -> true
+                    | p::rest -> call rest
+                call parents
+            static member private statusInNews news sInfo = // returns true if passed status is news list
+                news |> Seq.exists (fun childInfo -> childInfo.Status.StatusId = sInfo.Status.StatusId)                            
 
-    let convertToConversationSource (opacityDecider:OpacityDecider) (visibilityDecider:StatusVisibilityDecider) 
-                                                                    (colorDecider: BackgroundColorDecider) sRootDisplayInfo =
+    let convertToConversationSource (opacityDecider:OpacityDecider) 
+                                    (visibilityDecider:StatusVisibilityDecider) 
+                                    (colorDecider: BackgroundColorDecider) 
+                                    sRootDisplayInfo =
         let ret = new ResizeArray<_>()
         let rec _convert depth parents sDisplayInfo = 
             ret.Add({ Depth = depth
                       Opacity = opacityDecider.F sDisplayInfo
-                      BackgroundColor = colorDecider.F parents sRootDisplayInfo }, 
+                      BackgroundColor = colorDecider.F parents sDisplayInfo }, 
                     sDisplayInfo)
             sDisplayInfo.Children
                 |> Seq.filter visibilityDecider.F
@@ -139,6 +180,7 @@ module private CommonConversationHelpers =
 
 module H = CommonConversationHelpers
 
+/// Functions for statuses displayed as a tree. Functions are specific for use when filter should be considered.
 module FilterAwareConversation = 
     
     let private getConversationControlOpacity (visibilityDecider:H.ConversationStatusVisibilityDecider) sDisplayInfo =
@@ -164,6 +206,8 @@ module FilterAwareConversation =
                                                      H.BackgroundColorDecider.DefaultColor)
           |> List.map (fun conversationRows -> H.createConversation details conversationRows)
 
+/// Functions for statuses displayed as a tree. Functions are specific for use when conversations updates are performed - 
+/// then different colors are used depending on status state (new, newly found ,..).
 module FullConversation = 
 
     let fill (details:StackPanel) statuses =    
@@ -178,11 +222,15 @@ module FullConversation =
           |> List.map H.convertToConversationSourceFullVisibility
           |> List.map (fun conversationRows -> H.createConversation details conversationRows)
 
-    let addOne addTo (details:StackPanel) rootStatus =
+    let addOneWithColor colorsDescriptor addTo (details:StackPanel) rootStatus =
+        let colorDecider = H.BackgroundColorDecider.FullByDescriptor colorsDescriptor
         rootStatus 
           |> convertToStatusDisplayInfo UIFilterDescriptor.NoFilter
-          |> H.convertToConversationSourceFullVisibility
+          |> H.convertToConversationSourceFullVisibilityWithColor colorDecider
           |> H.createConversationAt true addTo details
+
+    let addOne addTo (details:StackPanel) rootStatus =
+        addOneWithColor UIColorsDescriptor.UseDefault addTo details rootStatus
 
     let updateOne (conversationCtls:conversationControls) rootStatus =
         rootStatus 
@@ -190,15 +238,9 @@ module FullConversation =
           |> H.convertToConversationSourceFullVisibility
           |> WpfUtils.updateConversation conversationCtls
 
-    let updateOneWithColors lastUpdateAll (conversationCtls:conversationControls) rootStatus =
-        let rec hasAnyNewParent = function
-            | [] -> false
-            | p::rest when p.StatusInfo.Status.Inserted >= lastUpdateAll -> true
-            | p::rest -> hasAnyNewParent rest
-        let colorF parents status =
-            if status.StatusInfo.Status.Inserted >= lastUpdateAll || hasAnyNewParent parents then Brushes.Yellow
-            else Brushes.White
-        let colorDecider = { H.BackgroundColorDecider.F = colorF }
+    let updateOneWithColors (colorsDescriptor:UIColorsDescriptor) (conversationCtls:conversationControls) rootStatus =
+        
+        let colorDecider = H.BackgroundColorDecider.FullByDescriptor colorsDescriptor
         rootStatus 
           |> convertToStatusDisplayInfo UIFilterDescriptor.NoFilter
           |> H.convertToConversationSourceFullVisibilityWithColor colorDecider
