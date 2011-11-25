@@ -30,14 +30,7 @@ and StatusInfoToDisplay =
             async {
                 match urlsAccess.TranslateUrl(url) with
                 | Some(translated) -> return translated.LongUrl
-                | None             -> let! translated = UrlExpander.urlExpander.AsyncResolveUrl(url, x.StatusInfo.StatusId())
-                                      let toStore = { ShortUrl = url
-                                                      LongUrl  = translated
-                                                      Date     = DateTime.Now
-                                                      StatusId = x.StatusInfo.Status.StatusId }
-                                      urlsAccess.SaveUrl(toStore)
-                                      linfop2 "Translated {0} to {1}" url translated
-                                      return translated
+                | None             -> return! UrlExpander.urlExpander.AsyncResolveUrl(url, x.StatusInfo.StatusId())
             }
         let expand () =
             async { 
@@ -97,7 +90,8 @@ let private BrowseHlClick (e:Navigation.RequestNavigateEventArgs) =
 let private linkFromUrl fragment =
     let link, text = TextSplitter.urlFragmentToLinkAndName fragment
     let hl = new Hyperlink(new Run(text),
-                           NavigateUri = new Uri(link))
+                           NavigateUri = new Uri(link),
+                           TextDecorations = null)
     hl.RequestNavigate.Add(BrowseHlClick)
     hl
 

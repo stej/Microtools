@@ -52,9 +52,10 @@ let private getResponse (url:string) =
         None
 
 let private tco (url:string) =
-    let parsedUrl = url |> getResponse
-                        |> textFromResponse 
-                        |> extractFromMeta
+    let toExpand = if url.EndsWith(")") then url.TrimEnd(')') else url
+    let parsedUrl = toExpand |> getResponse
+                             |> textFromResponse 
+                             |> extractFromMeta
     //printfn "Parsed from tco: %A" parsedUrl
     //File.AppendAllLines(@"log.log", ["from tco"; parsedUrl.ToString()])
     match parsedUrl with
@@ -84,10 +85,12 @@ let extract (url:string) =
                 NotNeeded(url)
         match extracted with
         | Failed -> Failed              // finish
-        | Extracted(u) -> _extract u
+        | Extracted(u) -> _extract u    // try to extract again, it might be e.g. bit.ly wrapped in t.co
         | NotNeeded(u) -> Extracted(u)  // finish
 
     if Regex.IsMatch(url, regex) then
-        _extract url
+        let ret = _extract url
+        linfop2 "Expanded {0} to {1}" url ret
+        ret
     else
         NotNeeded(url)

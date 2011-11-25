@@ -86,18 +86,17 @@ let resolveUrls () =
         let expandControlUrls id =
             async { 
                 match controlsCache.TryGetValue(id) with
-                    | true, v when started >= lastRefresh -> 
-                           ldbgp2 "Control {0} was found, thread id {1}" id Thread.CurrentThread.ManagedThreadId
+                    | true, v -> 
                            do! v.StatusToDisplay.ExpandUrls()
                            WpfUtils.dispatchMessage wrap (fun _ -> FilterAwareConversation.updateText v)
-                    | true, _ when started < lastRefresh -> 
-                           ldbgp2 "Control {0} EXPIRED, thread id {1}" id Thread.CurrentThread.ManagedThreadId
-                    | _  -> ldbgp2 "Control {0} NOT found, thread id {1}" id Thread.CurrentThread.ManagedThreadId
+                    | _  -> ()
             }
         let ids = controlsCache.Keys |> Seq.sort |> Seq.toList
         linfop2 "CURLS: Count of ids to resolve: {0}, thread id {1}" ids.Length Thread.CurrentThread.ManagedThreadId 
-        for id in ids do 
-            do! expandControlUrls id
+
+        for id in ids do
+            if started >= lastRefresh then
+                do! expandControlUrls id
             
         linfop2 "CURLS: resolving urls ended from {0}, thread id: {1}" started Thread.CurrentThread.ManagedThreadId
 
