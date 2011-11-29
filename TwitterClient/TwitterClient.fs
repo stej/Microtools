@@ -134,9 +134,9 @@ let StatusesLoadedPublished = StatusesLoadedEvent.Publish
 StatusesLoadedPublished |> Event.add (fun list ->
     UIState.addDone() 
     match list with
-    | Some(l) -> l |> PreviewsState.userStatusesState.AddStatuses
-                 refresh()
-    | _       -> ()
+    | Some(l) when l.Length > 0 -> l |> PreviewsState.userStatusesState.AddStatuses
+                                   refresh()
+    | _                         -> ()
 )
 window.Loaded.Add(fun _ ->
     setAppState "Loading.."

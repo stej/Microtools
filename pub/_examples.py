@@ -157,7 +157,7 @@ for o in older:
 		counter = counter + 1
 print "Count of statuses to export: " + str(counter)
 
-## export to db
+## export to external db
 import sys
 import StatusDb
 sdb = StatusDb.StatusesDbState(exportFile)
@@ -175,3 +175,31 @@ for o in older:
 			print "Pressed Esc -> breaking"
 			break
 print 'done'
+
+#########################
+## import from other db
+from System import *
+import System.IO
+import StatusDb
+
+fromDate = DateTime(2011, 11, 28, 18, 0, 0)   #yyyy MM dd HH mm ss
+
+fromFile = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, 'statuses.from.db')
+if not System.IO.File.Exists(fromFile):
+	raise Exception('File ' + fromFile + ' does not exist')
+
+toFile = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, 'statuses.to.db')
+if not System.IO.File.Exists(toFile):
+	raise Exception('File ' + toFile + ' does not exist')
+	
+fromdb = StatusDb.StatusesDbState(fromFile)
+todb = StatusDb.StatusesDbState(toFile)
+
+statuses = db.GetStatusesFromSql("select * from Status where Inserted > " + fromDate.Ticks.ToString())
+for s in statuses:
+	stored = todb.ReadStatusWithId(s.Status.StatusId)
+	if stored == None:
+		print ('Storing: ' + s.ToString())
+		todb.SaveStatus(s)
+	else:
+		print ('Stored: ' + stored.Value.ToString())

@@ -27,11 +27,7 @@ and StatusInfoToDisplay =
     }
     member x.ExpandUrls() =
         let expandUrl url =
-            async {
-                match urlsAccess.TranslateUrl(url) with
-                | Some(translated) -> return translated.LongUrl
-                | None             -> return! UrlExpander.urlExpander.AsyncResolveUrl(url, x.StatusInfo.StatusId())
-            }
+            UrlExpander.urlExpander.AsyncResolveUrl(url, x.StatusInfo.StatusId())
         let expand () =
             async { 
                 let expanded = x.TextFragments |> Array.map (fun f -> match f with |FragmentUrl(u) -> let newu = expandUrl u |> Async.RunSynchronously // eh, todo
@@ -277,3 +273,11 @@ let dispatchMessage<'a> (dispatcherOwner:DispatcherObject) fce =
     dispatcherOwner.Dispatcher.Invoke(DispatcherPriority.Normal, 
                                       System.Action<'a>(fce), 
                                       ()) |> ignore
+
+let resolveTextFragmentsFromCache fragments =
+    fragments |> Array.map (fun f -> 
+         match f with |FragmentUrl(u) -> let newu = UrlExpander.urlExpander.AsyncResolveUrlFromCache(u) |> Async.RunSynchronously // eh, todo
+                                         match newu with
+                                         | Some(longUrl) -> FragmentUrl(longUrl)
+                                         | None -> FragmentUrl(u)
+                      | x -> x) 

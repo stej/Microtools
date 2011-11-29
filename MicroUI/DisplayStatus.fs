@@ -56,6 +56,12 @@ let rec private convertToStatusDisplayInfo filter (statusInfo:statusInfo) : Stat
         TextFragments = TextSplitter.splitText statusInfo.Status.Text
     }
 
+let private resolveFragmentsFromCache sDisplayInfo = 
+    { sDisplayInfo with TextFragments = sDisplayInfo.TextFragments |> WpfUtils.resolveTextFragmentsFromCache }
+
+let private convertToLittleSDisplayInfo = convertToStatusDisplayInfo
+let private convertToFullSDisplayInfo filter = convertToStatusDisplayInfo filter >> resolveFragmentsFromCache
+
 /// Functions for preview consisting only from images.
 module LitlePreview = 
     let private convertToPreviewSource sDisplayInfo =
@@ -73,7 +79,7 @@ module LitlePreview =
             |> List.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
             |> List.sortBy (fun (sInfo, displayDate) -> displayDate)
             |> List.map (fst 
-                         >> (convertToStatusDisplayInfo filter)
+                         >> (convertToLittleSDisplayInfo filter)
                          >> convertToPreviewSource)
 
         previewSources 
@@ -199,7 +205,7 @@ module FilterAwareConversation =
           |> Seq.toList
           |> List.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
           |> List.sortBy (fun (sInfo, displayDate) -> displayDate)
-          |> List.map (fst >> (convertToStatusDisplayInfo filter))
+          |> List.map (fst >> (convertToFullSDisplayInfo filter))
           |> List.filter visibilityDecider.isRootStatusVisible
           |> List.map (H.convertToConversationSource { H.OpacityDecider.F          = getConversationControlOpacity visibilityDecider }
                                                      { H.StatusVisibilityDecider.F = visibilityDecider.isStatusVisible}
@@ -221,14 +227,14 @@ module FullConversation =
           |> Seq.toList
           |> List.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
           |> List.sortBy (fun (sInfo, displayDate) -> displayDate)
-          |> List.map (fst >> (convertToStatusDisplayInfo noFilter))
+          |> List.map (fst >> (convertToFullSDisplayInfo noFilter))
           |> List.map H.convertToConversationSourceFullVisibility
           |> List.map (fun conversationRows -> H.createConversation details conversationRows)
 
     let addOneWithColor colorsDescriptor addTo (details:StackPanel) rootStatus =
         let colorDecider = H.BackgroundColorDecider.FullByDescriptor colorsDescriptor
         rootStatus 
-          |> convertToStatusDisplayInfo UIFilterDescriptor.NoFilter
+          |> convertToFullSDisplayInfo UIFilterDescriptor.NoFilter
           |> H.convertToConversationSourceFullVisibilityWithColor colorDecider
           |> H.createConversationAt true addTo details
 
@@ -237,7 +243,7 @@ module FullConversation =
 
     let updateOne (conversationCtls:conversationControls) rootStatus =
         rootStatus 
-          |> convertToStatusDisplayInfo UIFilterDescriptor.NoFilter
+          |> convertToFullSDisplayInfo UIFilterDescriptor.NoFilter
           |> H.convertToConversationSourceFullVisibility
           |> WpfUtils.updateConversation conversationCtls
 
@@ -245,6 +251,6 @@ module FullConversation =
         
         let colorDecider = H.BackgroundColorDecider.FullByDescriptor colorsDescriptor
         rootStatus 
-          |> convertToStatusDisplayInfo UIFilterDescriptor.NoFilter
+          |> convertToFullSDisplayInfo UIFilterDescriptor.NoFilter
           |> H.convertToConversationSourceFullVisibilityWithColor colorDecider
           |> WpfUtils.updateConversation conversationCtls
