@@ -43,10 +43,16 @@ let setCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) =
     UIState.setCounts count filtered
 
 let mutable showHiddenStatuses = false
+let mutable showOnlyLinkPart = true
 let mutable lastRefresh = DateTime.MinValue
 filterCtl.Text <- StatusFilter.defaultConfigFilter
 DbInterface.dbAccess <- StatusDb.statusesDb
 ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
+
+let getCurrentUISettings() = 
+    let statusFilterer = StatusFilter.getStatusFilterer filterCtl.Text
+    { ShowOnlyLinkPart = showOnlyLinkPart
+      Filter = { ShowHidden = showHiddenStatuses; FilterOutRule = statusFilterer } }
 
 // status downloaded from Twitter
 Twitter.NewStatusDownloaded 
@@ -88,7 +94,7 @@ let resolveUrls () =
                 match controlsCache.TryGetValue(id) with
                     | true, v -> 
                            do! v.StatusToDisplay.ExpandUrls()
-                           WpfUtils.dispatchMessage wrap (fun _ -> FilterAwareConversation.updateText v)
+                           WpfUtils.dispatchMessage wrap (fun _ -> FilterAwareConversation.updateText (getCurrentUISettings()) v)
                     | _  -> ()
             }
         let ids = controlsCache.Keys |> Seq.sort |> Seq.toList
@@ -111,10 +117,9 @@ let refresh =
                 ldbgp2 "CLI: Count of statuses: {0}/{1}" list.Length trees.Length
                 ImagesSource.ensureStatusesImages trees |> ignore
                 ldbg "CLI: Refreshing panels"
-                WpfUtils.dispatchMessage wrap (fun _ -> let statusFilterer = StatusFilter.getStatusFilterer filterCtl.Text
-                                                        let filter = { ShowHidden = showHiddenStatuses; FilterOutRule = statusFilterer }
-                                                        let filterStatusInfos = fillPictures filter list
-                                                        let detailsCtls = fillDetails filter trees
+                WpfUtils.dispatchMessage wrap (fun _ -> let uiSettings = getCurrentUISettings()
+                                                        let filterStatusInfos = fillPictures uiSettings list
+                                                        let detailsCtls = fillDetails uiSettings trees
                                                         fillCache detailsCtls
                                                         setCount list.Length filterStatusInfos)
                 resolveUrls ()
@@ -245,6 +250,15 @@ do
     let menuItem = new MenuItem(Header = "Go up", 
                                 ToolTip = "Get older statuses")
     menuItem.Click.Add(fun _ -> goUp ())
+    window.ContextMenu.Items.Add(menuItem) |> ignore
+
+    let menuItem = new MenuItem(Header = "Short links", 
+                                ToolTip = "Show only part of the link",
+                                IsCheckable = true)
+    menuItem.IsChecked <- showOnlyLinkPart
+    menuItem.Click.Add(fun _ -> showOnlyLinkPart <- not showOnlyLinkPart
+                                refresh () )
+
     window.ContextMenu.Items.Add(menuItem) |> ignore
 
 [<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]

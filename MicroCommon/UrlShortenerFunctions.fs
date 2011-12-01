@@ -5,6 +5,8 @@ open Utils
 open System.Net
 open System.IO
 
+//todo: http://trunc.it/, http://jdem.cz
+
 type ExtractedUrlsType = 
     | Extracted of string
     | NotNeeded of string

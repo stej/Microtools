@@ -17,6 +17,10 @@ type UIFilterDescriptor =
     { ShowHidden : bool 
       FilterOutRule : statusInfo -> bool } 
     with static member NoFilter = { ShowHidden = true; FilterOutRule = fun _ -> false }
+type UISettingsDescriptor = 
+    { Filter : UIFilterDescriptor
+      ShowOnlyLinkPart : bool }
+    with static member Default = { ShowOnlyLinkPart = true; Filter = UIFilterDescriptor.NoFilter }
 
 /// Used in TwitterConversation. Provides info needed to pick one color for status background.
 type UIColorsDescriptor = 
@@ -70,7 +74,7 @@ module LitlePreview =
 
     // todo: run only needed parts (manipulating with controls) on UI thread.. 
     // currently all the stuff is supposed to run on UI thread
-    let fill (wrap:WrapPanel) (filter:UIFilterDescriptor) statuses =
+    let fill (wrap:WrapPanel) (settings:UISettingsDescriptor) statuses =
 
         wrap.Children.Clear()
         let previewSources = 
@@ -79,7 +83,7 @@ module LitlePreview =
             |> List.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
             |> List.sortBy (fun (sInfo, displayDate) -> displayDate)
             |> List.map (fst 
-                         >> (convertToLittleSDisplayInfo filter)
+                         >> (convertToLittleSDisplayInfo settings.Filter)
                          >> convertToPreviewSource)
 
         previewSources 
@@ -154,12 +158,14 @@ module private CommonConversationHelpers =
     let convertToConversationSource (opacityDecider:OpacityDecider) 
                                     (visibilityDecider:StatusVisibilityDecider) 
                                     (colorDecider: BackgroundColorDecider) 
+                                    (showOnlyDomainLinks : bool)
                                     sRootDisplayInfo =
         let ret = new ResizeArray<_>()
         let rec _convert depth parents sDisplayInfo = 
             ret.Add({ Depth = depth
                       Opacity = opacityDecider.F sDisplayInfo
-                      BackgroundColor = colorDecider.F parents sDisplayInfo }, 
+                      BackgroundColor = colorDecider.F parents sDisplayInfo
+                      ShowOnlyDomainInLinks = showOnlyDomainLinks}, 
                     sDisplayInfo)
             sDisplayInfo.Children
                 |> Seq.filter visibilityDecider.F
@@ -170,11 +176,11 @@ module private CommonConversationHelpers =
         _convert 0 [] sRootDisplayInfo
         ret |> Seq.toList
 
-    let convertToConversationSourceFullVisibility =
-        convertToConversationSource OpacityDecider.AlwaysVisible StatusVisibilityDecider.AlwaysVisible BackgroundColorDecider.DefaultColor
+    let convertToConversationSourceWithDefaults =
+        convertToConversationSource OpacityDecider.AlwaysVisible StatusVisibilityDecider.AlwaysVisible BackgroundColorDecider.DefaultColor false
 
-    let convertToConversationSourceFullVisibilityWithColor colorDecider =
-        convertToConversationSource OpacityDecider.AlwaysVisible StatusVisibilityDecider.AlwaysVisible colorDecider
+    let convertToConversationSourceWithDefaultsWithColor colorDecider =
+        convertToConversationSource OpacityDecider.AlwaysVisible StatusVisibilityDecider.AlwaysVisible colorDecider false
 
     let createConversationAt updatable addTo (details:StackPanel) conversationRows =
         let mainControls = WpfUtils.createConversationControls updatable addTo details
@@ -196,24 +202,25 @@ module FilterAwareConversation =
             OpacityFiltered
         else OpacityVisible
 
-    let fill (details:StackPanel) (filter:UIFilterDescriptor) statuses =    
+    let fill (details:StackPanel) (settings:UISettingsDescriptor) statuses =    
         ldbg "UI: fillDetails"
-        let visibilityDecider = new H.ConversationStatusVisibilityDecider(filter.ShowHidden)
+        let visibilityDecider = new H.ConversationStatusVisibilityDecider(settings.Filter.ShowHidden)
 
         details.Children.Clear()
         statuses 
           |> Seq.toList
           |> List.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
           |> List.sortBy (fun (sInfo, displayDate) -> displayDate)
-          |> List.map (fst >> (convertToFullSDisplayInfo filter))
+          |> List.map (fst >> (convertToFullSDisplayInfo settings.Filter))
           |> List.filter visibilityDecider.isRootStatusVisible
           |> List.map (H.convertToConversationSource { H.OpacityDecider.F          = getConversationControlOpacity visibilityDecider }
                                                      { H.StatusVisibilityDecider.F = visibilityDecider.isStatusVisible}
-                                                     H.BackgroundColorDecider.DefaultColor)
+                                                     H.BackgroundColorDecider.DefaultColor
+                                                     settings.ShowOnlyLinkPart)
           |> List.map (fun conversationRows -> H.createConversation details conversationRows)
 
-    let updateText (ctlInfo:WpfUtils.conversationNodeControlsInfo) =
-        WpfUtils.updateTextblockText  ctlInfo.Text ctlInfo.StatusToDisplay.TextFragments
+    let updateText uiSettings (ctlInfo:WpfUtils.conversationNodeControlsInfo) =
+        WpfUtils.updateTextblockText uiSettings.ShowOnlyLinkPart ctlInfo.Text ctlInfo.StatusToDisplay.TextFragments
 
 /// Functions for statuses displayed as a tree. Functions are specific for use when conversations updates are performed - 
 /// then different colors are used depending on status state (new, newly found ,..).
@@ -228,14 +235,14 @@ module FullConversation =
           |> List.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
           |> List.sortBy (fun (sInfo, displayDate) -> displayDate)
           |> List.map (fst >> (convertToFullSDisplayInfo noFilter))
-          |> List.map H.convertToConversationSourceFullVisibility
+          |> List.map H.convertToConversationSourceWithDefaults
           |> List.map (fun conversationRows -> H.createConversation details conversationRows)
 
     let addOneWithColor colorsDescriptor addTo (details:StackPanel) rootStatus =
         let colorDecider = H.BackgroundColorDecider.FullByDescriptor colorsDescriptor
         rootStatus 
           |> convertToFullSDisplayInfo UIFilterDescriptor.NoFilter
-          |> H.convertToConversationSourceFullVisibilityWithColor colorDecider
+          |> H.convertToConversationSourceWithDefaultsWithColor colorDecider
           |> H.createConversationAt true addTo details
 
     let addOne addTo (details:StackPanel) rootStatus =
@@ -244,7 +251,7 @@ module FullConversation =
     let updateOne (conversationCtls:conversationControls) rootStatus =
         rootStatus 
           |> convertToFullSDisplayInfo UIFilterDescriptor.NoFilter
-          |> H.convertToConversationSourceFullVisibility
+          |> H.convertToConversationSourceWithDefaults
           |> WpfUtils.updateConversation conversationCtls
 
     let updateOneWithColors (colorsDescriptor:UIColorsDescriptor) (conversationCtls:conversationControls) rootStatus =
@@ -252,5 +259,5 @@ module FullConversation =
         let colorDecider = H.BackgroundColorDecider.FullByDescriptor colorsDescriptor
         rootStatus 
           |> convertToFullSDisplayInfo UIFilterDescriptor.NoFilter
-          |> H.convertToConversationSourceFullVisibilityWithColor colorDecider
+          |> H.convertToConversationSourceWithDefaultsWithColor colorDecider
           |> WpfUtils.updateConversation conversationCtls

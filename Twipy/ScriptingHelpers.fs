@@ -20,7 +20,7 @@ open System.Windows.Documents
 type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) = 
     let neverFilterer = fun _ -> false
     let fillDetails  = FullConversation.fill details
-    let fillPictures = LitlePreview.fill wrapContent UIFilterDescriptor.NoFilter
+    let fillPictures = LitlePreview.fill wrapContent UISettingsDescriptor.Default
 
     member x.loadTree status = StatusesReplies.loadSavedReplyTree status
     member x.show (statuses: statusInfo seq) = 

@@ -14,6 +14,8 @@ open Utils
 open TextSplitter
 open ShortenerDbInterface
 
+let private urlShortenerRegex = @"^(https?://([^.]+\.)?[^.]+\.[^./]+).*"
+
 type FilterInfo = {
     Filtered : bool
     HasUnfilteredDescendant : bool
@@ -48,6 +50,7 @@ type ConversationFace = {
     Depth : int
     Opacity : float
     BackgroundColor: SolidColorBrush
+    ShowOnlyDomainInLinks : bool
 }
 type ConversationSource = ConversationFace * StatusInfoToDisplay
 
@@ -83,32 +86,50 @@ let private BrowseHlClick (e:Navigation.RequestNavigateEventArgs) =
     Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)) |> ignore
     e.Handled <- true
 
-let private linkFromUrl fragment =
-    let link, text = TextSplitter.urlFragmentToLinkAndName fragment
+let private linkFromUrl (hyperlinkContentGetter: _ -> string*string*string) fragment =
+    let link, text, tooltip = hyperlinkContentGetter fragment
     let hl = new Hyperlink(new Run(text),
                            NavigateUri = new Uri(link),
-                           TextDecorations = null)
+                           TextDecorations = null,
+                           ToolTip = tooltip)
     hl.RequestNavigate.Add(BrowseHlClick)
+    hl, link, text
+let private generalLinkFromUrl showOnlyDomainInLinks fragment = 
+    
+    let hyperlinkContentGetter = fun fragment -> 
+        let mutable link, text = TextSplitter.urlFragmentToLinkAndName fragment
+        let tooltip = text
+        if showOnlyDomainInLinks then
+            text <- System.Text.RegularExpressions.Regex.Replace(text, urlShortenerRegex, "$1")
+        link, text, tooltip
+    let hl, link, text = linkFromUrl hyperlinkContentGetter fragment
+    hl
+let private twitterLinkFromUrl fragment = 
+    let hyperlinkContentGetter = fun fragment -> 
+        let link, text = TextSplitter.urlFragmentToLinkAndName fragment
+        link, text, text
+    let hl, link, text = linkFromUrl hyperlinkContentGetter fragment
     hl
 
 type private TextBlockInnerCtl =    // needed to define here, because Run and Hyperlink don't have suitable common base class
     | CtlRun of Run
     | CtlHL of Hyperlink
-let private textFragmentsToCtls fragments = 
+let private textFragmentsToCtls showOnlyDomainInLinks fragments = 
     seq {
         for f in fragments do match f with | FragmentWords(w) -> yield CtlRun(new Run(w))
-                                           | _                -> yield CtlHL((linkFromUrl f))
+                                           | FragmentUrl(w)   -> yield CtlHL((generalLinkFromUrl showOnlyDomainInLinks f))
+                                           | _                -> yield CtlHL((twitterLinkFromUrl f))
     }
 let private fillTextBlock (tb:TextBlock) controls = 
     controls |> Seq.iter (fun c -> match c with
                                     | CtlRun(r) -> tb.Inlines.Add(r)
                                     | CtlHL(h)  -> tb.Inlines.Add(h))
-let private textFragmentsToTextblock fragments = 
+let private textFragmentsToTextblock showOnlyDomainInLinks fragments = 
     let ret = new TextBlock(TextWrapping = TextWrapping.Wrap,
                             Padding = new Thickness(0.),
                             Margin = new Thickness(5., 0., 0., 5.),
                             FontSize = fontSize)
-    fragments |> textFragmentsToCtls 
+    fragments |> textFragmentsToCtls showOnlyDomainInLinks
               |> fillTextBlock ret
     ret
 
@@ -120,7 +141,7 @@ let createLittlePicture (previewFace, sDisplayInfo) =
     ldbgp "UI: Little picture for {0} done" status
     ret
               
-let createDetail sDisplayInfo =
+let createDetail (conversationSource, sDisplayInfo) =
     let status = sDisplayInfo.StatusInfo.Status
     let row = new StackPanel(HorizontalAlignment = HorizontalAlignment.Left,
                              VerticalAlignment = VerticalAlignment.Top,
@@ -172,7 +193,7 @@ let createDetail sDisplayInfo =
                                Orientation = Orientation.Vertical,
                                Width = 500.,
                                Margin = new Thickness(0.))
-        let textCtls = textFragmentsToTextblock sDisplayInfo.TextFragments
+        let textCtls = textFragmentsToTextblock conversationSource.ShowOnlyDomainInLinks sDisplayInfo.TextFragments
         s.Children.Add(meta) |> ignore
         s.Children.Add(textCtls) |> ignore
         (textCtls, 
@@ -185,9 +206,9 @@ let createDetail sDisplayInfo =
     (row, img, innerTextBlock)
 
 /// Used when content of the textblock changes and should be updated (currently only because urls are extracted)
-let updateTextblockText (tb:TextBlock) fragments = 
+let updateTextblockText showOnlyDomainInLinks (tb:TextBlock) fragments = 
     tb.Inlines.Clear()
-    fragments |> textFragmentsToCtls 
+    fragments |> textFragmentsToCtls showOnlyDomainInLinks 
               |> fillTextBlock tb
 
 type conversationControls = {
@@ -249,7 +270,7 @@ let updateConversation (controls:conversationControls) (updatedStatuses:Conversa
     let createConversationNode (conversationSource, sDisplayInfo) =
         ldbgp "Adding {0}" sDisplayInfo.StatusInfo
         let filterInfo = sDisplayInfo.FilterInfo
-        let detail, img, textblock = createDetail sDisplayInfo
+        let detail, img, textblock = createDetail (conversationSource, sDisplayInfo)
 
         img.Margin <- new Thickness(float conversationSource.Depth * (pictureSize+2.), 0., 0., 5.)
         detail.Tag <- { UrlResolved = false }
