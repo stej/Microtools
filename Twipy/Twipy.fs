@@ -28,8 +28,9 @@ let commandText = window.FindName("ipyCommand") :?> TextBox
 let runCommand = window.FindName("run") :?> Button
 let clearScope = window.FindName("clearScope") :?> Button
 
-let setAppState state = 
-    WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
+let setAppStateNoAction state = ()
+let setAppStateShowInUI state = WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
+let mutable setAppState = setAppStateNoAction
 
 DbInterface.dbAccess <- StatusDb.statusesDb
 
@@ -69,6 +70,8 @@ if script.IsSome then
         exit 0
     WpfUtils.dispatchMessage commandText (fun _ -> commandText.Text <- script.Value)
 (******** eof options **************)
+
+setAppState <- setAppStateShowInUI
 
 let runUserScript text =
     linfop "Running script {0}\n\n" text
