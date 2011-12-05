@@ -100,7 +100,7 @@ let private generalLinkFromUrl showOnlyDomainInLinks fragment =
         let mutable link, text = TextSplitter.urlFragmentToLinkAndName fragment
         let tooltip = text
         if showOnlyDomainInLinks then
-            text <- System.Text.RegularExpressions.Regex.Replace(text, urlShortenerRegex, "$1")
+            text <- System.Text.RegularExpressions.Regex.Replace(text, urlShortenerRegex, "$1") + "/..."
         link, text, tooltip
     let hl, link, text = linkFromUrl hyperlinkContentGetter fragment
     hl
