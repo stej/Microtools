@@ -88,7 +88,7 @@ type UserStatusesState() =
                                 let first = Flatten statuses |> Seq.map extractStatus 
                                                              |> Seq.sortBy (fun s -> s.LogicalStatusId) 
                                                              |> Seq.nth 0
-                                Some(first.StatusId)
+                                Some(first.LogicalStatusId)
                              else None
                     chnl.Reply(id)
                     return! loop statuses statusesWithRoots }
