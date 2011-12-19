@@ -38,7 +38,7 @@ if (!$runOnly) {
 	"$rootDir\Twipy\Cmdline.fs" `
 	"$rootDir\TwitterClient\UIState.fs" `
 	"$rootDir\test\FsUnit.fs" `
-	"$rootDir\test\test.test.fs" `
+	<#"$rootDir\test\test.test.fs" `
 	"$rootDir\test\test.xmlUtil.fs" `
 	"$rootDir\test\test.testdbUtils.fs" `
 	"$rootDir\test\test.statusParsing.fs" `
@@ -47,13 +47,16 @@ if (!$runOnly) {
 	"$rootDir\test\test.previewStateAccessingDb.fs" `
 	"$rootDir\test\test.statusesChecker.fs" `
 	"$rootDir\test\test.UIState.fs" `
-	"$rootDir\test\test.urlShortening.fs" `
+	"$rootDir\test\test.urlShortening.fs" #> `
+	"$rootDir\test\test.fparsec.fs" `
   --target:library --platform:x86 --out:$res `
   --reference:$rootDir\lib\DevDefined.OAuth.dll `
   --reference:$rootDir\lib\log4net.dll `
   --reference:$rootDir\lib\System.Data.SQLite.dll `
   --reference:$rootDir\bin\Monooptions.dll `
   --reference:$rootDir\lib\nunit\nunit.framework.dll `
+  --reference:$rootDir\packages\FParsec.0.9.1\lib\net40\FParsec.dll `
+  --reference:$rootDir\packages\FParsec.0.9.1\lib\net40\FParsecCS.dll `
   --reference:System.Runtime.Serialization `
   --reference:WindowsBase `
   --reference:System.Xml `
@@ -66,6 +69,8 @@ if ($? -or $runOnly) {
   copy-item $rootDir\test\testStatus.xml $rootDir\bin
   copy-item $rootDir\statuses.db $rootDir\bin\test.statuses.db
   copy-item $rootDir\test\app.config $rootDir\bin\MicroTest.dll.config
+  copy-item $rootDir\packages\FParsec.0.9.1\lib\net40\FParsec.dll $rootDir\bin
+  copy-item $rootDir\packages\FParsec.0.9.1\lib\net40\FParsecCS.dll $rootDir\bin
   
   & $rootDir\lib\nunit\nunit-console-x86.exe $rootDir\bin\MicroTest.dll
   if (!$?) { Write-Error "Testing failed" }
