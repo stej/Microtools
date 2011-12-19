@@ -189,7 +189,7 @@ let goUp () =
                           Int64.MaxValue
             | Some(id) -> linfop "first status id is {0}" id
                           id
-        StatusDb.statusesDb.GetTimelineStatusesBefore(50,firstStatusId)
+        StatusDb.statusesDb.GetTimelineStatusesBefore(Utils.Settings.UpCount,firstStatusId)
             |> ImagesSource.ensureStatusesImages
             |> PreviewsState.userStatusesState.AddStatuses
         refresh() 
