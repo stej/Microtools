@@ -3,15 +3,16 @@
 open FParsec
 open FsUnit
 open NUnit.Framework
+open System
 
 type StringConstant = StringConstant of string * string
 
 type FilterItem = 
     | Regex of string
-    | StringNoWhitespace of string
-    | StringWithWhitespace of string
+    | StatusText of string
     | User of string
     | UserRetweet of string
+    | UserTimeline of string
     | AllTimeline
     | AllRetweets
     | FilterReference of string
@@ -27,6 +28,11 @@ type ``Test fparsec`` ()=
 
     [<Test>]
     member test.``twClient.Filter`` () =
+        let charList2String (cl:char list) =
+            cl |> List.map string
+               |> String.concat ""
+        let baseLetters c = 
+            isLetter c || isDigit c || c = '_' || c = '-'
         let filterParser =
             let stringInApostrophes = 
                 // todo: zrejme by slo i pomoci noneOf (pripadne nejakych satisfy)
@@ -43,22 +49,27 @@ type ``Test fparsec`` ()=
                     >>. spaces
                     >>. stringInApostrophes
                     |>> (fun s -> s.Trim(''') |> Regex)
-            let simpleText  = many1Satisfy isLetter |>> StringNoWhitespace
-            let user        = pstring "@" >>. many1Satisfy isLetter   |>> User
-            let allTimeline = pstring "@all"                         |>> ignore |>> (fun _ -> AllTimeline)
-            let userRetweet = pstring "rt@" >>. many1Satisfy isLetter |>> UserRetweet
-            let allRetweets = pstring "rt@all"                       |>> ignore |>> (fun _ -> AllRetweets)
-            let filterRef   = pstring "#f:" >>. many1Satisfy (fun c -> isLetter c || isDigit c || c = '-' || c = '_') |>> FilterReference
+//            let simpleText   = many1Satisfy (fun c -> c <> ' ')             |>> StatusText
+            let simpleText   = pipe2 (satisfy baseLetters) 
+                                 (many (noneOf " #"))
+                                 (fun a b -> a.ToString()+(charList2String b)) |>> StatusText
+            let textWithSpace= stringInApostrophes                          |>> StatusText
+            let allTimeline  = pstring "timeline@all"                       |>> ignore |>> (fun _ -> AllTimeline)
+            let allRetweets  = pstring "rt@all"                             |>> ignore |>> (fun _ -> AllRetweets)
+            let user         = pstring "@"        >>. many1Satisfy baseLetters |>> User
+            let userRetweet  = pstring "rt@"      >>. many1Satisfy baseLetters |>> UserRetweet
+            let userTimeline = pstring "timeline@">>. many1Satisfy baseLetters |>> UserTimeline
+            let filterRef    = pstring "#f:"      >>. many1Satisfy baseLetters |>> FilterReference
             let parsers = 
                 choice [allRetweets
-                        userRetweet
                         allTimeline
+                        userRetweet
+                        userTimeline
                         regex
-                        stringInApostrophes |>> StringWithWhitespace
+                        stringInApostrophes |>> StatusText
                         simpleText
                         user
                         filterRef]
-            //spaces >>. (stringsSepBy parsers (skipAnyOf ' ')) .>> spaces .>> eof
             spaces >>. (sepBy parsers (skipAnyOf " ")) .>> spaces .>> eof
 
         testp filterParser "#r:'abc'"       |> should equal (Some([Regex("abc")]))
@@ -66,16 +77,19 @@ type ``Test fparsec`` ()=
         testp filterParser "#r:'(a'"        |> should equal (Some([Regex("(a")]))
         testp filterParser @"#r:'\n\t\'x'"  |> should equal (Some([Regex("\\n\\t'x")]))
     
-        testp filterParser @"'\n\t\'x'"  |> should equal (Some([StringWithWhitespace("\\n\\t'x")]))
-        testp filterParser "'a b c'"     |> should equal (Some([StringWithWhitespace("a b c")]))
-        testp filterParser "abc"         |> should equal (Some([StringNoWhitespace("abc")]))
+        testp filterParser @"'\n\t\'x'"  |> should equal (Some([StatusText("\\n\\t'x")]))
+        testp filterParser "'a b c'"     |> should equal (Some([StatusText("a b c")]))
+        testp filterParser "abc"         |> should equal (Some([StatusText("abc")]))
+        //testp filterParser "abd "        |> should equal (Some([StatusText("abd")]))
+        testp filterParser " abe"        |> should equal (Some([StatusText("abe")]))
 
-        testp filterParser "@all"    |> should equal (Some([AllTimeline]))
-        testp filterParser "@userx"  |> should equal (Some([User("userx")]))
-        testp filterParser "@"       |> should equal None
-        testp filterParser "rt@all"  |> should equal (Some([AllRetweets]))
-        testp filterParser "rt@userx"|> should equal (Some([UserRetweet("userx")]))
-        testp filterParser "rt@"     |> should equal None
+        testp filterParser "@userx"        |> should equal (Some([User("userx")]))
+        testp filterParser "@"             |> should equal None
+        testp filterParser "rt@all"        |> should equal (Some([AllRetweets]))
+        testp filterParser "rt@userx"      |> should equal (Some([UserRetweet("userx")]))
+        testp filterParser "rt@"           |> should equal None
+        testp filterParser "timeline@usax" |> should equal (Some([UserTimeline("usax")]))
+        testp filterParser "timeline@all"  |> should equal (Some([AllTimeline]))
 
         testp filterParser "#f:filter-ref_x"  |> should equal (Some([FilterReference("filter-ref_x")]))
         testp filterParser "#f:"              |> should equal None
@@ -83,17 +97,22 @@ type ``Test fparsec`` ()=
 
         testp filterParser "#"                |> should equal None
 
-        testp filterParser "@userx abc #r:'neco' #r:'\\d+necox \\t \\' abc\\d+' @all rt@all rt@userxyz #f:f1 #f:f2_v2-0"  
+        testp filterParser "@userx a-_$%( abc #r:'neco' #r:'\\d+necox \\t \\' abc\\d+' timeline@ab timeline@all rt@all rt@userxyz #f:f1 #f:f2_v2-0"  
         |> should equal (Some([User("userx")
-                               StringNoWhitespace("abc")
+                               StatusText("a-_$%(")
+                               StatusText("abc")
                                Regex("neco")
                                Regex("\\d+necox \\t ' abc\\d+")
+                               UserTimeline("ab")
                                AllTimeline
                                AllRetweets
                                UserRetweet("userxyz")
                                FilterReference("f1")
                                FilterReference("f2_v2-0")
                               ]))
+//        testp filterParser "filter-common rt@keff85 " 
+//        |> should equal (Some([StatusText("filter-common")
+//                               UserRetweet("keff85")]))
 
     [<Test>] 
     member test.``tfloat`` () =

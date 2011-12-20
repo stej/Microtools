@@ -50,7 +50,15 @@ DbInterface.dbAccess <- StatusDb.statusesDb
 ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
 
 let getCurrentUISettings() = 
-    let statusFilterer = StatusFilter.getStatusFilterer filterCtl.Text
+    let statusFilterer = 
+        try 
+            filterCtl.Background <- Brushes.White
+            StatusFilter.getStatusFilterer filterCtl.Text
+        with e ->
+            //MessageBox.Show("Error when parsing filter " + filterCtl.Text + "\n" + e.Message) |> ignore
+            lerrex e "Parsing filters"
+            filterCtl.Background <- Brushes.Red
+            (fun _ -> false)
     { ShowOnlyLinkPart = showOnlyLinkPart
       Filter = { ShowHidden = showHiddenStatuses; FilterOutRule = statusFilterer } }
 

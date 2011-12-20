@@ -3,16 +3,17 @@ open System
 open System.Text.RegularExpressions
 open Status
 
-type filterType =
-   | UserName
-   | Text
-   | RTs
-   | TimelineStatuses
-   | RTByUser
-   | TimelineByUser
+open FParsec
 
-
-type statusFilter = (filterType * string) list 
+type FilterItem = 
+    | Regex of string
+    | StatusText of string
+    | User of string
+    | UserRetweet of string
+    | UserTimeline of string
+    | AllTimeline
+    | AllRetweets
+    | FilterReference of string
 
 let configFilters = 
     let appsettings = System.Configuration.ConfigurationManager.AppSettings
@@ -24,56 +25,147 @@ let defaultConfigFilter =
 let configFiltersMap = configFilters |> Map.ofSeq
 
 // returns info about if the status matches the filter
-let matchesFilter (filter:statusFilter) (sInfo:statusInfo) = 
+let matchesFilter (filters:FilterItem list) (sInfo:statusInfo) = 
     let status = sInfo.Status
     let source = sInfo.Source
     let matchItem = function 
-                    | (UserName, text) ->
+                    | User(name) ->
                         let user = match status.RetweetInfo with 
                                     | Some(r) -> r.UserName 
                                     | None -> status.UserName
-                        System.String.Compare(user, text, StringComparison.InvariantCultureIgnoreCase) = 0
-                    | (Text, text) -> 
+                        System.String.Compare(user, name, StringComparison.InvariantCultureIgnoreCase) = 0
+                    | StatusText(text) -> 
                         let left = if text.StartsWith("*") then "" else "\\b"
                         let mid  = Regex.Escape(text.Replace("*",""))
                         let right = if text.EndsWith("*") then "" else "\\b"
                         let pattern = sprintf "%s%s%s" left mid right
                         Regex.Match(status.Text, pattern, RegexOptions.IgnoreCase).Success
-                    | (RTs,_) ->
+                    | Regex(pattern) -> 
+                        Regex.Match(status.Text, pattern, RegexOptions.IgnoreCase).Success
+                    | AllRetweets ->
                         // timeline and requested conversation (even when retweeted) don't match the filter
                         match source with
                         | Timeline
                         | StatusSource.RequestedConversation -> false
                         | _ -> status.RetweetInfo.IsSome
-                    | (TimelineStatuses, _) -> 
+                    | AllTimeline -> 
                         status.RetweetInfo.IsNone
-                    | (RTByUser, username) ->
+                    | UserRetweet(username) ->
                         status.RetweetInfo.IsSome && status.RetweetInfo.Value.UserName = username
-                    | (TimelineByUser, username) ->
+                    | UserTimeline(username) ->
                         status.RetweetInfo.IsNone && status.UserName = username
+                    | FilterReference(name) ->
+                        false
     let rec matchrec filter =
         match filter with
         | head::tail -> if matchItem head then true
                         else matchrec tail
         | [] -> false
-    matchrec filter
+    matchrec filters
 
 // parses filter text to objects; supports also filters defined in config
 // the filters in config may reference other filters from config -> possible infinite loop :)
+//let rec parseFilter (text:string) = 
+//    let filterParser =
+//        let stringInApostrophes = 
+//            // todo: zrejme by slo i pomoci noneOf (pripadne nejakych satisfy)
+//            let escaped = pipe2 (pstring "\\") 
+//                                (anyString 1) 
+//                                (fun a b -> if b="'"then b else a+b)
+//
+//            let normalCharSnippet = manySatisfy (fun c -> c <> ''' && c <> '\\')
+//            let normalOrEscapedCharSnippet  = 
+//                stringsSepBy normalCharSnippet escaped
+//            between (pstring "'") (pstring "'") normalOrEscapedCharSnippet 
+//        let regex = 
+//            pstring "#r:" 
+//                >>. spaces
+//                >>. stringInApostrophes
+//                |>> (fun s -> s.Trim(''') |> Regex)
+//        let simpleText   = many1Satisfy isLetter                        |>> StatusText
+//        let textWithSpace= stringInApostrophes                          |>> StatusText
+//        let allTimeline  = pstring "timeline@all"                       |>> ignore |>> (fun _ -> AllTimeline)
+//        let allRetweets  = pstring "rt@all"                             |>> ignore |>> (fun _ -> AllRetweets)
+//        let user         = pstring "@"        >>. many1Satisfy isLetter |>> User
+//        let userRetweet  = pstring "rt@"      >>. many1Satisfy isLetter |>> UserRetweet
+//        let userTimeline = pstring "timeline@">>. many1Satisfy isLetter |>> UserTimeline
+//        let filterRef    = pstring "#f:"      >>. many1Satisfy (fun c -> isLetter c || isDigit c || c = '-' || c = '_') |>> FilterReference
+//        let parsers = 
+//            choice [allRetweets
+//                    allTimeline
+//                    userRetweet
+//                    userTimeline
+//                    regex
+//                    textWithSpace
+//                    simpleText
+//                    user
+//                    filterRef]
+//        //spaces >>. (stringsSepBy parsers (skipAnyOf ' ')) .>> spaces .>> eof
+//        spaces >>. (sepBy parsers (skipAnyOf " ")) .>> spaces .>> eof
+//    match run filterParser text with
+//        | Success(result, _, _)   -> printfn "Success: %A" result; Some(result)
+//        | Failure(errorMsg, _, _) -> printfn "Failure: %s" errorMsg; None
+
 let rec parseFilter (text:string) = 
+    let charList2String (cl:char list) =
+            cl |> List.map string
+               |> String.concat ""
+    let baseLetters c = 
+            isLetter c || isDigit c || c = '_' || c = '-'
+    let filterParser =
+        let stringInApostrophes = 
+            // todo: zrejme by slo i pomoci noneOf (pripadne nejakych satisfy)
+            let escaped = pipe2 (pstring "\\") 
+                                (anyString 1) 
+                                (fun a b -> if b="'"then b else a+b)
+
+            let normalCharSnippet = manySatisfy (fun c -> c <> ''' && c <> '\\')
+            let normalOrEscapedCharSnippet  = 
+                stringsSepBy normalCharSnippet escaped
+            between (pstring "'") (pstring "'") normalOrEscapedCharSnippet 
+        let regex = 
+            pstring "#r:" 
+                >>. spaces
+                >>. stringInApostrophes
+                |>> (fun s -> s.Trim(''') |> Regex)
+        let simpleText   = pipe2 (satisfy baseLetters) 
+                                 (many (noneOf " #"))
+                                 (fun a b -> a.ToString()+(charList2String b)) |>> StatusText
+        let textWithSpace= stringInApostrophes                          |>> StatusText
+        let allTimeline  = pstring "timeline@all"                       |>> ignore |>> (fun _ -> AllTimeline)
+        let allRetweets  = pstring "rt@all"                             |>> ignore |>> (fun _ -> AllRetweets)
+        let user         = pstring "@"        >>. many1Satisfy baseLetters |>> User
+        let userRetweet  = pstring "rt@"      >>. many1Satisfy baseLetters |>> UserRetweet
+        let userTimeline = pstring "timeline@">>. many1Satisfy baseLetters |>> UserTimeline
+        let filterRef    = pstring "#f:"      >>. many1Satisfy baseLetters |>> FilterReference
+        let parsers = 
+            choice [allRetweets
+                    allTimeline
+                    userRetweet
+                    userTimeline
+                    regex
+                    textWithSpace
+                    simpleText
+                    user
+                    filterRef]
+        //spaces >>. (stringsSepBy parsers (skipAnyOf ' ')) .>> spaces .>> eof
+        spaces >>. (sepBy parsers (skipAnyOf " ")) .>> spaces .>> eof
     seq { 
-        for part in text.Split([|' '|], StringSplitOptions.RemoveEmptyEntries) do
-            if configFiltersMap.ContainsKey(part) then yield! parseFilter configFiltersMap.[part]
-            else if part = "allRT" then yield (RTs, null)
-            else if part = "allTimeline" then yield (TimelineStatuses, null)
-            else if part.StartsWith("@") then yield (UserName, (if part.Length > 0 then part.Substring(1) else ""))
-            else if part.StartsWith("RT@") then yield (RTByUser, (if part.Length > 3 then part.Substring(3) else ""))
-            else if part.StartsWith("Timeline@") then yield (TimelineByUser, (if part.Length > 9 then part.Substring(9) else ""))
-            else yield (Text, part)
-    } |> Seq.toList
+        match run filterParser text with
+        | Success(result, _, _)   -> 
+            printfn "Success: %A" result
+            for item in result do
+                match item with
+                | FilterReference(filter) ->
+                    if configFiltersMap.ContainsKey(filter) then yield! parseFilter configFiltersMap.[filter]
+                    else failwith (sprintf "Unknown filter %s" filter)
+                | item -> yield item
+        | Failure(errorMsg, _, _) ->
+            failwith (sprintf "Error when parsing %s" text)
+    }
     
 // @filterText - text with filter definition
 // returns - statusInfo -> bool (true = filter match)
-let getStatusFilterer filterText = 
-  let parsed = parseFilter filterText
-  matchesFilter parsed
+let getStatusFilterer (filterText:string) =  
+    let filters = parseFilter (filterText.Trim()) |> Seq.toList
+    matchesFilter filters
