@@ -38,4 +38,4 @@ let urlFragmentToLinkAndName = function
     | FragmentUrl(s)         -> s, s
     | FragmentUserMention(s) -> (sprintf "http://twitter.com/%s" (s.TrimStart('@')), s)
     | FragmentHash(s)        -> (sprintf "http://twitter.com/search?q=%s" (System.Web.HttpUtility.UrlEncode(s)), s)
-    | _                      -> failwith "not supported"
+    | x                      -> failwith ("the url fragment not supported: " + x.ToString())

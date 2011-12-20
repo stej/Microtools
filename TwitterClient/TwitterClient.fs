@@ -45,7 +45,7 @@ let setCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) =
 let mutable showHiddenStatuses = false
 let mutable showOnlyLinkPart = true
 let mutable lastRefresh = DateTime.MinValue
-filterCtl.Text <- StatusFilter.defaultConfigFilter
+filterCtl.Text <- "#f:"+StatusFilter.defaultConfigFilter
 DbInterface.dbAccess <- StatusDb.statusesDb
 ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
 
@@ -57,7 +57,7 @@ let getCurrentUISettings() =
         with e ->
             //MessageBox.Show("Error when parsing filter " + filterCtl.Text + "\n" + e.Message) |> ignore
             lerrex e "Parsing filters"
-            filterCtl.Background <- Brushes.Red
+            filterCtl.Background <- Brushes.Salmon
             (fun _ -> false)
     { ShowOnlyLinkPart = showOnlyLinkPart
       Filter = { ShowHidden = showHiddenStatuses; FilterOutRule = statusFilterer } }
