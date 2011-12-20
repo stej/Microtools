@@ -1,3 +1,25 @@
+############### 
+## common
+def countSize(sInfo):
+  curr = 0
+  for ch in sInfo.Children: curr = curr + countSize(ch)
+  return curr + 1
+def getShoFigure():
+  import System
+  System.Environment.SetEnvironmentVariable( "SHODIR", "C:\\prgs\\dev\Sho 2.0 for .NET 4\\")
+  import clr
+  clr.AddReference('System.Windows.Forms')
+  clr.AddReferenceToFileAndPath('c:\\prgs\\dev\\Sho 2.0 for .NET 4\\bin\\ShoViz.dll')
+  import ShoNS.Visualization
+  return ShoNS.Visualization.ShoPlotHelper.Figure()
+def statusInfoListToFSharpList(l):
+  from Microsoft.FSharp.Collections import *
+  import System.Collections.Generic
+  from StatusesReplies import *
+  import Status
+  return ListModule.OfSeq[Status.statusInfo](l)
+
+#############
 l = db.GetLastTimelineId()
 status = db.ReadStatusWithId(l).Value
 h.loadTree(status)
@@ -24,47 +46,75 @@ for s in st:
   countSize(s)
 print size 
 ##############
+#graf s velikostmi 100 tweetu
+#import common: countSize, getShoFigure
 sizes = []
-def countSize(sInfo):
-  curr = 0
-  for ch in sInfo.Children:
-    curr = curr + countSize(ch)
-  return curr + 1
 st = db.GetRootStatusesHavingReplies(100)
 for status in st:
   h.loadTree(status)
   sizes.append(countSize(status))
 
-import System
-System.Environment.SetEnvironmentVariable( "SHODIR", "C:\\prgs\\dev\Sho 2.0 for .NET 4\\")
-import clr
-clr.AddReference('System.Windows.Forms')
-clr.AddReferenceToFileAndPath('c:\\prgs\\dev\\Sho 2.0 for .NET 4\\bin\\ShoViz.dll')
-import ShoNS.Visualization
-f = ShoNS.Visualization.ShoPlotHelper.Figure()
-f.Bar(sizes)
+getShoFigure().Bar(sizes)
 
 ##############
+# graf, x = velikost konverzace, y = pocet konverzaci dane velikosti
+#import common: countSize, getShoFigure
 st = db.GetRootStatusesHavingReplies(100000)
 sizes = {}
-def countSize(sInfo):
-  curr = 0
-  for ch in sInfo.Children: curr = curr + countSize(ch)
-  return curr + 1
 for status in st:
   h.loadTree(status)
   size = countSize(status)
   if not sizes.has_key(size): sizes[size] = 0
   sizes[size] = sizes[size] + 1
 
-import System
-System.Environment.SetEnvironmentVariable( "SHODIR", "C:\\prgs\\dev\Sho 2.0 for .NET 4\\")
-import clr
-clr.AddReference('System.Windows.Forms')
-clr.AddReferenceToFileAndPath('c:\\prgs\\dev\\Sho 2.0 for .NET 4\\bin\\ShoViz.dll')
-import ShoNS.Visualization
-f = ShoNS.Visualization.ShoPlotHelper.Figure()
-f.Bar([k for k in sizes.keys()], [sizes[k] for k in sizes.keys()])
+getShoFigure().Bar([k for k in sizes.keys()], [sizes[k] for k in sizes.keys()])
+##############
+# graf s uzivateli, kteri maji nejvetsi konverzace
+#import common: countSize, getShoFigure
+st = db.GetRootStatusesHavingReplies(1000000)
+sizes = {}
+for status in st:
+  userName = status.Status.UserName
+  h.loadTree(status)
+  size = countSize(status)
+  if not sizes.has_key(userName): sizes[userName] = 0
+  sizes[userName] = max(size, sizes[userName])
+
+treshold = 50
+getShoFigure().Bar([k for k in sizes.keys() if sizes[k] > treshold], [sizes[k] for k in sizes.keys() if sizes[k] > treshold])
+##############
+# graf s uzivateli, na ktere reagoval nejvetsi pocet ostatnich (jen 1st level odpoved)
+#import common: countSize, getShoFigure
+st = db.GetRootStatusesHavingReplies(1000000)
+sizes = {}
+for status in st:
+  userName = status.Status.UserName
+  h.loadTree(status)
+  replies = status.Children.Count
+  if not sizes.has_key(userName): sizes[userName] = 0
+  sizes[userName] = max(replies, sizes[userName])
+
+treshold = 20
+keys = sorted([k for k in sizes.keys() if sizes[k] > treshold], key = lambda k: sizes[k])
+getShoFigure().Bar(keys, [sizes[k] for k in keys])
+##############
+# export statusu s nejvetsimi konverzacemi
+#import common: countSize, statusInfoListToFSharpList
+st = db.GetRootStatusesHavingReplies(1000000)
+sizes = {}
+for status in st:
+  userName = status.Status.UserName
+  h.loadTree(status)
+  size = countSize(status)
+  if not sizes.has_key(userName): sizes[userName] = (0, None)
+  if size > sizes[userName][0]:
+    sizes[userName] = (size, status)
+
+treshold = 50
+aboveTreshold = [k for k in sizes.keys() if sizes[k][0] > treshold]
+sortedKeys = sorted(aboveTreshold, key=lambda k: sizes[k][0])
+toExport = statusInfoListToFSharpList([sizes[key][1] for key in sortedKeys])
+h.exportToHtml(toExport)
 ###################
 st = db.GetStatusesFromSql("select * from Status where UserName like 'AugiCZ' and ReplyTo=-1")
 for status in st:
@@ -102,7 +152,7 @@ withrepl = findReplies(status.Value)
 h.show(withrepl)
 ####################
 # take last 300 statuses and try to root them - find conversations
-from Microsoft.FSharp.Collections import *
+# import common: statusInfoListToFSharpList
 import System.Collections.Generic
 from StatusesReplies import *
 import Status
@@ -114,8 +164,8 @@ sql = """
     limit 0, 10"""
 statuses = db.GetStatusesFromSql(sql)
 rooted = h.RootConversationsWithNoDownload(
-          ListModule.OfSeq[Status.statusInfo]([]),
-          ListModule.OfSeq[Status.statusInfo](statuses))
+          statusInfoListToFSharpList([]),
+          statusInfoListToFSharpList(statuses))
 toshow = System.Collections.Generic.List[Status.statusInfo]()
 for sInfo in rooted:
     if sInfo.Children.Count > 0:
