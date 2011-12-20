@@ -18,6 +18,7 @@ let private readUrl (rd:SQLiteDataReader) =
 type private UrlsDbMessages =
 | TranslateUrl of string * AsyncReplyChannel<ShortUrlInfo option>
 | SaveUrl of ShortUrlInfo
+| GetUrlsFromSql of string * AsyncReplyChannel<ShortUrlInfo list>
 
 type UrlsDbState(file) =
     let translateUrl (shortUrl:string) = 
@@ -47,6 +48,13 @@ type UrlsDbState(file) =
             addCmdParameter cmd "@p3" urlInfo.StatusId
             cmd.ExecuteNonQuery() |> ignore
         )
+    let getUrlsFromSql sql =
+        ldbgp "getUrlsFromSql {0}" sql
+        useDb file (fun conn ->
+            use cmd = conn.CreateCommand()
+            cmd.CommandText <- sql
+            executeSelect readUrl cmd
+        )
 
     let mbox = MailboxProcessor.Start(fun mbox ->
             printfn "starting urls db"
@@ -60,6 +68,9 @@ type UrlsDbState(file) =
                 | SaveUrl(urlInfo) -> 
                     saveUrl urlInfo
                     return! loop()
+                | GetUrlsFromSql(sql, chnl) ->
+                    chnl.Reply(getUrlsFromSql(sql))
+                    return! loop()
             }
             ldbg "Starting url db"
             loop()
@@ -67,6 +78,8 @@ type UrlsDbState(file) =
     do
         mbox.Error.Add(fun exn -> printfn "exception: %A" exn
                                   lerrex exn "Error in url db mailbox")
+
+    member x.GetUrlsFromSql(sql) = mbox.PostAndReply(fun reply -> GetUrlsFromSql(sql, reply))
 
     interface ShortenerDbInterface.IShortUrlsDatabase with
         member x.TranslateUrl(shortUrl) = mbox.PostAndReply(fun reply -> TranslateUrl(shortUrl, reply))

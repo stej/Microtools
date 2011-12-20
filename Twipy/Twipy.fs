@@ -44,9 +44,10 @@ Twitter.NewStatusDownloaded
     
 let newScope() =
     let values = new Dictionary<string, obj>()
-    values.["db"] <- (StatusDb.statusesDb :> obj)
+    values.["db"]   <- (StatusDb.statusesDb :> obj)
     values.["limits"] <- (twitterLimits :> obj)
-    values.["h"] <- (ScriptingHelpers.Helpers(window, details, wrapContent) :> obj)
+    values.["h"]    <- (ScriptingHelpers.Helpers(window, details, wrapContent) :> obj)
+    values.["urls"] <- (UrlDb.urlsDb :> obj)
     createScope values
 let scope = ref (newScope())
 

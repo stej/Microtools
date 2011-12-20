@@ -48,10 +48,10 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
         let file = System.IO.Path.GetTempFileName().Replace(".tmp", ".html")
         let processText text =
             let convertPart part =
-                let link, text = TextSplitter.urlFragmentToLinkAndName part
                 match part with
                 | FragmentWords(u)       -> u
-                | _                      -> (sprintf "<a href=\"%s\">%s</a>" link text)
+                | _                      -> let link, text = TextSplitter.urlFragmentToLinkAndName part
+                                            (sprintf "<a href=\"%s\">%s</a>" link text)
             let parts = 
                 TextSplitter.splitText text
                 |> Array.map convertPart
