@@ -38,7 +38,7 @@ if (!$runOnly) {
 	"$rootDir\Twipy\Cmdline.fs" `
 	"$rootDir\TwitterClient\UIState.fs" `
 	"$rootDir\test\FsUnit.fs" `
-	<#"$rootDir\test\test.test.fs" `
+	"$rootDir\test\test.test.fs" `
 	"$rootDir\test\test.xmlUtil.fs" `
 	"$rootDir\test\test.testdbUtils.fs" `
 	"$rootDir\test\test.statusParsing.fs" `
@@ -47,8 +47,9 @@ if (!$runOnly) {
 	"$rootDir\test\test.previewStateAccessingDb.fs" `
 	"$rootDir\test\test.statusesChecker.fs" `
 	"$rootDir\test\test.UIState.fs" `
-	"$rootDir\test\test.urlShortening.fs" #> `
+	"$rootDir\test\test.urlShortening.fs" `
 	"$rootDir\test\test.fparsec.fs" `
+	"$rootDir\test\test.testShortenedUrlToDomain.fs" `
   --target:library --platform:x86 --out:$res `
   --reference:$rootDir\lib\DevDefined.OAuth.dll `
   --reference:$rootDir\lib\log4net.dll `
