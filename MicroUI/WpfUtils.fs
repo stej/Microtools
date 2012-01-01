@@ -14,8 +14,6 @@ open Utils
 open TextSplitter
 open ShortenerDbInterface
 
-let private urlShortenerRegex = @"^(https?://([^.]+\.)?[^.]+\.[^./]+).*"
-
 type FilterInfo = {
     Filtered : bool
     HasUnfilteredDescendant : bool
@@ -100,7 +98,7 @@ let private generalLinkFromUrl showOnlyDomainInLinks fragment =
         let mutable link, text = TextSplitter.urlFragmentToLinkAndName fragment
         let tooltip = text
         if showOnlyDomainInLinks then
-            text <- System.Text.RegularExpressions.Regex.Replace(text, urlShortenerRegex, "$1") + "/..."
+            text <- Utils.shortenUrlToDomain text
         link, text, tooltip
     let hl, link, text = linkFromUrl hyperlinkContentGetter fragment
     hl

@@ -103,6 +103,18 @@ let getSyncContext() =
     syncContext
 let triggerEvent fce (syncContext:SynchronizationContext) =
     syncContext.Post(SendOrPostCallback(fce), state=null)
+
+let private urlShortenerRegex = new System.Text.RegularExpressions.Regex @"^(https?://([^./]+\.)+\w+)/?(?<rest>.*)"
+let shortenUrlToDomain (url:string) = 
+    let m = urlShortenerRegex.Match(url)
+    if m.Success then
+        let short = urlShortenerRegex.Replace(url, "$1")
+        match m.Groups.["rest"].Success && not (String.IsNullOrEmpty(m.Groups.["rest"].Value)) with
+        | true -> short + "/..."
+        | false -> short
+    else
+        url
+    
     
 (*let padSpaces count = 
     System.Console.Write("{0," + (count * 3).ToString() + "}", "")

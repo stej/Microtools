@@ -76,7 +76,7 @@ let private generalExtract (url:string) =
             Extracted(str)
 
 let extract (url:string) =
-    let regex = "^http://(bit.ly|bitly.com|is.gd|j.mp|cli.gs|tinyurl.com|snurl.com|goo.gl|tr.im|t.co)/"
+    let regex = "^http://(bit.ly|bitly.com|is.gd|j.mp|cli.gs|tinyurl.com|snurl.com|goo.gl|tr.im|t.co|jdem.cz|trunc.it)/"
     let rec _extract (url:string) =
         let extracted = 
             if url.StartsWith("http://t.co") then

@@ -119,6 +119,7 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="test.urlShortening.fs" />
     <Compile Include="test.testUrlsDb.fs" />
     <Compile Include="test.textSplitter.fs" />
+    <Compile Include="test.testShortenedUrlToDomain.fs" />
     <Content Include="testRetweet.xml">
       <Link>testRetweet.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
