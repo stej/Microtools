@@ -20,7 +20,7 @@
         x:Name="ipyCommand" 
         TextWrapping="Wrap" 
         MinLines="1" 
-        MaxLines="7"
+        MaxLines="15"
         AcceptsReturn="True"
         VerticalScrollBarVisibility="Visible"></TextBox>
     <Button

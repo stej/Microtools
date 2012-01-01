@@ -18,12 +18,51 @@ def statusInfoListToFSharpList(l):
   from StatusesReplies import *
   import Status
   return ListModule.OfSeq[Status.statusInfo](l)
+def getMonthFromStatus(status):
+  from System import DateTime
+  date = status.Status.Date
+  return DateTime(date.Year, date.Month, 1)
+def getWeekFromStatus(status):
+  from System import DateTime
+  date = status.Status.Date
+  return DateTime(date.Year, date.Month, date.Day).AddDays(- int(date.DayOfWeek))
+def getTimelineByTimes(statuses, dateFromStatusGetter, nextDateGetter):
+  sortedStatuses = sorted(statuses, key = lambda status: status.Status.Date)
+  if sortedStatuses.count == 0: return
+  if sortedStatuses.count == 1: yield [dateFromStatusGetter(sortedStatuses[0])]; return
+  first, last = dateFromStatusGetter(sortedStatuses[0]), dateFromStatusGetter(sortedStatuses[-1])
+  while first <= last:
+    yield first
+    first = nextDateGetter(first)
+def getTimelineByMonths(statuses):
+  return [t for t in getTimelineByTimes(statuses, getMonthFromStatus, lambda date: date.AddMonths(1))]
+def getTimelineByWeeks(statuses):
+  return [t for t in getTimelineByTimes(statuses, getWeekFromStatus, lambda date: date.AddDays(7))]
+def getDictBy(statuses, keyFunc):
+  ret = {}
+  for status in statuses:
+    key = keyFunc(status)
+    if ret.has_key(key):
+      s = ret[key] + [status]
+      ret[key] = s
+    else:
+      ret[key] = [status]
+  return ret
+def getEmbeddedSho():
+  import clr
+  clr.AddReference('System.Windows.Forms')
+  clr.AddReferenceToFileAndPath('c:\\prgs\\dev\\Sho 2.0 for .NET 4\\bin\\EmbeddedSho.dll')
+  from ShoNS.Hosting import *
+
+  es = EmbeddedSho('c:\\prgs\\dev\\Sho 2.0 for .NET 4')
+  return es
 
 #############
 l = db.GetLastTimelineId()
 status = db.ReadStatusWithId(l).Value
 h.loadTree(status)
 h.show(status)
+
 #############
 count = 1000
 st = db.GetRootStatusesHavingReplies(count)
@@ -33,8 +72,10 @@ for status in st:
   if counter > 950:
     h.loadTree(status)
 h.show(st)
+
 ############
 h.show(h.find("cqrs"))
+
 #############3
 size = 0 
 def countSize(status):
@@ -45,6 +86,7 @@ def countSize(status):
 for s in st:
   countSize(s)
 print size 
+
 ##############
 #graf s velikostmi 100 tweetu
 #import common: countSize, getShoFigure
@@ -82,6 +124,7 @@ for status in st:
 
 treshold = 50
 getShoFigure().Bar([k for k in sizes.keys() if sizes[k] > treshold], [sizes[k] for k in sizes.keys() if sizes[k] > treshold])
+
 ##############
 # graf s uzivateli, na ktere reagoval nejvetsi pocet ostatnich (jen 1st level odpoved)
 #import common: countSize, getShoFigure
@@ -97,6 +140,52 @@ for status in st:
 treshold = 20
 keys = sorted([k for k in sizes.keys() if sizes[k] > treshold], key = lambda k: sizes[k])
 getShoFigure().Bar(keys, [sizes[k] for k in keys])
+
+##############
+# graf porovnavajici favourites pro stejcz, kolman, borekb a rarous
+#import common: getEmbeddedSho, getTimelineByMonths, getMonthFromStatus, getDictBy
+stejcz = db.GetStatusesFromSql("select * from Status where UserName = 'stejcz'")
+kolman = db.GetStatusesFromSql("select * from Status where UserName = 'kolman'")
+borekb = db.GetStatusesFromSql("select * from Status where UserName = 'borekb'")
+alesroubicek = db.GetStatusesFromSql("select * from Status where UserName = 'alesroubicek'")
+stejczByMonth = getDictBy(stejcz, getMonthFromStatus)
+kolmanByMonth = getDictBy(kolman, getMonthFromStatus)
+borekbByMonth = getDictBy(borekb, getMonthFromStatus)
+roubicekByMonth = getDictBy(alesroubicek, getMonthFromStatus)
+months = [m for m in getTimelineByMonths(stejcz)]
+def getFavsDiff(statuses, month):
+  prev = month.AddMonths(-1)
+  if statuses.has_key(month) and statuses.has_key(prev):
+    return statuses[month][-1].Status.UserFavoritesCount - statuses[prev][-1].Status.UserFavoritesCount
+  else: return 0
+es = getEmbeddedSho()
+es.SetPythonVariable("months", months);
+es.SetPythonVariable("stejcz", [getFavsDiff(stejczByMonth, m) for m in months]);
+es.SetPythonVariable("kolman", [getFavsDiff(kolmanByMonth, m) for m in months]);
+es.SetPythonVariable("borekb", [getFavsDiff(borekbByMonth, m) for m in months]);
+es.SetPythonVariable("roubicek", [getFavsDiff(roubicekByMonth, m) for m in months]);
+es.ExecutePython("bar(months, stejcz, 'b', months, kolman, 'g', months, borekb, 'r', months, roubicek, 'y')");
+es.ExecutePython("legend('stejcz', 'kolman', 'borekb', 'roubicek')")
+# druha moznost:
+#fig = getShoFigure()
+#fig.Hold = True
+#fig.Plot(months, [getFavsCount(stejczByMonth, m) for m in months], ".-")
+#fig.Plot(months, [getFavsCount(kolmanByMonth, m) for m in months], "..")
+#fig.Plot(months, [getFavsCount(borekbByMonth, m) for m in months], "..--")
+#fig.Plot(months, [getFavsCount(roubicekByMonth, m) for m in months], "-")
+
+##############
+# graf s pro stejcz, kde se zobrazi pocet timeline tweetu k precteni po tydnech
+#import common: getShoFigure, getTimelineByMonths, getMonthFromStatus, getDictBy
+from System import DateTime
+st = db.GetStatusesFromSql("select * from Status where Source = 1 or Source = 5")  # timeline or retweet
+statusesByWeek = getDictBy(st, getWeekFromStatus)
+weeks = [w for w in getTimelineByWeeks(st) if w > DateTime(2010, 10, 1)]
+def getStatusesCount(week):
+  if statusesByWeek.has_key(week):  return statusesByWeek[week].Count
+  else: return 0
+getShoFigure().Bar(weeks, [getStatusesCount(w) for w in weeks])
+
 ##############
 # export statusu s nejvetsimi konverzacemi
 #import common: countSize, statusInfoListToFSharpList
@@ -128,16 +217,7 @@ for sInfo in st:
 h.exportToHtml(st)
 ###################
 # ensure images for users from given query
-from ImagesSource import *
-
-a = 0
-statuses = h.find("cqrs")
-for sInfo in statuses:
- h.show(sInfo)
- ensureStatusImage(sInfo.Status)
- a = a + 1
- if a > 150:  # max 100 users
-   break
+c
 ###################
 print limits.GetLimitsString()
 statuses = h.DownloadAndSavePersonalStatuses()
@@ -198,6 +278,7 @@ for status in conversations:
 print 'count of conversationsIds: ' + str(conversationsIds.Values.Count)
 
 # load statuses older than 90days, that is not Timeline(1), Public(3), RequestedConversation(4), Retweet(5)
+# (values are: | Timeline -> 1, Search -> 2, Public -> 3, RequestedConversation -> 4, Retweet -> 5, Undefined -> 1000)
 older = db.GetStatusesFromSql('select * from Status where Source <> 1 and Source <> 3 and Source <> 4 and Source <> 5 and Inserted < ' + 
 	str(System.DateTime.Now.AddDays(-30).Ticks))
 print "Count of all old statuses: " + str(older.Length)
@@ -253,3 +334,16 @@ for s in statuses:
 		todb.SaveStatus(s)
 	else:
 		print ('Stored: ' + stored.Value.ToString())
+########################
+# sorts long urls by counts of domains
+u = urls.GetUrlsFromSql('select * from UrlTranslation')
+from System.Text.RegularExpressions import *
+counts = {}
+for url in u:
+  link = Regex.Replace(url.LongUrl, '^(https?://[^/]+).*', '$1')
+  if not counts.has_key(link): counts[link] = 0
+  counts[link] = counts[link] + 1
+
+keys = sorted(counts.keys(), key = lambda k: counts[k])
+for k in keys:
+  print '{0} - {1}'.format(counts[k], k)
