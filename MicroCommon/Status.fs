@@ -88,7 +88,8 @@ and statusInfo = {
                     x.Children |> Seq.map (fun s -> s.StatusId())
                  member x.IsRetweet() =
                     x.Status.RetweetInfo.IsSome
-        
+      
+let emptyStatusUserProfileImage = ".jpg"
 let getEmptyStatus() =
     { Id = null; 
       StatusId = -1L;
@@ -98,7 +99,7 @@ let getEmptyStatus() =
       Date = DateTime.MinValue
       UserName = "empty"
       UserId = "empty"
-      UserProfileImage = ".jpg"
+      UserProfileImage = emptyStatusUserProfileImage
       ReplyTo = -1L
       UserProtected = false
       UserFollowersCount = -1

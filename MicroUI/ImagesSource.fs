@@ -4,11 +4,21 @@ open System.IO
 open System
 open Utils
 
-let private directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "images")
+let private basedir = AppDomain.CurrentDomain.BaseDirectory
+let private directory = Path.Combine(basedir, "images")
 
 let private getImagePathFromUrl url user =
     let imageName = Path.GetFileName(url)
     Path.Combine(directory, (sprintf "Twitter-%s-%s" user imageName))
+
+let private getEmptyImagePath () =
+    let path = Path.Combine(basedir, "Twitter-empty.jpg")
+    let path2 = Path.Combine(basedir, "Twitter-empty-.jpg")
+    if File.Exists(path) then
+        path
+    else if File.Exists(path2) then
+        path2
+    else failwith (sprintf "File '%s' nor '%s' not found" path path2)
        
 let private imageInCache url user =
     let imagePath = getImagePathFromUrl url user
@@ -28,11 +38,16 @@ let private downloadImage (url:string) user =
     
 let getImagePath (status:Status.status) =
     let (url, user) = status.UserProfileImage, status.UserName
-    getImagePathFromUrl url user
+    if url = Status.emptyStatusUserProfileImage then
+        getEmptyImagePath ()
+    else
+        getImagePathFromUrl url user
     
 let ensureStatusImage (status: Status.status) =
     let (url, user) = status.UserProfileImage, status.UserName
-    if not (imageInCache url user) then
+    if url = Status.emptyStatusUserProfileImage then
+        ()
+    else if not (imageInCache url user) then
         downloadImage url user
     status
 //let ensureStatusImageNoRet (status: Status.status) =
