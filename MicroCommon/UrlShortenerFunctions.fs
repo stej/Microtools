@@ -54,9 +54,9 @@ let private getResponse (url:string) =
         None
 
 let private tco (url:string) =
-    let toExpand = if url.EndsWith(")") then url.TrimEnd(')') else url
+    let toExpand = url.TrimEnd([|')'; ';'; ':'|])
     let parsedUrl = toExpand |> getResponse
-                             |> textFromResponse 
+                             |> textFromResponse
                              |> extractFromMeta
     //printfn "Parsed from tco: %A" parsedUrl
     //File.AppendAllLines(@"log.log", ["from tco"; parsedUrl.ToString()])
@@ -76,7 +76,7 @@ let private generalExtract (url:string) =
             Extracted(str)
 
 let extract (url:string) =
-    let regex = "^http://(bit.ly|bitly.com|is.gd|j.mp|cli.gs|tinyurl.com|snurl.com|goo.gl|tr.im|t.co|jdem.cz|trunc.it)/"
+    let regex = "^https?://(bit.ly|bitly.com|is.gd|j.mp|cli.gs|tinyurl.com|snurl.com|goo.gl|tr.im|t.co|jdem.cz|trunc.it)/"
     let rec _extract (url:string) =
         let extracted = 
             if url.StartsWith("http://t.co") then
