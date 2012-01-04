@@ -106,6 +106,7 @@ let matchesFilter (filters:FilterItem list) (sInfo:statusInfo) =
 //        | Success(result, _, _)   -> printfn "Success: %A" result; Some(result)
 //        | Failure(errorMsg, _, _) -> printfn "Failure: %s" errorMsg; None
 
+let private cachedFilters = new System.Collections.Generic.Dictionary<string, FilterItem list>()
 let rec parseFilter (text:string) = 
     let charList2String (cl:char list) =
             cl |> List.map string
@@ -150,19 +151,26 @@ let rec parseFilter (text:string) =
                     filterRef]
         //spaces >>. (stringsSepBy parsers (skipAnyOf ' ')) .>> spaces .>> eof
         spaces >>. (sepBy parsers (skipAnyOf " ")) .>> spaces .>> eof
-    seq { 
-        match run filterParser text with
-        | Success(result, _, _)   -> 
-            printfn "Success: %A" result
-            for item in result do
-                match item with
-                | FilterReference(filter) ->
-                    if configFiltersMap.ContainsKey(filter) then yield! parseFilter configFiltersMap.[filter]
-                    else failwith (sprintf "Unknown filter %s" filter)
-                | item -> yield item
-        | Failure(errorMsg, _, _) ->
-            failwith (sprintf "Error when parsing %s" text)
-    }
+    match cachedFilters.TryGetValue(text) with
+    | true, list -> 
+        list
+    | false, _ -> 
+        let parsed = 
+            seq { 
+                match run filterParser text with
+                | Success(result, _, _)   -> 
+                    printfn "Success: %A" result
+                    for item in result do
+                        match item with
+                        | FilterReference(filter) ->
+                            if configFiltersMap.ContainsKey(filter) then yield! parseFilter configFiltersMap.[filter]
+                            else failwith (sprintf "Unknown filter %s" filter)
+                        | item -> yield item
+                | Failure(errorMsg, _, _) ->
+                    failwith (sprintf "Error when parsing %s" text)
+            } |> Seq.toList
+        cachedFilters.[text] <- parsed
+        parsed
     
 // @filterText - text with filter definition
 // returns - statusInfo -> bool (true = filter match)
