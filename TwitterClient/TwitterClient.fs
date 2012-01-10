@@ -163,7 +163,7 @@ window.Loaded.Add(fun _ ->
             statuses |> StatusesLoadedEvent.Trigger 
 
             setAppStateCount ()    // at least show that we are done..
-            do! Async.Sleep(1000*60*3)
+            do! Async.Sleep(Utils.Settings.TwitterClientFetchInterval*1000)
             return! asyncloop checkerfce statusesType
         }
 
