@@ -51,12 +51,12 @@ ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
 
 let getCurrentUISettings() = 
     let statusFilterer = 
-        try 
+        match StatusFilter.getStatusFilterer filterCtl.Text with
+        | Some(parsedExpressions) ->
             filterCtl.Background <- Brushes.White
-            StatusFilter.getStatusFilterer filterCtl.Text
-        with e ->
-            //MessageBox.Show("Error when parsing filter " + filterCtl.Text + "\n" + e.Message) |> ignore
-            lerrex e "Parsing filters"
+            parsedExpressions
+        | None ->
+            lerr "Parsing filters"
             filterCtl.Background <- Brushes.Salmon
             (fun _ -> false)
     { ShowOnlyLinkPart = showOnlyLinkPart
