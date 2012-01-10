@@ -68,7 +68,9 @@ let private filterTextParser =
             cl |> List.map string
                |> String.concat ""
     let baseLetters c = 
-            isLetter c || isDigit c || c = '_' || c = '-'
+        isLetter c || isDigit c || c = '_' || c = '-'
+    let baseLettersOrStar c =
+        c = '*' || baseLetters c
     let filterParser =
         let stringInApostrophes = 
             // todo: zrejme by slo i pomoci noneOf (pripadne nejakych satisfy)
@@ -80,17 +82,14 @@ let private filterTextParser =
             let normalOrEscapedCharSnippet  = 
                 stringsSepBy normalCharSnippet escaped
             between (pstring "'") (pstring "'") normalOrEscapedCharSnippet 
-        let regex = 
-            pstring "#r:" 
-                >>. spaces
-                >>. stringInApostrophes
-                |>> (fun s -> s.Trim(''') |> Regex)
-        let simpleText   = pipe2 (satisfy baseLetters) 
+        let wildcardText = pipe2 (satisfy baseLettersOrStar) 
                                  (many (noneOf " #"))
                                  (fun a b -> a.ToString()+(charList2String b)) |>> StatusText
-        let textWithSpace= stringInApostrophes                          |>> StatusText
-        let allTimeline  = pstring "timeline@all"                       |>> ignore |>> (fun _ -> AllTimeline)
-        let allRetweets  = pstring "rt@all"                             |>> ignore |>> (fun _ -> AllRetweets)
+        let regex        = pstring "#r:" >>. spaces >>. stringInApostrophes|>> (fun s -> s.Trim(''') |> Regex)
+        //let regexNoApo   = pstring "#r:" >>. many1Satisfy (fun c->c <> ' ' && c <> ''')|>> Regex
+        let textWithSpace= stringInApostrophes                             |>> StatusText
+        let allTimeline  = pstring "timeline@all"                          |>> fun _ -> AllTimeline
+        let allRetweets  = pstring "rt@all"                                |>> fun _ -> AllRetweets
         let user         = pstring "@"        >>. many1Satisfy baseLetters |>> User
         let userRetweet  = pstring "rt@"      >>. many1Satisfy baseLetters |>> UserRetweet
         let userTimeline = pstring "timeline@">>. many1Satisfy baseLetters |>> UserTimeline
@@ -101,7 +100,7 @@ let private filterTextParser =
                               userTimeline
                               regex
                               textWithSpace
-                              simpleText
+                              wildcardText
                               user
                               filterRef]
         //spaces >>. (stringsSepBy parsers (skipAnyOf ' ')) .>> spaces .>> eof
@@ -123,6 +122,7 @@ let rec parseFilter (text:string) =
                             else failwith (sprintf "Unknown filter %s" filter)
                         | item -> yield item
                 | Failure(errorMsg, _, _) ->
+                    printfn "Failure: %A" errorMsg
                     failwith (sprintf "Error when parsing %s" text)
             }
         let ret = parsedExpressions |> Seq.toList

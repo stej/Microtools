@@ -6,10 +6,12 @@ open System.Xml
 
 log4net.Config.XmlConfigurator.Configure()
 let private logger =  log4net.LogManager.GetLogger("loggerdefault");
+
 type LogLevel =
     | Debug
     | Info
     | Error
+
 let private log level str =
     //ILog logger = LogManager.GetLogger("notes");
     if level = Debug && logger.IsDebugEnabled then 
@@ -62,17 +64,18 @@ let IntDefault = -1
 
 let Int64OrDefault (value:string) =
     match Int64.TryParse(value) with
-        | (true, i) -> i
+        | true, i -> i
         | _ -> Int64Default
 let IntOrDefault (value:string) =
     match Int32.TryParse(value) with
-        | (true, i) -> i
+        | true, i -> i
         | _ -> IntDefault
+
 let monthsMap = 
   Map ([("Jan", 1); ("Feb", 2); ("Mar", 3); ("Apr", 4); ("May", 5); ("Jun", 6);
         ("Jul", 7); ("Aug", 8); ("Sep", 9); ("Oct", 10); ("Nov", 11); ("Dec", 12)])
+
 let TwitterDateOrDefault (value:string) =
-    //printfn "Parsing date %s" value
     let r = new System.Text.RegularExpressions.Regex("^(?<dayInWeek>\w+)\s(?<month>\w+)\s(?<day>\d+)\s(?<h>\d+):(?<m>\d+):(?<s>\d+)\s\+(\d+)\s(?<year>\d+)$")
     let mtch  = r.Match(value)
     if not mtch.Success then 
@@ -92,18 +95,6 @@ let BoolOrDefault deflt (value:string) =
     try Convert.ToBoolean(value)
     with ex -> deflt
 
-let download (url:string) = 
-    //printfn "downloading %s" url
-    let client = new System.Net.WebClient()
-    client.DownloadString url
-    
-let getSyncContext() = 
-    let syncContext = SynchronizationContext.Current
-    do if syncContext = null then failwith "no synchronization context found"
-    syncContext
-let triggerEvent fce (syncContext:SynchronizationContext) =
-    syncContext.Post(SendOrPostCallback(fce), state=null)
-
 let private urlShortenerRegex = new System.Text.RegularExpressions.Regex @"^(https?://([^./]+\.)+\w+)/?(?<rest>.*)"
 let shortenUrlToDomain (url:string) = 
     let m = urlShortenerRegex.Match(url)
@@ -114,11 +105,6 @@ let shortenUrlToDomain (url:string) =
         | false -> short
     else
         url
-    
-    
-(*let padSpaces count = 
-    System.Console.Write("{0," + (count * 3).ToString() + "}", "")
-*)
 
 type Settings =
     static member private settings = System.Configuration.ConfigurationManager.AppSettings;

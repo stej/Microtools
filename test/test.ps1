@@ -10,7 +10,7 @@ $compilator = $(
   })
   
 $rootDir = Join-Path (split-path $MyInvocation.MyCommand.Path -parent) '..' | Resolve-Path
-Write-Host "Roor directory is $rootDir"
+Write-Host "Root directory is $rootDir"
 $res = "$rootDir\bin\MicroTest.dll"
 
 mkdir $rootDir\bin\test -EA SilentlyContinue
@@ -49,8 +49,8 @@ if (!$runOnly) {
 	"$rootDir\test\test.UIState.fs" `
 	"$rootDir\test\test.urlShortening.fs" `
 	"$rootDir\test\test.fparsec.fs" `
-	"$rootDir\test\test.statusFilter.fs" `
 	"$rootDir\test\test.testShortenedUrlToDomain.fs" `
+	"$rootDir\test\test.statusFilter.fs" `
   --target:library --platform:x86 --out:$res `
   --reference:$rootDir\lib\DevDefined.OAuth.dll `
   --reference:$rootDir\lib\log4net.dll `
