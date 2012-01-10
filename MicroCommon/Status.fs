@@ -84,6 +84,8 @@ and statusInfo = {
                  override x.ToString() = String.Format("{0}-{1}", x.Status, (statusSource2String x.Source))
                  member inline x.StatusId () =
                     x.Status.StatusId
+                 member inline x.LogicalStatusId () =
+                    x.Status.LogicalStatusId
                  member x.ChildrenIds () =
                     x.Children |> Seq.map (fun s -> s.StatusId())
                  member x.IsRetweet() =

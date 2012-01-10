@@ -50,15 +50,16 @@ DbInterface.dbAccess <- StatusDb.statusesDb
 ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
 
 let getCurrentUISettings() = 
-    let statusFilterer = 
-        match StatusFilter.getStatusFilterer filterCtl.Text with
+    let filterText = ref ""
+    WpfUtils.dispatchMessage wrap (fun _ -> filterText := filterCtl.Text)
+    let color, statusFilterer = 
+        match StatusFilter.getStatusFilterer !filterText with
         | Some(parsedExpressions) ->
-            filterCtl.Background <- Brushes.White
-            parsedExpressions
+             Brushes.White, parsedExpressions
         | None ->
             lerr "Parsing filters"
-            filterCtl.Background <- Brushes.Salmon
-            (fun _ -> false)
+            Brushes.Salmon, fun _ -> false
+    WpfUtils.dispatchMessage wrap (fun _ -> filterCtl.Background <- color)
     { ShowOnlyLinkPart = showOnlyLinkPart
       Filter = { ShowHidden = showHiddenStatuses; FilterOutRule = statusFilterer } }
 
@@ -83,7 +84,7 @@ let switchPanes () =
 let controlsCache = new System.Collections.Concurrent.ConcurrentDictionary<Int64, WpfUtils.conversationNodeControlsInfo>()
 let fillCache items = 
     let addToCache (item:WpfUtils.conversationNodeControlsInfo) = 
-        let id = item.StatusToDisplay.StatusInfo.StatusId()
+        let id = item.StatusToDisplay.StatusInfo.LogicalStatusId()
         controlsCache.[id] <- item
     controlsCache.Clear()
     ldbg "CURLS: Clearing ctls cache"
@@ -102,7 +103,8 @@ let resolveUrls () =
                 match controlsCache.TryGetValue(id) with
                     | true, v -> 
                            do! v.StatusToDisplay.ExpandUrls()
-                           WpfUtils.dispatchMessage wrap (fun _ -> FilterAwareConversation.updateText (getCurrentUISettings()) v)
+                           let currentUISettings = getCurrentUISettings ()
+                           WpfUtils.dispatchMessage wrap (fun _ -> FilterAwareConversation.updateText currentUISettings  v)
                     | _  -> ()
             }
         let ids = controlsCache.Keys |> Seq.sort |> Seq.toList
@@ -125,8 +127,8 @@ let refresh =
                 ldbgp2 "CLI: Count of statuses: {0}/{1}" list.Length trees.Length
                 ImagesSource.ensureStatusesImages trees |> ignore
                 ldbg "CLI: Refreshing panels"
-                WpfUtils.dispatchMessage wrap (fun _ -> let uiSettings = getCurrentUISettings()
-                                                        let filterStatusInfos = fillPictures uiSettings list
+                let uiSettings = getCurrentUISettings()
+                WpfUtils.dispatchMessage wrap (fun _ -> let filterStatusInfos = fillPictures uiSettings list
                                                         let detailsCtls = fillDetails uiSettings trees
                                                         fillCache detailsCtls
                                                         setCount list.Length filterStatusInfos)
