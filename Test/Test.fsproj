@@ -120,6 +120,8 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="test.testUrlsDb.fs" />
     <Compile Include="test.textSplitter.fs" />
     <Compile Include="test.testShortenedUrlToDomain.fs" />
+    <Compile Include="test.fparsec.fs" />
+    <Compile Include="test.statusFilter.fs" />
     <Content Include="testRetweet.xml">
       <Link>testRetweet.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -128,7 +130,6 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
       <Link>testStatus.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Compile Include="test.fparsec.fs" />
     <None Include="statuses.db">
       <Link>statuses.db</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

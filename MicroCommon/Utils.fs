@@ -125,10 +125,18 @@ type Settings =
     static member MinRateLimit = match Settings.settings.["minRateLimit"] with | null -> 20 | filter -> int filter
     static member Size = Settings.settings.["size"].ToString()
     static member UpCount = match Settings.settings.["upCount"] with | null -> 50 | c -> int c
+    static member TwitterClientFetchInterval = match Settings.settings.["statusesDownloadInterval"] with | null -> 60*3 | c -> int c
 
 let doAndRet fce item = 
     fce item |> ignore
     item
+
+let isValidRegex regex =
+    try
+        new System.Text.RegularExpressions.Regex(regex) |> ignore
+        true
+    with _ ->
+        false
         
 (*
 // by Tomas Petricek

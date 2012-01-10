@@ -63,51 +63,7 @@ let matchesFilter (filters:FilterItem list) (sInfo:statusInfo) =
         | [] -> false
     matchrec filters
 
-// parses filter text to objects; supports also filters defined in config
-// the filters in config may reference other filters from config -> possible infinite loop :)
-//let rec parseFilter (text:string) = 
-//    let filterParser =
-//        let stringInApostrophes = 
-//            // todo: zrejme by slo i pomoci noneOf (pripadne nejakych satisfy)
-//            let escaped = pipe2 (pstring "\\") 
-//                                (anyString 1) 
-//                                (fun a b -> if b="'"then b else a+b)
-//
-//            let normalCharSnippet = manySatisfy (fun c -> c <> ''' && c <> '\\')
-//            let normalOrEscapedCharSnippet  = 
-//                stringsSepBy normalCharSnippet escaped
-//            between (pstring "'") (pstring "'") normalOrEscapedCharSnippet 
-//        let regex = 
-//            pstring "#r:" 
-//                >>. spaces
-//                >>. stringInApostrophes
-//                |>> (fun s -> s.Trim(''') |> Regex)
-//        let simpleText   = many1Satisfy isLetter                        |>> StatusText
-//        let textWithSpace= stringInApostrophes                          |>> StatusText
-//        let allTimeline  = pstring "timeline@all"                       |>> ignore |>> (fun _ -> AllTimeline)
-//        let allRetweets  = pstring "rt@all"                             |>> ignore |>> (fun _ -> AllRetweets)
-//        let user         = pstring "@"        >>. many1Satisfy isLetter |>> User
-//        let userRetweet  = pstring "rt@"      >>. many1Satisfy isLetter |>> UserRetweet
-//        let userTimeline = pstring "timeline@">>. many1Satisfy isLetter |>> UserTimeline
-//        let filterRef    = pstring "#f:"      >>. many1Satisfy (fun c -> isLetter c || isDigit c || c = '-' || c = '_') |>> FilterReference
-//        let parsers = 
-//            choice [allRetweets
-//                    allTimeline
-//                    userRetweet
-//                    userTimeline
-//                    regex
-//                    textWithSpace
-//                    simpleText
-//                    user
-//                    filterRef]
-//        //spaces >>. (stringsSepBy parsers (skipAnyOf ' ')) .>> spaces .>> eof
-//        spaces >>. (sepBy parsers (skipAnyOf " ")) .>> spaces .>> eof
-//    match run filterParser text with
-//        | Success(result, _, _)   -> printfn "Success: %A" result; Some(result)
-//        | Failure(errorMsg, _, _) -> printfn "Failure: %s" errorMsg; None
-
-let private cachedFilters = new System.Collections.Generic.Dictionary<string, FilterItem list>()
-let rec parseFilter (text:string) = 
+let private filterTextParser =
     let charList2String (cl:char list) =
             cl |> List.map string
                |> String.concat ""
@@ -139,41 +95,60 @@ let rec parseFilter (text:string) =
         let userRetweet  = pstring "rt@"      >>. many1Satisfy baseLetters |>> UserRetweet
         let userTimeline = pstring "timeline@">>. many1Satisfy baseLetters |>> UserTimeline
         let filterRef    = pstring "#f:"      >>. many1Satisfy baseLetters |>> FilterReference
-        let parsers = 
-            choice [allRetweets
-                    allTimeline
-                    userRetweet
-                    userTimeline
-                    regex
-                    textWithSpace
-                    simpleText
-                    user
-                    filterRef]
+        let parsers = choice [allRetweets
+                              allTimeline
+                              userRetweet
+                              userTimeline
+                              regex
+                              textWithSpace
+                              simpleText
+                              user
+                              filterRef]
         //spaces >>. (stringsSepBy parsers (skipAnyOf ' ')) .>> spaces .>> eof
         spaces >>. (sepBy parsers (skipAnyOf " ")) .>> spaces .>> eof
-    match cachedFilters.TryGetValue(text) with
-    | true, list -> 
-        list
-    | false, _ -> 
-        let parsed = 
-            seq { 
-                match run filterParser text with
+    filterParser
+
+let private cachedFilters = new System.Collections.Generic.Dictionary<string, (FilterItem list) option>()
+let rec parseFilter (text:string) = 
+    let rec parseText text =
+        let parsedExpressions =
+            seq {
+                match run filterTextParser text with
                 | Success(result, _, _)   -> 
                     printfn "Success: %A" result
                     for item in result do
                         match item with
                         | FilterReference(filter) ->
-                            if configFiltersMap.ContainsKey(filter) then yield! parseFilter configFiltersMap.[filter]
+                            if configFiltersMap.ContainsKey(filter) then yield! parseText configFiltersMap.[filter]
                             else failwith (sprintf "Unknown filter %s" filter)
                         | item -> yield item
                 | Failure(errorMsg, _, _) ->
                     failwith (sprintf "Error when parsing %s" text)
-            } |> Seq.toList
-        cachedFilters.[text] <- parsed
-        parsed
+            }
+        let ret = parsedExpressions |> Seq.toList
+        for p in parsedExpressions do 
+            match p with
+            | Regex(text) -> if not (Utils.isValidRegex text) then failwith (sprintf "Text '%s' is not valid regular expression" text)
+            | _ -> ()
+        ret
+
+    match cachedFilters.TryGetValue(text) with
+    | true, parsedFilter -> 
+        parsedFilter
+    | false, _ -> 
+        try 
+            let parsed = parseText text
+            cachedFilters.[text] <- Some(parsed)
+            Some(parsed)
+        with e ->
+            cachedFilters.[text] <- None
+            None
     
 // @filterText - text with filter definition
-// returns - statusInfo -> bool (true = filter match)
+// returns - (statusInfo -> bool) option (true = filter match)
+//           None if there was error parsing the text
 let getStatusFilterer (filterText:string) =  
-    let filters = parseFilter (filterText.Trim()) |> Seq.toList
-    matchesFilter filters
+    let filters = parseFilter (filterText.Trim())
+    match filters with 
+    | Some(parsedFilters) -> Some(matchesFilter parsedFilters)
+    | None -> None

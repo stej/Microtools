@@ -49,6 +49,7 @@ if (!$runOnly) {
 	"$rootDir\test\test.UIState.fs" `
 	"$rootDir\test\test.urlShortening.fs" `
 	"$rootDir\test\test.fparsec.fs" `
+	"$rootDir\test\test.statusFilter.fs" `
 	"$rootDir\test\test.testShortenedUrlToDomain.fs" `
   --target:library --platform:x86 --out:$res `
   --reference:$rootDir\lib\DevDefined.OAuth.dll `
