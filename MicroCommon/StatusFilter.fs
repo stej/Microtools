@@ -14,6 +14,14 @@ type FilterItem =
     | AllTimeline
     | AllRetweets
     | FilterReference of string
+type FilterType =
+    | WhiteList
+    | BlackList
+type FilterDefinition = 
+    { FilterType : FilterType
+      Items : FilterItem list 
+    }
+    
 
 let configFilters = 
     let appsettings = System.Configuration.ConfigurationManager.AppSettings
@@ -25,7 +33,7 @@ let defaultConfigFilter =
 let configFiltersMap = configFilters |> Map.ofSeq
 
 // returns info about if the status matches the filter
-let matchesFilter (filters:FilterItem list) (sInfo:statusInfo) = 
+let matchesFilter (filter: FilterDefinition) (sInfo:statusInfo) = 
     let status = sInfo.Status
     let source = sInfo.Source
     let matchItem = function 
@@ -56,12 +64,16 @@ let matchesFilter (filters:FilterItem list) (sInfo:statusInfo) =
                         status.RetweetInfo.IsNone && status.UserName = username
                     | FilterReference(name) ->
                         false
-    let rec matchrec filter =
-        match filter with
-        | head::tail -> if matchItem head then true
-                        else matchrec tail
-        | [] -> false
-    matchrec filters
+//    let rec matchrec filter =
+//        match filter with
+//        | head::tail -> if matchItem head then true
+//                        else matchrec tail
+//        | [] -> false
+//    matchrec filter.Items
+    let anyFilterMatches = filter.Items |> List.exists matchItem
+    match filter.FilterType with
+    | BlackList -> anyFilterMatches                 // if any filter matches, than returns 'true' meaning 'hide the tweet'
+    | WhiteList -> not anyFilterMatches
 
 let private filterTextParser =
     let charList2String (cl:char list) =
@@ -107,7 +119,7 @@ let private filterTextParser =
         spaces >>. (sepBy parsers (skipAnyOf " ")) .>> spaces .>> eof
     filterParser
 
-let private cachedFilters = new System.Collections.Generic.Dictionary<string, (FilterItem list) option>()
+let private cachedFilters = new System.Collections.Generic.Dictionary<string, FilterDefinition option>()
 let rec parseFilter (text:string) = 
     let rec parseText text =
         let parsedExpressions =
@@ -137,18 +149,22 @@ let rec parseFilter (text:string) =
         parsedFilter
     | false, _ -> 
         try 
-            let parsed = parseText text
-            cachedFilters.[text] <- Some(parsed)
-            Some(parsed)
+            let textWithoutDirective, filterType = 
+                if Regex.IsMatch(text, "^#(whitelist|wl)\s+") then Regex.Replace(text, "^#(whitelist|wl)\s+", ""), WhiteList
+                else text, BlackList
+                
+            let parsed = parseText textWithoutDirective
+            let filterDefinition = Some({ FilterType = filterType; Items = parsed })
+            cachedFilters.[text] <- filterDefinition
+            filterDefinition
         with e ->
             cachedFilters.[text] <- None
             None
     
 // @filterText - text with filter definition
-// returns - (statusInfo -> bool) option (true = filter match)
+// returns - (statusInfo -> bool) option (true value returned from (statusInfo->bool) means "hide the tweet")
 //           None if there was error parsing the text
 let getStatusFilterer (filterText:string) =  
-    let filters = parseFilter (filterText.Trim())
-    match filters with 
-    | Some(parsedFilters) -> Some(matchesFilter parsedFilters)
+    match parseFilter (filterText.Trim()) with 
+    | Some(filterDefinition) -> Some(matchesFilter filterDefinition)
     | None -> None
