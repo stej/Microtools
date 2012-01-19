@@ -5,8 +5,6 @@ open Utils
 open System.Net
 open System.IO
 
-//todo: http://trunc.it/, http://jdem.cz
-
 type ExtractedUrlsType = 
     | Extracted of string
     | NotNeeded of string
@@ -76,7 +74,7 @@ let private generalExtract (url:string) =
             Extracted(str)
 
 let extract (url:string) =
-    let regex = "^https?://(bit.ly|bitly.com|is.gd|j.mp|cli.gs|tinyurl.com|snurl.com|goo.gl|tr.im|t.co|jdem.cz|trunc.it)/"
+    let regex = "^http://(bit.ly|bitly.com|is.gd|j.mp|cli.gs|tinyurl.com|snurl.com|goo.gl|tr.im|t.co|jdem.cz|trunc.it|wp.me)/"
     let rec _extract (url:string) =
         let extracted = 
             if url.StartsWith("http://t.co") then
