@@ -76,7 +76,6 @@ module LitlePreview =
     // currently all the stuff is supposed to run on UI thread
     let fill (wrap:WrapPanel) (settings:UISettingsDescriptor) statuses =
 
-        wrap.Children.Clear()
         let previewSources = 
             statuses 
             |> Seq.toList
@@ -86,9 +85,12 @@ module LitlePreview =
                          >> (convertToLittleSDisplayInfo settings.Filter)
                          >> convertToPreviewSource)
 
-        previewSources 
-            |> List.map WpfUtils.createLittlePicture
-            |> List.iter (wrap.Children.Add >> ignore)
+        WpfUtils.dispatchMessage wrap (fun _ -> 
+            wrap.Children.Clear()
+            previewSources 
+                |> List.map WpfUtils.createLittlePicture
+                |> List.iter (wrap.Children.Add >> ignore)
+        )
 
         previewSources |> List.map snd
 
@@ -206,18 +208,24 @@ module FilterAwareConversation =
         ldbg "UI: fillDetails"
         let visibilityDecider = new H.ConversationStatusVisibilityDecider(settings.Filter.ShowHidden)
 
-        details.Children.Clear()
-        statuses 
-          |> Seq.toList
-          |> List.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
-          |> List.sortBy (fun (sInfo, displayDate) -> displayDate)
-          |> List.map (fst >> (convertToFullSDisplayInfo settings.Filter))
-          |> List.filter visibilityDecider.isRootStatusVisible
-          |> List.map (H.convertToConversationSource { H.OpacityDecider.F          = getConversationControlOpacity visibilityDecider }
-                                                     { H.StatusVisibilityDecider.F = visibilityDecider.isStatusVisible}
-                                                     H.BackgroundColorDecider.DefaultColor
-                                                     settings.ShowOnlyLinkPart)
-          |> List.map (fun conversationRows -> H.createConversation details conversationRows)
+        let conversationsSource =
+            statuses 
+            |> Seq.toList
+            |> List.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
+            |> List.sortBy (fun (sInfo, displayDate) -> displayDate)
+            |> List.map (fst >> (convertToFullSDisplayInfo settings.Filter))
+            |> List.filter visibilityDecider.isRootStatusVisible
+            |> List.map (H.convertToConversationSource { H.OpacityDecider.F          = getConversationControlOpacity visibilityDecider }
+                                                        { H.StatusVisibilityDecider.F = visibilityDecider.isStatusVisible}
+                                                        H.BackgroundColorDecider.DefaultColor
+                                                        settings.ShowOnlyLinkPart)
+
+        let ctls = ref []
+        WpfUtils.dispatchMessage details (fun _ -> 
+            details.Children.Clear()
+            ctls := conversationsSource |> List.map (fun conversationRows -> H.createConversation details conversationRows)
+        )
+        !ctls
 
     let updateText uiSettings (ctlInfo:WpfUtils.conversationNodeControlsInfo) =
         WpfUtils.updateTextblockText uiSettings.ShowOnlyLinkPart ctlInfo.Text ctlInfo.StatusToDisplay.TextFragments

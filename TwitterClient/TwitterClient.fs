@@ -125,15 +125,20 @@ let refresh =
                 let! msg = mbox.Receive()
                 let list,trees = PreviewsState.userStatusesState.GetStatuses()
                 ldbgp2 "CLI: Count of statuses: {0}/{1}" list.Length trees.Length
+
                 ImagesSource.ensureStatusesImages trees |> ignore
                 ldbg "CLI: Refreshing panels"
+
                 let uiSettings = getCurrentUISettings()
-                WpfUtils.dispatchMessage wrap (fun _ -> let filterStatusInfos = fillPictures uiSettings list
-                                                        let detailsCtls = fillDetails uiSettings trees
-                                                        fillCache detailsCtls
-                                                        setCount list.Length filterStatusInfos)
-                resolveUrls ()
+                
+                let filterStatusInfos = fillPictures uiSettings list
+                setCount list.Length filterStatusInfos
                 setAppStateCount ()
+
+                let detailsCtls = fillDetails uiSettings trees
+                fillCache detailsCtls
+
+                resolveUrls ()
                 ldbg "CLI: Refresh done"
                 return! loop()
             }
