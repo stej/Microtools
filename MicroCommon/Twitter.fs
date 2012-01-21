@@ -95,11 +95,10 @@ let search userName (sinceId:Int64) =
 type PersonalStatusesType =
     | FriendsStatuses
     | MentionsStatuses
-    | RetweetsStatuses
     | ListStatuses
 
 module PersonalStatuses = 
-    let friendsChecker, mentionsChecker, retweetsChecker = 
+    let friendsChecker, mentionsChecker = 
         let normalizeId idGetter = 
             match idGetter() with 
             | id when id < 1000L -> 1000L
@@ -107,11 +106,9 @@ module PersonalStatuses =
         // todo: dependency on db
         let getFriendsUrl () = sprintf "http://api.twitter.com/1/statuses/home_timeline.xml?since_id=%d&count=200&include_rts=true" (normalizeId dbAccess.GetLastTimelineId)
         let getMentionsUrl () = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d&include_rts=1&count=200" (normalizeId dbAccess.GetLastMentionsId)
-        let getRetweetsUrl () = sprintf "http://api.twitter.com/1/statuses/retweeted_to_me.xml?since_id=%d&count=100" (normalizeId dbAccess.GetLastRetweetsId)
         let canQuery = twitterLimits.IsSafeToQueryTwitterStatuses
         new TwitterStatusesChecker.Checker(FriendsStatuses, (OAuthFunctions.xml2StatusOrRetweet >> status2StatusInfoWithUnknownTimelineSource), getFriendsUrl, canQuery),
-        new TwitterStatusesChecker.Checker(MentionsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getMentionsUrl, canQuery),
-        new TwitterStatusesChecker.Checker(RetweetsStatuses, (OAuthFunctions.xml2Retweet >> (status2StatusInfo Retweet)), getRetweetsUrl, canQuery)
+        new TwitterStatusesChecker.Checker(MentionsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getMentionsUrl, canQuery)
 
     let getListChecker (listId:int64) =
         let listUrl () = sprintf "http://api.twitter.com/1/lists/statuses.xml?list_id=%d&include_rts=true&page=0&per_page=300" listId
@@ -127,7 +124,6 @@ module PersonalStatuses =
             match requestType with
             | FriendsStatuses -> dbAccess.UpdateLastTimelineId(latestStatus)
             | MentionsStatuses -> dbAccess.UpdateLastMentionsId(latestStatus)
-            | RetweetsStatuses -> dbAccess.UpdateLastRetweetsId(latestStatus)
             | ListStatuses     -> ()    // nothing is stored for list
         | _ -> ()
 
