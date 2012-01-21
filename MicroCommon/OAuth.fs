@@ -8,7 +8,7 @@ open Utils
 let private consumerKey = "8Zb9ZmCKaLAJ3dqsArStA" 
 let private consumerSecret = "PfqnoKucLZZO8jX8ghVIHeLsjOvs5uZhrmdsTtZAOss"
 
-let private accessTokenPath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "twitter.accesstoken.txt")
+let mutable private accessTokenPath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "twitter.accesstoken.txt")
 let mutable private accessToken:Framework.IToken = null
 
 let private createToken consumerKey realm token tokenSecret =
@@ -16,15 +16,6 @@ let private createToken consumerKey realm token tokenSecret =
                             Realm = realm,
                             Token = token,
                             TokenSecret = tokenSecret)
-
-let private readToken path =
-    linfo "reading token.."
-    if File.Exists(path) then
-        match File.ReadAllLines(path) with
-        | [|ck; realm; token; tokensecret|] -> createToken ck realm token tokensecret
-        | _ -> failwith (sprintf "File %s doesn't contain access token information." path)
-    else
-        failwith (sprintf "File %s doesn't exist." path)
 
 let private saveToken (path:string) token =
     linfo "saving token.."
@@ -36,15 +27,19 @@ let private saveToken (path:string) token =
     file.Close()
     linfo "..done"
 
-accessToken <- 
-    if File.Exists(accessTokenPath) then
-        readToken accessTokenPath
-    else
-        //failwith (sprintf "%s doesn't exist, so the request will not be handled.\nEither call the function again or register on Twitter" accessTokenPath)
-        null
+let readAccessToken () =
+    linfo "reading token.."
+    accessToken <- 
+        if File.Exists(accessTokenPath) then
+            match File.ReadAllLines(accessTokenPath) with
+            | [|ck; realm; token; tokensecret|] -> createToken ck realm token tokensecret
+            | _ -> failwith (sprintf "File %s doesn't contain access token information." accessTokenPath)
+        else
+            printf "%s doesn't exist, so the request will not be handled.\nEither call the function again or register on Twitter" accessTokenPath
+            null
 
-let private getAccessToken() =
-    createToken accessToken.ConsumerKey accessToken.Realm accessToken.Token accessToken.TokenSecret
+//let private getAccessToken() =
+//    createToken accessToken.ConsumerKey accessToken.Realm accessToken.Token accessToken.TokenSecret
 
 let private getNewSession() =
     let cons = new Consumer.OAuthConsumerContext(
@@ -62,11 +57,12 @@ let requestTwitter url =
         failwith "token is not initialized"
 
     try
-        let req = getNewSession().Request(getAccessToken())
+        let req = getNewSession().Request(accessToken) // getAccessToken())
         req.Context.RequestMethod <- "GET"
         req.Context.RawUri <- new System.Uri(url)
         let req0 = req.ToWebRequest()
         req0.Timeout <- 1000 * 30 // 30 sec
+        let a = Some('x')
         try 
             //let response = req.ToWebResponse()
             let response = req0.GetResponse() :?> System.Net.HttpWebResponse    // by reflector
@@ -97,3 +93,8 @@ let checkAccessTokenFile() =
     if accessToken = null then
         printfn "First authorize the application so that it can access your Twitter account. Look for register.bat file"
         exit 1
+
+let setAccessTokenPath path =
+    accessTokenPath <- path
+
+readAccessToken ()
