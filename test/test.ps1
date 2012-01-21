@@ -37,6 +37,7 @@ if (!$runOnly) {
 	"$rootDir\MicroUI\ImagesSource.fs" `
 	"$rootDir\Twipy\Cmdline.fs" `
 	"$rootDir\TwitterClient\UIState.fs" `
+	"$rootDir\TwitterClient\SubscriptionsConfig.fs" `
 	"$rootDir\test\FsUnit.fs" `
 	"$rootDir\test\test.test.fs" `
 	"$rootDir\test\test.xmlUtil.fs" `
@@ -51,6 +52,7 @@ if (!$runOnly) {
 	"$rootDir\test\test.fparsec.fs" `
 	"$rootDir\test\test.testShortenedUrlToDomain.fs" `
 	"$rootDir\test\test.statusFilter.fs" `
+	"$rootDir\test\test.subscriptionsConfig.fs" `
   --target:library --platform:x86 --out:$res `
   --reference:$rootDir\lib\DevDefined.OAuth.dll `
   --reference:$rootDir\lib\log4net.dll `

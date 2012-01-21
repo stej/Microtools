@@ -107,11 +107,12 @@ let shortenUrlToDomain (url:string) =
         url
 
 type Settings =
-    static member private settings = System.Configuration.ConfigurationManager.AppSettings;
+    static member private settings = System.Configuration.ConfigurationManager.AppSettings
     static member MinRateLimit = match Settings.settings.["minRateLimit"] with | null -> 20 | filter -> int filter
     static member Size = Settings.settings.["size"].ToString()
     static member UpCount = match Settings.settings.["upCount"] with | null -> 50 | c -> int c
     static member TwitterClientFetchInterval = match Settings.settings.["statusesDownloadInterval"] with | null -> 60*3 | c -> int c
+    static member GetAppSettings() = Settings.settings
 
 let doAndRet fce item = 
     fce item |> ignore

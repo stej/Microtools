@@ -96,6 +96,7 @@ type PersonalStatusesType =
     | FriendsStatuses
     | MentionsStatuses
     | RetweetsStatuses
+    | ListStatuses
 
 module PersonalStatuses = 
     let friendsChecker, mentionsChecker, retweetsChecker = 
@@ -112,6 +113,11 @@ module PersonalStatuses =
         new TwitterStatusesChecker.Checker(MentionsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getMentionsUrl, canQuery),
         new TwitterStatusesChecker.Checker(RetweetsStatuses, (OAuthFunctions.xml2Retweet >> (status2StatusInfo Retweet)), getRetweetsUrl, canQuery)
 
+    let getListChecker (listId:int64) =
+        let listUrl () = sprintf "http://api.twitter.com/1/lists/statuses.xml?list_id=%d&include_rts=true&page=0&per_page=300" listId
+        let canQuery = twitterLimits.IsSafeToQueryTwitterStatuses
+        new TwitterStatusesChecker.Checker(ListStatuses, (OAuthFunctions.xml2StatusOrRetweet >> status2StatusInfoWithUnknownTimelineSource), listUrl, canQuery)
+
     let saveStatuses requestType statuses =
         let getLogicalStatusId (sInfo:statusInfo) = sInfo.Status.LogicalStatusId
         match statuses with
@@ -122,6 +128,7 @@ module PersonalStatuses =
             | FriendsStatuses -> dbAccess.UpdateLastTimelineId(latestStatus)
             | MentionsStatuses -> dbAccess.UpdateLastMentionsId(latestStatus)
             | RetweetsStatuses -> dbAccess.UpdateLastRetweetsId(latestStatus)
+            | ListStatuses     -> ()    // nothing is stored for list
         | _ -> ()
 
 let getStatusId status =

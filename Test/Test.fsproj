@@ -103,6 +103,9 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="..\TwitterClient\UIState.fs">
       <Link>UIState.fs</Link>
     </Compile>
+    <Compile Include="..\TwitterClient\SubscriptionsConfig.fs">
+      <Link>SubscriptionsConfig.fs</Link>
+    </Compile>
     <Compile Include="..\MicroUI\TextSplitter.fs">
       <Link>TextSplitter.fs</Link>
     </Compile>
@@ -122,6 +125,7 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="test.testShortenedUrlToDomain.fs" />
     <Compile Include="test.fparsec.fs" />
     <Compile Include="test.statusFilter.fs" />
+    <Compile Include="test.subscriptionsConfig.fs" />
     <Content Include="testRetweet.xml">
       <Link>testRetweet.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
