@@ -108,10 +108,10 @@ type StatusesDbMessages =
 //| LoadStatuses of AsyncReplyChannel<status seq>
 | GetLastTimelineId of AsyncReplyChannel<Int64>
 | GetLastMentionsId of AsyncReplyChannel<Int64>
-| GetLastRetweetsId of AsyncReplyChannel<Int64>
+| GetLastListItemId of int64 * AsyncReplyChannel<Int64>
 | UpdateLastTimelineId of statusInfo
 | UpdateLastMentionsId of statusInfo
-| UpdateLastRetweetsId of statusInfo
+| UpdateLastListItemId of int64 * statusInfo
 | ReadStatusWithId of Int64 * AsyncReplyChannel<statusInfo option>
 | ReadStatusReplies of Int64 * AsyncReplyChannel<statusInfo seq>
 | GetRootStatusesHavingReplies of int * AsyncReplyChannel<statusInfo seq>
@@ -122,29 +122,45 @@ type StatusesDbMessages =
 | DeleteStatus of statusInfo * AsyncReplyChannel<Int64>
 
 type StatusesDbState(file) =
+    let checkLastIdRowExists (conn:SQLiteConnection) rowName =
+        use cmdSel = conn.CreateCommand(CommandText = "select count(ItemId) from LastId where Name = @p1")
+        addCmdParameter cmdSel "@p1" rowName
+        match Convert.ToInt32(cmdSel.ExecuteScalar()) with
+        | 0 -> linfop "Creating row in LastId for {0}" rowName
+               use cmdIns = conn.CreateCommand(CommandText = "INSERT INTO LastId(Name, ItemId) VALUES (@p1, @p2)")
+               addCmdParameter cmdIns "@p1" rowName
+               addCmdParameter cmdIns "@p2" 100
+               cmdIns.ExecuteNonQuery() |> ignore
+        | _ -> ()
 
-    let getLastId whatType column = 
+    let getLastId whatType rowName = 
         useDb file (fun conn ->
             ldbgp "Getting {0}" whatType
-            use cmd = conn.CreateCommand(CommandText = (sprintf "select %s from AppState" column))
+            checkLastIdRowExists conn rowName
+
+            use cmd = conn.CreateCommand(CommandText = "select ItemId from LastId where Name = @p1")
+            addCmdParameter cmd "@p1" rowName
             let ret = Convert.ToInt64(cmd.ExecuteScalar())
             linfop2 "{0} is {1}" whatType ret
             ret
         )
-    let updateLastId column (lastStatus:Status.status) =
+    let updateLastId rowName (lastStatus:Status.status) =
         useDb file (fun conn ->
+            checkLastIdRowExists conn rowName
+
             let id = lastStatus.LogicalStatusId
-            use cmd = conn.CreateCommand(CommandText = (sprintf "Update AppState set %s = @p1" column))
+            use cmd = conn.CreateCommand(CommandText = "Update LastId set ItemId = @p1 where Name = @p2")
             addCmdParameter cmd "@p1" id
+            addCmdParameter cmd "@p2" rowName
             cmd.ExecuteNonQuery() |> ignore
         )
-    let getLastTimelineId() = getLastId "Last timeline status id" "TimelineId"
-    let getLastRetweetsId() =  getLastId "Last retweet id" "RetweetsId"
-    let getLastMentionsId() =  getLastId "Last mention id" "MentionsId"
+    let getLastTimelineId() = getLastId "Last timeline status id" "timeline"
+    let getLastMentionsId() =  getLastId "Last mention id" "mentions"
+    let getLastListItemId (listId:int64) =  getLastId "Last mention id" (sprintf "list-%d" listId)
 
-    let updateLastTimelineId (lastStatus:statusInfo) = updateLastId "TimelineId" lastStatus.Status
-    let updateLastRetweetsId (lastStatus:statusInfo)  = updateLastId "RetweetsId" lastStatus.Status
-    let updateLastMentionsId (lastStatus:statusInfo)  = updateLastId "MentionsId" lastStatus.Status
+    let updateLastTimelineId (lastStatus:statusInfo) = updateLastId "timeline" lastStatus.Status
+    let updateLastMentionsId (lastStatus:statusInfo)  = updateLastId "mentions" lastStatus.Status
+    let updateLastListItemId (listId:int64) (lastStatus:statusInfo)  = updateLastId (sprintf "list-%d" listId) lastStatus.Status
 
     // todo - rework - use other method
     let readStatusWithIdUseConn (conn:SQLiteConnection) (statusId:Int64) = 
@@ -405,11 +421,11 @@ type StatusesDbState(file) =
                 | UpdateLastMentionsId(status) ->
                     updateLastMentionsId status
                     return! loop()
-                | GetLastRetweetsId(chnl) ->
-                    chnl.Reply(getLastRetweetsId())
+                | GetLastListItemId(listId, chnl) ->
+                    chnl.Reply(getLastListItemId listId)
                     return! loop()
-                | UpdateLastRetweetsId(status) ->
-                    updateLastRetweetsId status
+                | UpdateLastListItemId(listId, status) ->
+                    updateLastListItemId listId status
                     return! loop()
                 | ReadStatusWithId(id, chnl) ->
                     chnl.Reply(readStatusWithId id)
@@ -457,10 +473,10 @@ type StatusesDbState(file) =
 
         member x.GetLastTimelineId() = mbox.PostAndReply(GetLastTimelineId)
         member x.GetLastMentionsId() = mbox.PostAndReply(GetLastMentionsId)
-        member x.GetLastRetweetsId() = mbox.PostAndReply(GetLastRetweetsId)
+        member x.GetLastListItemId(listId) = mbox.PostAndReply(fun reply -> GetLastListItemId(listId, reply))
         member x.UpdateLastTimelineId(status) = mbox.Post(UpdateLastTimelineId(status))
         member x.UpdateLastMentionsId(status) = mbox.Post(UpdateLastMentionsId(status))
-        member x.UpdateLastRetweetsId(status) = mbox.Post(UpdateLastRetweetsId(status))
+        member x.UpdateLastListItemId(listId, status) = mbox.Post(UpdateLastListItemId(listId, status))
 
         member x.ReadStatusReplies(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusReplies(id, reply))
 

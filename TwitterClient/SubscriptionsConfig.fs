@@ -42,6 +42,6 @@ let GetTwitterCheckersFromSubscriptions () =
             match s with
             | Timeline ->             yield (Twitter.PersonalStatuses.friendsChecker.Check, Twitter.FriendsStatuses)
             | Mentions ->             yield (Twitter.PersonalStatuses.mentionsChecker.Check, Twitter.MentionsStatuses)
-            | ListSubscription(id) -> yield (Twitter.PersonalStatuses.getListChecker(id).Check, Twitter.ListStatuses)
+            | ListSubscription(id) -> yield (Twitter.PersonalStatuses.getListChecker(id).Check, Twitter.ListStatuses(id))
             | Unknown(str) ->         lerrp "String {0} is not recognized as valid download specification" str
     } |> Seq.toList

@@ -95,14 +95,15 @@ let search userName (sinceId:Int64) =
 type PersonalStatusesType =
     | FriendsStatuses
     | MentionsStatuses
-    | ListStatuses
+    | ListStatuses of int64     // the int64 is id of list
 
 module PersonalStatuses = 
+    let private normalizeId idGetter = 
+        match idGetter() with 
+        | id when id < 1000L -> 1000L
+        | id -> id
+
     let friendsChecker, mentionsChecker = 
-        let normalizeId idGetter = 
-            match idGetter() with 
-            | id when id < 1000L -> 1000L
-            | id -> id
         // todo: dependency on db
         let getFriendsUrl () = sprintf "http://api.twitter.com/1/statuses/home_timeline.xml?since_id=%d&count=200&include_rts=true" (normalizeId dbAccess.GetLastTimelineId)
         let getMentionsUrl () = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d&include_rts=1&count=200" (normalizeId dbAccess.GetLastMentionsId)
@@ -111,9 +112,10 @@ module PersonalStatuses =
         new TwitterStatusesChecker.Checker(MentionsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getMentionsUrl, canQuery)
 
     let getListChecker (listId:int64) =
-        let listUrl () = sprintf "http://api.twitter.com/1/lists/statuses.xml?list_id=%d&include_rts=true&page=0&per_page=300" listId
+        let getLastListItemId () = dbAccess.GetLastListItemId listId
+        let listUrl () = sprintf "http://api.twitter.com/1/lists/statuses.xml?since_id=%d&list_id=%d&include_rts=true&page=0&per_page=300" (normalizeId getLastListItemId) listId
         let canQuery = twitterLimits.IsSafeToQueryTwitterStatuses
-        new TwitterStatusesChecker.Checker(ListStatuses, (OAuthFunctions.xml2StatusOrRetweet >> status2StatusInfoWithUnknownTimelineSource), listUrl, canQuery)
+        new TwitterStatusesChecker.Checker(ListStatuses(listId), (OAuthFunctions.xml2StatusOrRetweet >> status2StatusInfoWithUnknownTimelineSource), listUrl, canQuery)
 
     let saveStatuses requestType statuses =
         let getLogicalStatusId (sInfo:statusInfo) = sInfo.Status.LogicalStatusId
@@ -124,7 +126,7 @@ module PersonalStatuses =
             match requestType with
             | FriendsStatuses -> dbAccess.UpdateLastTimelineId(latestStatus)
             | MentionsStatuses -> dbAccess.UpdateLastMentionsId(latestStatus)
-            | ListStatuses     -> ()    // nothing is stored for list
+            | ListStatuses(id) -> dbAccess.UpdateLastListItemId(id, latestStatus)
         | _ -> ()
 
 let getStatusId status =
