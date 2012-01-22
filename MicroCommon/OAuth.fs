@@ -52,7 +52,8 @@ let private getNewSession() =
                         "http://twitter.com/oauth/request_token",
                         "http://twitter.com/oauth/authorize",
                         "http://twitter.com/oauth/access_token")
-let requestTwitter url =
+
+let requestTwitterWithQS url (queryStringParams: (string*string) list) =
     if accessToken = null then
         failwith "token is not initialized"
 
@@ -60,12 +61,12 @@ let requestTwitter url =
         let req = getNewSession().Request(accessToken) // getAccessToken())
         req.Context.RequestMethod <- "GET"
         req.Context.RawUri <- new System.Uri(url)
-        let req0 = req.ToWebRequest()
-        req0.Timeout <- 1000 * 30 // 30 sec
-        let a = Some('x')
+        req.Timeout <- Nullable<int>(1000 * 30) // 30 sec
+
+        // add query string params
+        queryStringParams |> List.iter req.Context.QueryParameters.Add
         try 
-            //let response = req.ToWebResponse()
-            let response = req0.GetResponse() :?> System.Net.HttpWebResponse    // by reflector
+            let response = req.ToWebResponse()
             Some(DevDefined.OAuth.Utility.StreamExtensions.ReadToEnd(response), response.StatusCode, response.Headers)
         with
           | :? System.Net.WebException as ex -> lerrex ex "Unable to download string"
@@ -76,6 +77,9 @@ let requestTwitter url =
     with 
         ex -> lerrex ex "Error when querying url"
               None
+
+let requestTwitter url =
+    requestTwitterWithQS url []
 
 let registerOnTwitter() =
     let session = getNewSession()
