@@ -45,7 +45,9 @@
     <Compile Include="UIState.fs" />
     <Compile Include="TwitterClient.fs" />
     <None Include="App.config" />
-    <None Include="TwitterClient.xaml" />
+    <None Include="TwitterClient.xaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

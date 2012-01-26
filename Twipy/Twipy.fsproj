@@ -46,7 +46,9 @@
     <Compile Include="ScriptingHelpers.fs" />
     <Compile Include="Twipy.fs" />
     <None Include="App.config" />
-    <None Include="Twipy.xaml" />
+    <None Include="Twipy.xaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="DevDefined.OAuth">

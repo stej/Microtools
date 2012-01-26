@@ -299,4 +299,28 @@ let resolveTextFragmentsFromCache fragments =
                                          match newu with
                                          | Some(longUrl) -> FragmentUrl(longUrl)
                                          | None -> FragmentUrl(u)
-                      | x -> x) 
+                      | x -> x)
+
+module Commands =
+    //http://dikhi.wordpress.com/2008/06/27/keygesture-doesnt-work-with-alpha-numeric-key/
+    open System.Windows.Input
+    type AnyKeyGesture(key) = 
+        inherit InputGesture()
+        let _key = key
+        override this.Matches (targetElement, inputEventArgs) =
+            match inputEventArgs with
+            | :? KeyEventArgs as args -> _key = args.Key
+            | _ -> false
+
+    let bindCommand key fn (window:Window) (menuItem:MenuItem) =
+        //http://stackoverflow.com/questions/1361350/keyboard-shortcuts-in-wpf
+        let rt = new RoutedCommand()
+        //let gesture = new AnyKeyGesture(key)      // fires when i type the key in textbox -- not desired -> added CTRL modifier
+        let gesture = new KeyGesture(key, ModifierKeys.Control)
+        rt.InputGestures.Add(gesture) |> ignore
+        let commandBinding = new CommandBinding(rt, 
+                                                new ExecutedRoutedEventHandler(fun _ _ -> fn()))
+        window.CommandBindings.Add(commandBinding) |> ignore
+        if menuItem <> null then
+            menuItem.Command <- rt
+            menuItem.InputBindings.Add(new InputBinding(rt, gesture)) |> ignore

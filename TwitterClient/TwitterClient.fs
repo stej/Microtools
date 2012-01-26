@@ -20,6 +20,7 @@ open System.Windows
 open System.Windows.Controls
 open System.Windows.Data
 open System.Windows.Media
+open System.Windows.Input
 
 let window = WpfUtils.createXamlWindow "TwitterClient.xaml"
 let wrap = window.FindName("images") :?> WrapPanel
@@ -242,40 +243,33 @@ let negateShowHide (menuItem:MenuItem) =
 
 // bind context menu
 do
-    //detailsHolder.ContextMenu <- new ContextMenu()
+    let addMenu menu =
+        window.ContextMenu.Items.Add(menu) |> ignore    
+        menu
+
     window.ContextMenu <- new ContextMenu()
      
-    let menuItem = new MenuItem(Header = "Show filtered", 
-                                IsCheckable = true, 
-                                ToolTip = "Show/hide filtered items")
-    menuItem.Click.Add(fun _ -> negateShowHide menuItem
-                                refresh ())
-    window.ContextMenu.Items.Add(menuItem) |> ignore
+    let menuShowFiltered = new MenuItem(Header = "Show _filtered", 
+                                        IsCheckable = true, 
+                                        ToolTip = "Show/hide filtered items")
+                           |> addMenu
+    let menuSwitch = new MenuItem(Header = "_Switch", ToolTip = "Switch to list/tree view") |> addMenu
+    let menuClear = new MenuItem(Header = "_Clear", ToolTip = "Clear view")                 |> addMenu
+    let menuUp = new MenuItem(Header = "Go _up", ToolTip = "Get older statuses")            |> addMenu
 
-    let menuItem = new MenuItem(Header = "Switch", 
-                                ToolTip = "Switch to list/tree view")
-    menuItem.Click.Add(fun _ -> switchPanes ())
-    window.ContextMenu.Items.Add(menuItem) |> ignore
+    let menuShortLinks = new MenuItem(Header = "Short links", 
+                                      ToolTip = "Show only part of the link",
+                                      IsCheckable = true)
+    menuShortLinks.IsChecked <- showOnlyLinkPart
+    menuShortLinks.Click.Add(fun _ -> showOnlyLinkPart <- not showOnlyLinkPart
+                                      refresh () )
+    addMenu menuShortLinks |> ignore
 
-    let menuItem = new MenuItem(Header = "Clear", 
-                                ToolTip = "Clear view")
-    menuItem.Click.Add(fun _ -> PreviewsState.userStatusesState.ClearStatuses()
-                                refresh())
-    window.ContextMenu.Items.Add(menuItem) |> ignore
-
-    let menuItem = new MenuItem(Header = "Go up", 
-                                ToolTip = "Get older statuses")
-    menuItem.Click.Add(fun _ -> goUp ())
-    window.ContextMenu.Items.Add(menuItem) |> ignore
-
-    let menuItem = new MenuItem(Header = "Short links", 
-                                ToolTip = "Show only part of the link",
-                                IsCheckable = true)
-    menuItem.IsChecked <- showOnlyLinkPart
-    menuItem.Click.Add(fun _ -> showOnlyLinkPart <- not showOnlyLinkPart
-                                refresh () )
-
-    window.ContextMenu.Items.Add(menuItem) |> ignore
+    WpfUtils.Commands.bindCommand Key.S switchPanes window menuSwitch
+    WpfUtils.Commands.bindCommand Key.F (fun () -> negateShowHide menuShowFiltered; refresh ()) window menuShowFiltered
+    WpfUtils.Commands.bindCommand Key.C (PreviewsState.userStatusesState.ClearStatuses >> refresh) window menuClear
+    WpfUtils.Commands.bindCommand Key.U goUp window menuUp
+    WpfUtils.Commands.bindCommand Key.T (fun () -> window.Topmost <- not window.Topmost) window null
 
 [<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]
 [<assembly: System.Runtime.InteropServices.Guid("b607f47b-df94-4c4c-a7ff-1a182bf8d8bb3")>]

@@ -44,7 +44,9 @@
     <Compile Include="ConversationState.fs" />
     <Compile Include="TwitterConversation.fs" />
     <None Include="App.config" />
-    <None Include="TwitterConversation.xaml" />
+    <None Include="TwitterConversation.xaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="DevDefined.OAuth">
