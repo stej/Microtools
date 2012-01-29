@@ -30,6 +30,9 @@ let details = window.FindName("statusDetails") :?> StackPanel
 let limitCtl = window.FindName("limit") :?> TextBlock
 let appStateCtl = window.FindName("appState") :?> TextBlock
 let filterCtl = window.FindName("filter") :?> TextBox
+let scrollDetails = window.FindName("scrollDetails") :?> ScrollViewer
+let scrollImages = window.FindName("scrollImages") :?> ScrollViewer
+//let tweetsWrapper = window.FindName("tweetsWrapper") :?> Panel
 //let contentGrid = window.FindName("content") :?> Panel
 
 let setAppState state = 
@@ -43,6 +46,9 @@ let setAppStateCount () =
 let setCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) = 
     let filtered = filterStatusInfos |> List.fold (fun count curr -> if curr.FilterInfo.Filtered then count+1 else count) 0
     UIState.setCounts count filtered
+let focusTweets() =
+    if imagesHolder.Visibility = Visibility.Visible then scrollImages.Focus() |> ignore
+    else scrollDetails.Focus() |> ignore
 
 let mutable showHiddenStatuses = false
 let mutable showOnlyLinkPart = true
@@ -265,11 +271,12 @@ do
                                       refresh () )
     addMenu menuShortLinks |> ignore
 
-    WpfUtils.Commands.bindCommand Key.S switchPanes window menuSwitch
-    WpfUtils.Commands.bindCommand Key.F (fun () -> negateShowHide menuShowFiltered; refresh ()) window menuShowFiltered
-    WpfUtils.Commands.bindCommand Key.C (PreviewsState.userStatusesState.ClearStatuses >> refresh) window menuClear
-    WpfUtils.Commands.bindCommand Key.U goUp window menuUp
-    WpfUtils.Commands.bindCommand Key.T (fun () -> window.Topmost <- not window.Topmost) window null
+    WpfUtils.Commands.bindCommand Key.S (switchPanes>>focusTweets) window menuSwitch
+    WpfUtils.Commands.bindCommand Key.F (fun () -> negateShowHide menuShowFiltered; refresh (); focusTweets()) window menuShowFiltered
+    WpfUtils.Commands.bindCommand Key.C (PreviewsState.userStatusesState.ClearStatuses >> refresh >> focusTweets) window menuClear
+    WpfUtils.Commands.bindCommand Key.U (goUp>>focusTweets) window menuUp
+    WpfUtils.Commands.bindCommand Key.T (fun () -> window.Topmost <- not window.Topmost;focusTweets()) window null
+    WpfUtils.Commands.bindClick MouseAction.LeftDoubleClick (switchPanes>>focusTweets) window null
 
 [<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]
 [<assembly: System.Runtime.InteropServices.Guid("b607f47b-df94-4c4c-a7ff-1a182bf8d8bb3")>]

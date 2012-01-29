@@ -156,7 +156,7 @@ type StatusesDbState(file) =
         )
     let getLastTimelineId() = getLastId "Last timeline status id" "timeline"
     let getLastMentionsId() =  getLastId "Last mention id" "mentions"
-    let getLastListItemId (listId:int64) =  getLastId "Last mention id" (sprintf "list-%d" listId)
+    let getLastListItemId (listId:int64) =  getLastId "Last list id" (sprintf "list-%d" listId)
 
     let updateLastTimelineId (lastStatus:statusInfo) = updateLastId "timeline" lastStatus.Status
     let updateLastMentionsId (lastStatus:statusInfo)  = updateLastId "mentions" lastStatus.Status

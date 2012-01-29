@@ -324,3 +324,11 @@ module Commands =
         if menuItem <> null then
             menuItem.Command <- rt
             menuItem.InputBindings.Add(new InputBinding(rt, gesture)) |> ignore
+
+    let bindClick mouseAction fn (window:Window) (menuItem:MenuItem) =
+        let rt = new RoutedCommand()
+        let gesture = new MouseGesture(mouseAction)
+        rt.InputGestures.Add(gesture) |> ignore
+        let commandBinding = new CommandBinding(rt, 
+                                                new ExecutedRoutedEventHandler(fun _ _ -> fn()))
+        window.CommandBindings.Add(commandBinding) |> ignore

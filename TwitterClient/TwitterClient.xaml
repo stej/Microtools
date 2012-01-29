@@ -44,7 +44,9 @@
         CornerRadius = "10"
         x:Name="detailsHolder"
         Visibility="collapsed">
-        <ScrollViewer HorizontalScrollBarVisibility="auto">
+        <ScrollViewer
+          HorizontalScrollBarVisibility="auto" 
+          x:Name="scrollDetails">
          <StackPanel Height="auto" x:Name="statusDetails">
          </StackPanel>
        </ScrollViewer>
@@ -57,7 +59,8 @@
            VerticalScrollBarVisibility="auto"
            HorizontalScrollBarVisibility="disabled"
            HorizontalAlignment="stretch"
-           VerticalAlignment="stretch">
+           VerticalAlignment="stretch"
+           x:Name="scrollImages">
          <WrapPanel Height="auto" x:Name="images">
          </WrapPanel>
        </ScrollViewer>
