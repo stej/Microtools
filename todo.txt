@@ -1,8 +1,7 @@
 * post message
 * reply to a status
 * mark as favorite
-* (bug) when updating conversations - not all new responses are shown
-  OK
-1/2 filter 
-OK topmost
-* retweets
+* store position and size - config file?
+* tool for visualization - only python or built-in queries?
+* better UI
+* list management, downloading of lists

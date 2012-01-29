@@ -223,6 +223,10 @@ print limits.GetLimitsString()
 statuses = h.DownloadAndSavePersonalStatuses()
 print limits.GetLimitsString()
 h.show(statuses)
+
+###################
+st = h.DownloadAndSaveListStatuses(949537)
+h.show(st)
 ###################
 # get status somehow (e.g. load from db)
 status = db.ReadStatusWithId(91945905766408192)

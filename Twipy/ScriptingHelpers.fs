@@ -106,9 +106,6 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
          async { let! statuses = Twitter.PersonalStatuses.mentionsChecker.Check()
                  Twitter.PersonalStatuses.saveStatuses Twitter.MentionsStatuses statuses
                  return statuses }
-         //async { let! statuses = Twitter.PersonalStatuses.retweetsChecker.Check()
-         //        Twitter.PersonalStatuses.saveStatuses Twitter.RetweetsStatuses statuses
-         //        return statuses }
         ]
         |> Async.Parallel
         |> Async.RunSynchronously
@@ -118,6 +115,21 @@ type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) =
         printf "Waiting until all statuses are saved.."
         DbInterface.dbAccess.GetLastTimelineId() |> ignore //ensure waiting until all statuses are saved
         printfn "done"
+        statusesState.GetStatuses() |> fst
+
+    member x.DownloadAndSaveListStatuses listId = 
+        let statusesState = new PreviewsState.UserStatusesState();
+        let statuses = 
+            async { 
+                let! statuses = Twitter.PersonalStatuses.getListChecker(listId).Check()
+                Twitter.PersonalStatuses.saveStatuses (Twitter.ListStatuses(listId)) statuses
+                return statuses }
+            |> Async.RunSynchronously
+        if statuses.IsSome then 
+            statusesState.AddStatuses statuses.Value
+            printf "Waiting until all statuses are saved.."
+            DbInterface.dbAccess.GetLastTimelineId() |> ignore //ensure waiting until all statuses are saved
+            printfn "done"
         statusesState.GetStatuses() |> fst
     member x.LoadConversations(maxConversations) = StatusDb.statusesDb.GetRootStatusesHavingReplies(maxConversations)
     member x.LoadChildren(status) = StatusesReplies.loadSavedReplyTree(status)
