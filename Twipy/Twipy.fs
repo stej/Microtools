@@ -9,6 +9,7 @@ open Status
 open System.Windows.Threading
 open ipy
 open TwitterLimits
+open StatusXmlProcessors
 
 (**************************************)
 (* wrapPanel and scroll: http://social.msdn.microsoft.com/forums/en-US/wpf/thread/02cf717c-1191-4266-b850-91b8a2716ba6 *)
@@ -33,7 +34,8 @@ let setAppStateShowInUI state = WpfUtils.dispatchMessage appStateCtl (fun _ -> a
 let mutable setAppState = setAppStateNoAction
 
 DbInterface.dbAccess <- StatusDb.statusesDb
-
+ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
+ExtraProcessors.Processors <- [ExtraProcessors.Url.ParseShortUrlsAndStore]
 twitterLimits.Start()
 
 // events

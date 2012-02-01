@@ -6,7 +6,7 @@ open System.Xml
 open System.IO
 open Utils
 open Status
-open OAuthFunctions
+open StatusXmlProcessors
 
 type ``Given status xml document`` ()=
     let xml = new XmlDocument()
@@ -20,12 +20,24 @@ type ``Given status xml document`` ()=
         let s = xml2Status (xml.SelectSingleNode("status"))
         //printfn "status %A" s
         s |> should not (equal None)
-        s.Value.StatusId |> should equal 119519838443024384L
-        s.Value.Text     |> should equal "It's funny but I've found that the people who annoy me the most at first often turn out to be the best friends in the long term"
-        s.Value.UserName |> should equal "rickasaurus"
-        s.Value.Date     |> should equal (System.DateTime.Parse("2011-09-29 21:12:04"))
-        s.Value.UserFavoritesCount |> should equal 254
-        s.Value.UserStatusesCount |> should equal 18763
+        s.Value.StatusId |> should equal 164474168182714368L
+        s.Value.Text     |> should equal "Co je ACTA? (titulky CZ/SK/EN): http://t.co/wnobaUTk via @youtube"
+        s.Value.UserName |> should equal "jirkavagner"
+        s.Value.Date     |> should equal (System.DateTime.Parse("2012-01-31 22:24:32"))
+        s.Value.UserFavoritesCount |> should equal 1
+        s.Value.UserStatusesCount |> should equal 623
+
+    [<Test>]
+    member test.``parse url entity`` () =
+        let node = xml.SelectSingleNode("status")
+        let sInfo = { Status = (xml2Status node).Value
+                      Children = new ResizeArray<_>()
+                      Source = Timeline }
+        let urls = ExtraProcessors.Url.extractEntities sInfo node |> Seq.toList
+        urls.Length |> should equal 1
+        urls.[0].LongUrl  |> should equal "http://youtu.be/3cz6bEkdX4Q"
+        urls.[0].ShortUrl |> should equal "http://t.co/wnobaUTk"
+        urls.[0].StatusId |> should equal (sInfo.StatusId())
         
 [<TestFixture>] 
 type ``Given retweet xml document`` ()=
@@ -52,6 +64,19 @@ type ``Given retweet xml document`` ()=
         retweet.UserName           |> should equal "twitterapi"
         retweet.UserFavoritesCount |> should equal 22
         retweet.UserStatusesCount  |> should equal 3119
+
+    [<Test>]
+    member test.``parse url entity`` () =
+        failwith "not implemented yet"
+        let node = xml.SelectSingleNode("status")
+        let sInfo = { Status = (xml2Status node).Value
+                      Children = new ResizeArray<_>()
+                      Source = Timeline }
+        let urls = ExtraProcessors.Url.extractEntities sInfo node |> Seq.toList
+        urls.Length |> should equal 1
+        urls.[0].LongUrl  |> should equal "http://youtu.be/3cz6bEkdX4Q"
+        urls.[0].ShortUrl |> should equal "http://t.co/wnobaUTk"
+        urls.[0].StatusId |> should equal (sInfo.StatusId())
 
 [<TestFixture>] 
 type ``Given some xml status that might be Retweet or STatus`` ()=

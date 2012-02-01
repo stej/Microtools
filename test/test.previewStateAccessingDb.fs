@@ -7,7 +7,7 @@ open Utils
 open Status
 open PreviewsState
 open System.Xml
-open OAuthFunctions
+open StatusXmlProcessors
 open StatusDb
 open testDbHelpers.testStatusesDbUtils
 

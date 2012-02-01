@@ -6,13 +6,14 @@ open Status
 open Utils
 open TwitterLimits
 open DbInterface
+open StatusXmlProcessors
 
 let private newStatusDownloaded = new Event<statusInfo>()
 let NewStatusDownloaded = newStatusDownloaded.Publish
 
 let getStatus source (id:Int64) =
     let convertToStatus source node = 
-        let parsedStatus = OAuthFunctions.xml2Status node
+        let parsedStatus = StatusXmlProcessors.xml2Status node
         match parsedStatus with
         | Some(status) ->
             let ret = { Status = status
@@ -105,17 +106,32 @@ module PersonalStatuses =
 
     let friendsChecker, mentionsChecker = 
         // todo: dependency on db
-        let getFriendsUrl () = sprintf "http://api.twitter.com/1/statuses/home_timeline.xml?since_id=%d&count=200&include_rts=true" (normalizeId dbAccess.GetLastTimelineId)
-        let getMentionsUrl () = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d&include_rts=1&count=200" (normalizeId dbAccess.GetLastMentionsId)
+        let getFriendsUrl () = sprintf "http://api.twitter.com/1/statuses/home_timeline.xml?since_id=%d&count=200&include_rts=true&include_entities=true" (normalizeId dbAccess.GetLastTimelineId)
+        let getMentionsUrl () = sprintf "http://api.twitter.com/1/statuses/mentions.xml?since_id=%d&include_rts=1&count=200&include_entities=true" (normalizeId dbAccess.GetLastMentionsId)
         let canQuery = twitterLimits.IsSafeToQueryTwitterStatuses
-        new TwitterStatusesChecker.Checker(FriendsStatuses, (OAuthFunctions.xml2StatusOrRetweet >> status2StatusInfoWithUnknownTimelineSource), getFriendsUrl, canQuery),
-        new TwitterStatusesChecker.Checker(MentionsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), getMentionsUrl, canQuery)
+        new TwitterStatusesChecker.Checker(
+                FriendsStatuses, 
+                (StatusXmlProcessors.xml2StatusOrRetweet >> status2StatusInfoWithUnknownTimelineSource), 
+                ExtraProcessors.Processors,
+                getFriendsUrl, 
+                canQuery),
+        new TwitterStatusesChecker.Checker(
+                MentionsStatuses, 
+                (StatusXmlProcessors.xml2Status >> (status2StatusInfo Timeline)), 
+                ExtraProcessors.Processors,
+                getMentionsUrl, 
+                canQuery)
 
     let getListChecker (listId:int64) =
         let getLastListItemId () = dbAccess.GetLastListItemId listId
-        let listUrl () = sprintf "http://api.twitter.com/1/lists/statuses.xml?since_id=%d&list_id=%d&include_rts=true&page=0&per_page=300" (normalizeId getLastListItemId) listId
+        let listUrl () = sprintf "http://api.twitter.com/1/lists/statuses.xml?since_id=%d&list_id=%d&include_rts=true&page=0&per_page=300&include_entities=true" (normalizeId getLastListItemId) listId
         let canQuery = twitterLimits.IsSafeToQueryTwitterStatuses
-        new TwitterStatusesChecker.Checker(ListStatuses(listId), (OAuthFunctions.xml2StatusOrRetweet >> status2StatusInfoWithUnknownTimelineSource), listUrl, canQuery)
+        new TwitterStatusesChecker.Checker(
+            ListStatuses(listId), 
+            (StatusXmlProcessors.xml2StatusOrRetweet >> status2StatusInfoWithUnknownTimelineSource), 
+            ExtraProcessors.Processors,
+            listUrl, 
+            canQuery)
 
     let saveStatuses requestType statuses =
         let getLogicalStatusId (sInfo:statusInfo) = sInfo.Status.LogicalStatusId

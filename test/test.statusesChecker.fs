@@ -6,7 +6,7 @@ open System.Xml
 open System.IO
 open Utils
 open Status
-open OAuthFunctions
+open StatusXmlProcessors
 open StatusDb
 open testDbHelpers.testStatusesDbUtils
 
@@ -27,7 +27,7 @@ type ``Given statuses checker`` () =
     [<Test>] 
     member test.``When can not query, None is returned`` () =
         printfn "When can not query, None is returned-------------------------------------------------------"
-        let c = new TwitterStatusesChecker.Checker(Twitter.FriendsStatuses, getDummyStatusInfo, (fun () -> ""), (fun () -> false))
+        let c = new TwitterStatusesChecker.Checker(Twitter.FriendsStatuses, getDummyStatusInfo, [], (fun () -> ""), (fun () -> false))
         let res = async { return! c.Check() } |> Async.RunSynchronously
         printfn "%A" res
         match res with
@@ -41,7 +41,7 @@ type ``Given statuses checker`` () =
         setupOAuthInterface None None (Some(fun _ ->
           None
         ))
-        let c = new TwitterStatusesChecker.Checker(Twitter.FriendsStatuses, getDummyStatusInfo, (fun () -> ""), (fun () -> true))
+        let c = new TwitterStatusesChecker.Checker(Twitter.FriendsStatuses, getDummyStatusInfo, [], (fun () -> ""), (fun () -> true))
         let res = async { return! c.Check() } |> Async.RunSynchronously
         printfn "%A" res
         match res with
@@ -58,7 +58,7 @@ type ``Given statuses checker`` () =
            new System.Net.WebHeaderCollection())
           |> Some
         ))
-        let c = new TwitterStatusesChecker.Checker(Twitter.FriendsStatuses, getDummyStatusInfo, (fun () -> ""), (fun () -> true))
+        let c = new TwitterStatusesChecker.Checker(Twitter.FriendsStatuses, getDummyStatusInfo, [], (fun () -> ""), (fun () -> true))
         let res = async { return! c.Check() } |> Async.RunSynchronously
         printfn "%A" res
         match res with
@@ -75,11 +75,11 @@ type ``Given statuses checker`` () =
            new System.Net.WebHeaderCollection())
           |> Some
         ))
-        let c = new TwitterStatusesChecker.Checker(Twitter.FriendsStatuses, (OAuthFunctions.xml2Status >> (status2StatusInfo Timeline)), (fun () -> ""), (fun () -> true))
+        let c = new TwitterStatusesChecker.Checker(Twitter.FriendsStatuses, (StatusXmlProcessors.xml2Status >> (status2StatusInfo Timeline)), [], (fun () -> ""), (fun () -> true))
         let res = async { return! c.Check() } |> Async.RunSynchronously
         printfn "%A" res
         match res with
-        | Some([s]) -> s.Status.StatusId |> should equal 119519838443024384L 
-                       s.Status.Text     |> should equal "It's funny but I've found that the people who annoy me the most at first often turn out to be the best friends in the long term"
+        | Some([s]) -> s.Status.StatusId |> should equal 164474168182714368L
+                       s.Status.Text     |> should equal "Co je ACTA? (titulky CZ/SK/EN): http://t.co/wnobaUTk via @youtube"
                        s.Source          |> should equal Timeline
         | _         -> Assert.Fail()

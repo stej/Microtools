@@ -9,6 +9,7 @@ open System.Windows.Threading
 open System.Linq
 open TwitterLimits
 open DisplayStatus
+open StatusXmlProcessors
 open SubscriptionsConfig
 open System.Threading
 
@@ -56,6 +57,7 @@ let mutable lastRefresh = DateTime.MinValue
 filterCtl.Text <- "#f:"+StatusFilter.defaultConfigFilter
 DbInterface.dbAccess <- StatusDb.statusesDb
 ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
+ExtraProcessors.Processors <- [ExtraProcessors.Url.ParseShortUrlsAndStore]
 
 let getCurrentUISettings() = 
     let filterText = ref ""

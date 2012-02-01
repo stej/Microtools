@@ -103,8 +103,7 @@ let findReplies initialStatus =
         let name, id = status.UserName, status.StatusId
         let foundMentions =
             search name id
-            |> xpathNodes "//results/item" 
-            |> Seq.cast<XmlNode> 
+            |> xpathNodes "//results/item"
             |> Seq.toList
             |> List.map getStatusIdFromNode                                                  //get statusId
             |> List.filter (fun id -> not (StatusFunctions.DirectChildHasId sInfo id))      //filter ids not in Children still

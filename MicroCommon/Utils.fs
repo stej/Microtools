@@ -57,7 +57,7 @@ let xpathValue path (xml:XmlNode) =
         ""
 
 let xpathNodes path (xml:XmlNode) =
-    xml.SelectNodes(path)
+    xml.SelectNodes(path) |> Seq.cast<XmlNode> 
 
 let Int64Default = -1L
 let IntDefault = -1

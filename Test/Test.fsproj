@@ -58,14 +58,14 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="..\MicroCommon\OAuthInterface.fs">
       <Link>OAuthInterface.fs</Link>
     </Compile>
-    <Compile Include="..\MicroCommon\OAuthFunctions.fs">
-      <Link>OAuthFunctions.fs</Link>
-    </Compile>
     <Compile Include="..\MicroCommon\StatusDbInterface.fs">
       <Link>StatusDbInterface.fs</Link>
     </Compile>
     <Compile Include="..\MicroCommon\ShortenerDbInterface.fs">
       <Link>ShortenerDbInterface.fs</Link>
+    </Compile>
+    <Compile Include="..\MicroCommon\StatusXmlProcessors.fs">
+      <Link>StatusXmlProcessors.fs</Link>
     </Compile>
     <Compile Include="..\MicroCommon\TwitterLimits.fs">
       <Link>TwitterLimits.fs</Link>

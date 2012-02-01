@@ -1,8 +1,9 @@
-﻿module OAuthFunctions
+﻿module StatusXmlProcessors
 open System
 open Status
 open System.Xml
 open Utils
+open ShortenerDbInterface
 
 let xml2Status (xml:XmlNode) = 
     ldbgp "Parsing status {0}" (xml.OuterXml)
@@ -89,3 +90,20 @@ let xml2StatusOrRetweet (xml:XmlNode) =
         xml2Retweet xml
     else
         xml2Status xml
+
+module ExtraProcessors =
+    module Url =
+        let private parseUrlEntity (sInfo:statusInfo) (xml:XmlNode) =
+            { ShortUrl = xpathValue "url" xml
+              LongUrl = xpathValue "expanded_url" xml
+              Date = DateTime.Now
+              StatusId = sInfo.Status.StatusId }
+        let extractEntities (sInfo:statusInfo) (xml:XmlNode) =
+            xpathNodes "entities/urls/url" xml
+            |> Seq.map (parseUrlEntity sInfo)
+        let storeEntities entities =
+            entities |> Seq.iter urlsAccess.SaveUrl
+        let ParseShortUrlsAndStore (sInfo:statusInfo) (xml:XmlNode) =
+            extractEntities sInfo xml |> storeEntities
+
+    let mutable Processors : (statusInfo -> XmlNode -> unit) list = []

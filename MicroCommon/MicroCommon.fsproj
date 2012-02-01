@@ -64,7 +64,7 @@
     <Compile Include="StatusFilter.fs" />
     <Compile Include="StatusFunctions.fs" />
     <Compile Include="OAuth.fs" />
-    <Compile Include="OAuthFunctions.fs" />
+    <Compile Include="StatusXmlProcessors.fs" />
     <Compile Include="OAuthInterface.fs" />
     <Compile Include="TwitterLimits.fs" />
     <Compile Include="TwitterStatusesChecker.fs" />

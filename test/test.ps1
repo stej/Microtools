@@ -22,9 +22,9 @@ if (!$runOnly) {
 	"$rootDir\MicroCommon\StatusFunctions.fs" `
 	"$rootDir\MicroCommon\OAuth.fs" `
 	"$rootDir\MicroCommon\OAuthInterface.fs" `
-	"$rootDir\MicroCommon\OAuthFunctions.fs" `
 	"$rootDir\MicroCommon\StatusDbInterface.fs" `
 	"$rootDir\MicroCommon\ShortenerDbInterface.fs" `
+	"$rootDir\MicroCommon\StatusXmlProcessors.fs" `
 	"$rootDir\MicroCommon\TwitterLimits.fs" `
 	"$rootDir\MicroCommon\TwitterStatusesChecker.fs" `
 	"$rootDir\MicroCommon\Twitter.fs" `

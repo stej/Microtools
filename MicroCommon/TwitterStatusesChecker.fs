@@ -10,15 +10,21 @@ type TwitterStatusesCheckerMessages =
 | Stop
 | CheckForStatuses of AsyncReplyChannel<(statusInfo list) option>
 
-type Checker(checkerType, statusNodeConvertor:XmlNode->statusInfo option, getUrl, isItSaveToQuery) =
+type Checker(checkerType, 
+             statusNodeConvertor:XmlNode->statusInfo option, 
+             extraXmlProcessors : (statusInfo -> XmlNode -> unit) list,
+             getUrl, 
+             isItSaveToQuery) =
     let extractStatuses statusesXml =
         statusesXml
             |> xpathNodes "//statuses/status"
-            |> Seq.cast<XmlNode> 
-            |> Seq.map statusNodeConvertor
-            |> Seq.filter (fun s -> s.IsSome)
-            |> Seq.map (fun s -> s.Value)
+            |> Seq.map (fun node -> (statusNodeConvertor node, node))
+            |> Seq.filter (fun (s, node) -> s.IsSome)
+            |> Seq.map (fun (s, node) -> (s.Value, node))
     let mbox =
+        let processByExtraProcessors (infos : (statusInfo * XmlNode) list) =
+            for processor in extraXmlProcessors do
+                infos |> List.iter (fun (st,node) -> processor st node)
         MailboxProcessor.Start(fun mbox ->
             let rec loop () = async {
                 let! msg = mbox.Receive()
@@ -40,8 +46,10 @@ type Checker(checkerType, statusNodeConvertor:XmlNode->statusInfo option, getUrl
                             | text -> xml.LoadXml(text)
                             let statuses = xml |> extractStatuses
                                                |> Seq.toList
-                        
-                            chnl.Reply(Some(statuses))
+                            processByExtraProcessors statuses
+
+                            let toRet = statuses |> List.map fst
+                            chnl.Reply(Some(toRet))
 
                         linfop2 "Check {0} - {1} done" checkerType url
                     else

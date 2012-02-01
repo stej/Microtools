@@ -2,7 +2,7 @@ namespace testDbHelpers
 
 open System.Xml
 open System.IO
-open OAuthFunctions
+open StatusXmlProcessors
 open StatusDb
 open UrlDb
 open DbCommon

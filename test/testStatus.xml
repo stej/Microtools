@@ -1,8 +1,8 @@
 <status>
-  <created_at>Thu Sep 29 21:12:04 +0000 2011</created_at>
-  <id>119519838443024384</id>
-  <text>It's funny but I've found that the people who annoy me the most at first often turn out to be the best friends in the long term</text>
-  <source>&lt;a href=&quot;http://www.tweetdeck.com&quot; rel=&quot;nofollow&quot;&gt;TweetDeck&lt;/a&gt;</source>
+  <created_at>Tue Jan 31 22:24:32 +0000 2012</created_at>
+  <id>164474168182714368</id>
+  <text>Co je ACTA? (titulky CZ/SK/EN): http://t.co/wnobaUTk via @youtube</text>
+  <source>&lt;a href=&quot;http://twitter.com/tweetbutton&quot; rel=&quot;nofollow&quot;&gt;Tweet Button&lt;/a&gt;</source>
   <truncated>false</truncated>
   <favorited>false</favorited>
   <in_reply_to_status_id></in_reply_to_status_id>
@@ -11,39 +11,39 @@
   <retweet_count>0</retweet_count>
   <retweeted>false</retweeted>
   <user>
-    <id>16377511</id>
-    <name>Richard Minerich</name>
-    <screen_name>rickasaurus</screen_name>
-    <location>Hoboken, NJ</location>
-    <description>Sr. Researcher at Bayard Rock. Functional Programmer. Co-author of Professional F# 2.0 and F# MVP. Loves Type Systems, Machine Learning and Physics.</description>
-    <profile_image_url>http://a1.twimg.com/profile_images/1144629758/tweetphoto3_normal.png</profile_image_url>
-    <profile_image_url_https>https://si0.twimg.com/profile_images/1144629758/tweetphoto3_normal.png</profile_image_url_https>
-    <url>http://richardminerich.com/</url>
+    <id>23756964</id>
+    <name>Jirka bianco V&#225;gner</name>
+    <screen_name>jirkavagner</screen_name>
+    <location></location>
+    <description></description>
+    <profile_image_url>http://a2.twimg.com/profile_images/1385459009/ja_normal.jpg</profile_image_url>
+    <profile_image_url_https>https://si0.twimg.com/profile_images/1385459009/ja_normal.jpg</profile_image_url_https>
+    <url></url>
     <protected>false</protected>
-    <followers_count>1968</followers_count>
-    <profile_background_color>000000</profile_background_color>
-    <profile_text_color>000000</profile_text_color>
-    <profile_link_color>3697f7</profile_link_color>
-    <profile_sidebar_fill_color>bfbfbf</profile_sidebar_fill_color>
-    <profile_sidebar_border_color>000000</profile_sidebar_border_color>
-    <friends_count>711</friends_count>
-    <created_at>Sat Sep 20 13:26:06 +0000 2008</created_at>
-    <favourites_count>254</favourites_count>
-    <utc_offset>-18000</utc_offset>
-    <time_zone>Eastern Time (US &amp; Canada)</time_zone>
-    <profile_background_image_url>http://a0.twimg.com/profile_background_images/10115650/bettertwitterbackground.png</profile_background_image_url>
-    <profile_background_image_url_https>https://si0.twimg.com/profile_background_images/10115650/bettertwitterbackground.png</profile_background_image_url_https>
-    <profile_background_tile>true</profile_background_tile>
-    <profile_use_background_image>true</profile_use_background_image>
+    <followers_count>40</followers_count>
+    <profile_background_color>352726</profile_background_color>
+    <profile_text_color>3E4415</profile_text_color>
+    <profile_link_color>D02B55</profile_link_color>
+    <profile_sidebar_fill_color>99CC33</profile_sidebar_fill_color>
+    <profile_sidebar_border_color>829D5E</profile_sidebar_border_color>
+    <friends_count>35</friends_count>
+    <created_at>Wed Mar 11 12:47:23 +0000 2009</created_at>
+    <favourites_count>1</favourites_count>
+    <utc_offset>-10800</utc_offset>
+    <time_zone>Greenland</time_zone>
+    <profile_background_image_url>http://a1.twimg.com/images/themes/theme8/bg.gif</profile_background_image_url>
+    <profile_background_image_url_https>https://si0.twimg.com/images/themes/theme8/bg.gif</profile_background_image_url_https>
+    <profile_background_tile>false</profile_background_tile>
+    <profile_use_background_image>false</profile_use_background_image>
     <notifications>false</notifications>
     <geo_enabled>false</geo_enabled>
     <verified>false</verified>
     <following>true</following>
-    <statuses_count>18763</statuses_count>
+    <statuses_count>623</statuses_count>
     <lang>en</lang>
     <contributors_enabled>false</contributors_enabled>
     <follow_request_sent>false</follow_request_sent>
-    <listed_count>217</listed_count>
+    <listed_count>6</listed_count>
     <show_all_inline_media>false</show_all_inline_media>
     <default_profile>false</default_profile>
     <default_profile_image>false</default_profile_image>
@@ -52,5 +52,23 @@
   <geo/>
   <coordinates/>
   <place/>
+  <possibly_sensitive>false</possibly_sensitive>
   <contributors/>
+  <entities>
+    <user_mentions>
+      <user_mention end="65" start="57">
+        <id>10228272</id>
+        <screen_name>YouTube</screen_name>
+        <name>YouTube</name>
+      </user_mention>
+    </user_mentions>
+    <urls>
+      <url end="52" start="32">
+        <url>http://t.co/wnobaUTk</url>
+        <display_url>youtu.be/3cz6bEkdX4Q</display_url>
+        <expanded_url>http://youtu.be/3cz6bEkdX4Q</expanded_url>
+      </url>
+    </urls>
+    <hashtags/>
+  </entities>
 </status>
