@@ -90,7 +90,7 @@ type ``Given empty urls database`` () =
         let readStatus = db.ReadStatusWithId(retweet.StatusId)
         
         readStatus.IsSome |> should be True
-        readStatus.Value.Status.Text |> should equal "Happening now - September 29th the Streaming API is turning SSL only - http://t.co/mlBeUUSQ"
+        readStatus.Value.Status.Text |> should equal "Windows Phone 8 Apollo: Windows 8 kernel, more form factors. The Windows 8 family is getting complicated. http://t.co/R0e3s9QV"
         
     [<Test>] 
     member test.``Store status from search then from timeline then should be stored as from timeline`` () =

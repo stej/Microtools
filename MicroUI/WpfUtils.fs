@@ -14,7 +14,7 @@ open Utils
 open TextSplitter
 open ShortenerDbInterface
 
-let mutable (urlResolver : UrlResolver.UrlResolver) = (Array.zeroCreate 1).[0]
+let mutable (urlResolver : UrlResolver.UrlResolver) = (Array.zeroCreate 1).[0] // omg trick from http://cs.hubfs.net/topic/None/57408
 type FilterInfo = {
     Filtered : bool
     HasUnfilteredDescendant : bool
