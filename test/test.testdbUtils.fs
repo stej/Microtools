@@ -35,6 +35,7 @@ module testUrlsDbUtils =
     let dbPath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "urls.db")
 
     let getDbObject() = 
+        printfn "Returning new urls db state, path: %s" dbPath
         new UrlsDbState(dbPath)
     let dbInterface() =
         getDbObject() :> ShortenerDbInterface.IShortUrlsDatabase

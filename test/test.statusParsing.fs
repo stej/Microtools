@@ -52,30 +52,29 @@ type ``Given retweet xml document`` ()=
         let s = xml2Retweet (xml.SelectSingleNode("status"))
         //printfn "status %A" s
         s |> should not (equal None)
-        s.Value.StatusId |> should equal 119514078736695298L
-        s.Value.Text     |> should equal "Happening now - September 29th the Streaming API is turning SSL only - http://t.co/mlBeUUSQ"
-        s.Value.UserName |> should equal "sitestreams"
-        s.Value.Date     |> should equal (System.DateTime.Parse("2011-09-29 20:49:11"))
+        s.Value.StatusId |> should equal 165203029522513920L
+        s.Value.Text     |> should equal "Windows Phone 8 Apollo: Windows 8 kernel, more form factors. The Windows 8 family is getting complicated. http://t.co/R0e3s9QV"
+        s.Value.UserName |> should equal "timanderson"
+        s.Value.Date     |> should equal (System.DateTime.Parse("2012-02-02 22:40:46"))
         s.Value.UserFavoritesCount |> should equal 0
-        s.Value.UserStatusesCount |> should equal 150
+        s.Value.UserStatusesCount |> should equal 7774
         
         s.Value.RetweetInfo |> should not (equal None)
         let retweet = s.Value.RetweetInfo.Value
-        retweet.UserName           |> should equal "twitterapi"
-        retweet.UserFavoritesCount |> should equal 22
-        retweet.UserStatusesCount  |> should equal 3119
+        retweet.UserName           |> should equal "slavof"
+        retweet.UserFavoritesCount |> should equal 1
+        retweet.UserStatusesCount  |> should equal 1408
 
     [<Test>]
     member test.``parse url entity`` () =
-        failwith "not implemented yet"
         let node = xml.SelectSingleNode("status")
-        let sInfo = { Status = (xml2Status node).Value
+        let sInfo = { Status = (xml2Retweet node).Value
                       Children = new ResizeArray<_>()
                       Source = Timeline }
         let urls = ExtraProcessors.Url.extractEntities sInfo node |> Seq.toList
         urls.Length |> should equal 1
-        urls.[0].LongUrl  |> should equal "http://youtu.be/3cz6bEkdX4Q"
-        urls.[0].ShortUrl |> should equal "http://t.co/wnobaUTk"
+        urls.[0].LongUrl  |> should equal "http://bit.ly/yVaHSH"
+        urls.[0].ShortUrl |> should equal "http://t.co/R0e3s9QV"
         urls.[0].StatusId |> should equal (sInfo.StatusId())
 
 [<TestFixture>] 

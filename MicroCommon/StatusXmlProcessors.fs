@@ -97,12 +97,15 @@ module ExtraProcessors =
             { ShortUrl = xpathValue "url" xml
               LongUrl = xpathValue "expanded_url" xml
               Date = DateTime.Now
-              StatusId = sInfo.Status.StatusId }
+              StatusId = sInfo.Status.StatusId 
+              Complete = false}
         let extractEntities (sInfo:statusInfo) (xml:XmlNode) =
-            xpathNodes "entities/urls/url" xml
+            let xpath = if sInfo.IsRetweet() then "retweeted_status/entities/urls/url"
+                        else "entities/urls/url"
+            xpathNodes xpath xml
             |> Seq.map (parseUrlEntity sInfo)
         let storeEntities entities =
-            entities |> Seq.iter urlsAccess.SaveUrl
+            entities |> Seq.iter urlsAccess.SaveIncompleteUrl
         let ParseShortUrlsAndStore (sInfo:statusInfo) (xml:XmlNode) =
             extractEntities sInfo xml |> storeEntities
 

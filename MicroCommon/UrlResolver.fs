@@ -1,4 +1,4 @@
-﻿module UrlExpander
+﻿module UrlResolver
 
 open System
 open UrlShortenerFunctions
@@ -8,25 +8,37 @@ type UrlShortenerMessages =
 | ResolveUrl of string * int64 * AsyncReplyChannel<string>
 | ResolveUrlFromCache of string * AsyncReplyChannel<string option>
 
-type UrlExpander() =
+type UrlResolver(db:ShortenerDbInterface.IShortUrlsDatabase) =
     /// Tries to get the long url from web and then save if it makes sense.
     /// If not successful, returns None
-    let tryTranslate shortUrl statusId =
+    let tryTranslateNew shortUrl statusId =
         match UrlShortenerFunctions.extract shortUrl with
         | NotNeeded(_) -> Some(shortUrl)
         | Failed       -> None
-        | Extracted(u) -> ShortenerDbInterface.urlsAccess.SaveUrl(
+        | Extracted(u) -> db.SaveUrl(
                             { ShortUrl = shortUrl
                               LongUrl = u
                               Date = DateTime.Now
-                              StatusId = statusId })
+                              StatusId = statusId
+                              Complete = true })
+                          Some(u)
+    let tryExpandIncomlete (urlInfo:ShortenerDbInterface.ShortUrlInfo) =
+        printfn "Trying to expand incomplete: %s / %s" urlInfo.ShortUrl urlInfo.LongUrl
+        match UrlShortenerFunctions.extract urlInfo.LongUrl with
+        | NotNeeded(u) -> db.SetComplete(urlInfo.ShortUrl)
+                          Some(u)
+        | Failed       -> None
+        | Extracted(u) -> db.UpdateExtracted(urlInfo.ShortUrl, u)
                           Some(u)
 
     /// Expands the url. First from db, then via downloading from web
     let loadOrDownload shortUrl statusId =
-        match ShortenerDbInterface.urlsAccess.TranslateUrl(shortUrl) with
-        | Some(res) -> Some(res.LongUrl)
-        | None      -> tryTranslate shortUrl statusId
+        match db.TranslateUrl(shortUrl) with
+        | Some(res) ->
+            if res.Complete then Some(res.LongUrl)
+            else tryExpandIncomlete res
+        | None ->
+            tryTranslateNew shortUrl statusId
     let mbox = 
         MailboxProcessor.Start(fun mbox ->
             let rec loop memoryCache = async {
@@ -58,5 +70,3 @@ type UrlExpander() =
 
     member x.AsyncResolveUrl(shortUrl, statusId) = mbox.PostAndAsyncReply(fun reply -> ResolveUrl(shortUrl, statusId, reply))
     member x.AsyncResolveUrlFromCache(shortUrl) = mbox.PostAndAsyncReply(fun reply -> ResolveUrlFromCache(shortUrl, reply))
-
-let urlExpander = new UrlExpander()

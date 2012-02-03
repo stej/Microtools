@@ -58,6 +58,7 @@ filterCtl.Text <- "#f:"+StatusFilter.defaultConfigFilter
 DbInterface.dbAccess <- StatusDb.statusesDb
 ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
 ExtraProcessors.Processors <- [ExtraProcessors.Url.ParseShortUrlsAndStore]
+WpfUtils.urlResolver <- new UrlResolver.UrlResolver(ShortenerDbInterface.urlsAccess)
 
 let getCurrentUISettings() = 
     let filterText = ref ""

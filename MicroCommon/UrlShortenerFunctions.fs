@@ -9,6 +9,11 @@ type ExtractedUrlsType =
     | Extracted of string
     | NotNeeded of string
     | Failed
+let private ExtractedToString item =
+    match item with
+    | Extracted(s) -> sprintf "Extracted '%s'" s
+    | NotNeeded(s) -> sprintf "Not needed '%s'" s
+    | Failed -> "Failed"
 
 let private textFromResponse (response:WebResponse option) =
     match response with
@@ -90,7 +95,7 @@ let extract (url:string) =
 
     if Regex.IsMatch(url, regex) then
         let ret = _extract url
-        linfop2 "Expanded {0} to {1}" url ret
+        linfop2 "Expanded {0} to {1}" url (ExtractedToString ret)
         ret
     else
         NotNeeded(url)

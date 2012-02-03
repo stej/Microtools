@@ -1,125 +1,120 @@
 <status>
-  <created_at>Thu Sep 29 20:58:52 +0000 2011</created_at>
-  <id>119516516159991810</id>
-  <text>RT @sitestreams: Happening now - September 29th the Streaming API is turning SSL only - http://t.co/mlBeUUSQ</text>
-  <source>web</source>
-  <truncated>false</truncated>
+  <created_at>Thu Feb 02 22:46:52 +0000 2012</created_at>
+  <id>165204566999175169</id>
+  <text>RT @timanderson: Windows Phone 8 &#8220;Apollo&#8221;: Windows 8 kernel, more form factors. The Windows 8 family is getting complicated. http://t.co ...</text>
+  <source>&lt;a href=&quot;http://www.metrotwit.com/&quot; rel=&quot;nofollow&quot;&gt;MetroTwit&lt;/a&gt;</source>
+  <truncated>true</truncated>
   <favorited>false</favorited>
   <in_reply_to_status_id></in_reply_to_status_id>
   <in_reply_to_user_id></in_reply_to_user_id>
   <in_reply_to_screen_name></in_reply_to_screen_name>
-  <retweet_count>25</retweet_count>
+  <retweet_count>2</retweet_count>
   <retweeted>false</retweeted>
   <retweeted_status>
-    <created_at>Thu Sep 29 20:49:11 +0000 2011</created_at>
-    <id>119514078736695298</id>
-    <text>Happening now - September 29th the Streaming API is turning SSL only - http://t.co/mlBeUUSQ</text>
-    <source>web</source>
+    <created_at>Thu Feb 02 22:40:46 +0000 2012</created_at>
+    <id>165203029522513920</id>
+    <text>Windows Phone 8 Apollo: Windows 8 kernel, more form factors. The Windows 8 family is getting complicated. http://t.co/R0e3s9QV</text>
+    <source>&lt;a href=&quot;http://www.twhirl.org&quot; rel=&quot;nofollow&quot;&gt;Seesmic twhirl&lt;/a&gt;</source>
     <truncated>false</truncated>
     <favorited>false</favorited>
     <in_reply_to_status_id></in_reply_to_status_id>
     <in_reply_to_user_id></in_reply_to_user_id>
     <in_reply_to_screen_name></in_reply_to_screen_name>
-    <retweet_count>25</retweet_count>
+    <retweet_count>2</retweet_count>
     <retweeted>false</retweeted>
     <user>
-      <id>183709371</id>
-      <name>Site Streams Beta</name>
-      <screen_name>sitestreams</screen_name>
-      <location>San Francisco, CA</location>
-      <description>Twitter Site Streams Beta Announcements. When reporting an issue, include account &amp; UTC. You may DM critical outages.</description>
-      <profile_image_url>http://a1.twimg.com/profile_images/1112022529/api_normal.png</profile_image_url>
-      <profile_image_url_https>https://si0.twimg.com/profile_images/1112022529/api_normal.png</profile_image_url_https>
-      <url>http://twitter.com</url>
+      <id>14320600</id>
+      <name>Tim Anderson</name>
+      <screen_name>timanderson</screen_name>
+      <location>UK</location>
+      <description>Tech journalist, freelance</description>
+      <profile_image_url>http://a3.twimg.com/profile_images/52966087/timanderson_small_normal.png</profile_image_url>
+      <profile_image_url_https>https://si0.twimg.com/profile_images/52966087/timanderson_small_normal.png</profile_image_url_https>
+      <url>http://www.itwriting.com/blog</url>
       <protected>false</protected>
-      <followers_count>2456</followers_count>
+      <followers_count>4227</followers_count>
       <profile_background_color>C0DEED</profile_background_color>
       <profile_text_color>333333</profile_text_color>
       <profile_link_color>0084B4</profile_link_color>
       <profile_sidebar_fill_color>DDEEF6</profile_sidebar_fill_color>
       <profile_sidebar_border_color>C0DEED</profile_sidebar_border_color>
-      <friends_count>1</friends_count>
-      <created_at>Fri Aug 27 18:04:38 +0000 2010</created_at>
+      <friends_count>308</friends_count>
+      <created_at>Mon Apr 07 06:18:13 +0000 2008</created_at>
       <favourites_count>0</favourites_count>
-      <utc_offset></utc_offset>
-      <time_zone></time_zone>
+      <utc_offset>0</utc_offset>
+      <time_zone>London</time_zone>
       <profile_background_image_url>http://a0.twimg.com/images/themes/theme1/bg.png</profile_background_image_url>
       <profile_background_image_url_https>https://si0.twimg.com/images/themes/theme1/bg.png</profile_background_image_url_https>
       <profile_background_tile>false</profile_background_tile>
       <profile_use_background_image>true</profile_use_background_image>
       <notifications>false</notifications>
       <geo_enabled>false</geo_enabled>
-      <verified>true</verified>
+      <verified>false</verified>
       <following>false</following>
-      <statuses_count>150</statuses_count>
+      <statuses_count>7774</statuses_count>
       <lang>en</lang>
-      <contributors_enabled>true</contributors_enabled>
+      <contributors_enabled>false</contributors_enabled>
       <follow_request_sent>false</follow_request_sent>
-      <listed_count>106</listed_count>
+      <listed_count>255</listed_count>
       <show_all_inline_media>false</show_all_inline_media>
       <default_profile>true</default_profile>
       <default_profile_image>false</default_profile_image>
-      <expanded_url></expanded_url>
-      <display_url></display_url>
-      <entities>
-        <user_mentions/>
-        <urls/>
-        <hashtags/>
-      </entities>
       <is_translator>false</is_translator>
     </user>
     <geo/>
     <coordinates/>
     <place/>
     <possibly_sensitive>false</possibly_sensitive>
-    <contributors>
-      <user_id>277378817</user_id>
-    </contributors>
+    <contributors/>
+    <entities>
+      <user_mentions/>
+      <urls>
+        <url end="128" start="108">
+          <url>http://t.co/R0e3s9QV</url>
+          <display_url>bit.ly/yVaHSH</display_url>
+          <expanded_url>http://bit.ly/yVaHSH</expanded_url>
+        </url>
+      </urls>
+      <hashtags/>
+    </entities>
   </retweeted_status>
   <user>
-    <id>6253282</id>
-    <name>Twitter API</name>
-    <screen_name>twitterapi</screen_name>
-    <location>San Francisco, CA</location>
-    <description>The Real Twitter API. I tweet about API changes, service issues and happily answer questions about Twitter and our API. Don't get an answer? It's on my website.</description>
-    <profile_image_url>http://a2.twimg.com/profile_images/1438634086/avatar_normal.png</profile_image_url>
-    <profile_image_url_https>https://si0.twimg.com/profile_images/1438634086/avatar_normal.png</profile_image_url_https>
-    <url>http://dev.twitter.com</url>
+    <id>16432132</id>
+    <name>Slavo Furman</name>
+    <screen_name>slavof</screen_name>
+    <location>Slovakia, Central Europe</location>
+    <description>My name is Slavo Furman. I am a long time windows/.NET/web programmer. ex-MVP ;). I like technology, good wine and good books. </description>
+    <profile_image_url>http://a2.twimg.com/profile_images/1438304521/sf2_normal.png</profile_image_url>
+    <profile_image_url_https>https://si0.twimg.com/profile_images/1438304521/sf2_normal.png</profile_image_url_https>
+    <url></url>
     <protected>false</protected>
-    <followers_count>682491</followers_count>
-    <profile_background_color>e8f2f7</profile_background_color>
-    <profile_text_color>437792</profile_text_color>
-    <profile_link_color>0094C2</profile_link_color>
-    <profile_sidebar_fill_color>a9d9f1</profile_sidebar_fill_color>
-    <profile_sidebar_border_color>0094C2</profile_sidebar_border_color>
-    <friends_count>33</friends_count>
-    <created_at>Wed May 23 06:01:13 +0000 2007</created_at>
-    <favourites_count>22</favourites_count>
-    <utc_offset>-28800</utc_offset>
-    <time_zone>Pacific Time (US &amp; Canada)</time_zone>
-    <profile_background_image_url>http://a2.twimg.com/profile_background_images/229557229/twitterapi-bg.png</profile_background_image_url>
-    <profile_background_image_url_https>https://si0.twimg.com/profile_background_images/229557229/twitterapi-bg.png</profile_background_image_url_https>
+    <followers_count>158</followers_count>
+    <profile_background_color>EBEBEB</profile_background_color>
+    <profile_text_color>333333</profile_text_color>
+    <profile_link_color>990000</profile_link_color>
+    <profile_sidebar_fill_color>F3F3F3</profile_sidebar_fill_color>
+    <profile_sidebar_border_color>DFDFDF</profile_sidebar_border_color>
+    <friends_count>200</friends_count>
+    <created_at>Wed Sep 24 08:25:25 +0000 2008</created_at>
+    <favourites_count>1</favourites_count>
+    <utc_offset>3600</utc_offset>
+    <time_zone>Bratislava</time_zone>
+    <profile_background_image_url>http://a1.twimg.com/images/themes/theme7/bg.gif</profile_background_image_url>
+    <profile_background_image_url_https>https://si0.twimg.com/images/themes/theme7/bg.gif</profile_background_image_url_https>
     <profile_background_tile>false</profile_background_tile>
     <profile_use_background_image>true</profile_use_background_image>
     <notifications>false</notifications>
-    <geo_enabled>true</geo_enabled>
-    <verified>true</verified>
+    <geo_enabled>false</geo_enabled>
+    <verified>false</verified>
     <following>true</following>
-    <statuses_count>3119</statuses_count>
+    <statuses_count>1408</statuses_count>
     <lang>en</lang>
-    <contributors_enabled>true</contributors_enabled>
+    <contributors_enabled>false</contributors_enabled>
     <follow_request_sent>false</follow_request_sent>
-    <listed_count>9350</listed_count>
+    <listed_count>13</listed_count>
     <show_all_inline_media>false</show_all_inline_media>
     <default_profile>false</default_profile>
     <default_profile_image>false</default_profile_image>
-    <expanded_url></expanded_url>
-    <display_url></display_url>
-    <entities>
-      <user_mentions/>
-      <urls/>
-      <hashtags/>
-    </entities>
     <is_translator>false</is_translator>
   </user>
   <geo/>
@@ -127,4 +122,20 @@
   <place/>
   <possibly_sensitive>false</possibly_sensitive>
   <contributors/>
+  <entities>
+    <user_mentions>
+      <user_mention end="15" start="3">
+        <id>14320600</id>
+        <screen_name>timanderson</screen_name>
+        <name>Tim Anderson</name>
+      </user_mention>
+    </user_mentions>
+    <urls>
+      <url end="136" start="125">
+        <url>http://t.co</url>
+        <expanded_url/>
+      </url>
+    </urls>
+    <hashtags/>
+  </entities>
 </status>

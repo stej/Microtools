@@ -85,6 +85,9 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="..\MicroCommon\UrlShortenerFunctions.fs">
       <Link>UrlShortenerFunctions.fs</Link>
     </Compile>
+    <Compile Include="..\MicroCommon\UrlResolver.fs">
+      <Link>UrlResolver.fs</Link>
+    </Compile>
     <Compile Include="..\MicroData\DbCommon.fs">
       <Link>DbCommon.fs</Link>
     </Compile>
@@ -126,6 +129,7 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="test.fparsec.fs" />
     <Compile Include="test.statusFilter.fs" />
     <Compile Include="test.subscriptionsConfig.fs" />
+    <Compile Include="test.urlResolver.fs" />
     <Content Include="testRetweet.xml">
       <Link>testRetweet.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

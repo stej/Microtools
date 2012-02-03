@@ -31,6 +31,7 @@ if (!$runOnly) {
 	"$rootDir\MicroCommon\StatusesReplies.fs" `
 	"$rootDir\MicroCommon\PreviewsState.fs" `
 	"$rootDir\MicroCommon\UrlShortenerFunctions.fs" `
+	"$rootDir\MicroCommon\UrlResolver.fs" `
 	"$rootDir\MicroData\DbCommon.fs" `
 	"$rootDir\MicroData\StatusDb.fs" `
 	"$rootDir\MicroData\UrlDb.fs" `
@@ -53,6 +54,7 @@ if (!$runOnly) {
 	"$rootDir\test\test.testShortenedUrlToDomain.fs" `
 	"$rootDir\test\test.statusFilter.fs" `
 	"$rootDir\test\test.subscriptionsConfig.fs" `
+	"$rootDir\test\test.UrlResolver.fs" `
   --target:library --platform:x86 --out:$res `
   --reference:$rootDir\lib\DevDefined.OAuth.dll `
   --reference:$rootDir\lib\log4net.dll `

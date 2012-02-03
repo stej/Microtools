@@ -14,6 +14,7 @@ open Utils
 open TextSplitter
 open ShortenerDbInterface
 
+let mutable (urlResolver : UrlResolver.UrlResolver) = (Array.zeroCreate 1).[0]
 type FilterInfo = {
     Filtered : bool
     HasUnfilteredDescendant : bool
@@ -27,12 +28,13 @@ and StatusInfoToDisplay =
     }
     member x.ExpandUrls() =
         let expandUrl url =
-            UrlExpander.urlExpander.AsyncResolveUrl(url, x.StatusInfo.StatusId())
+            urlResolver.AsyncResolveUrl(url, x.StatusInfo.StatusId())
         let expand () =
             async { 
-                let expanded = x.TextFragments |> Array.map (fun f -> match f with |FragmentUrl(u) -> let newu = expandUrl u |> Async.RunSynchronously // eh, todo
-                                                                                                      FragmentUrl(newu)
-                                                                                   | x -> x) 
+                let expanded = x.TextFragments 
+                               |> Array.map (fun f -> match f with |FragmentUrl(u) -> let newu = expandUrl u |> Async.RunSynchronously // eh, todo
+                                                                                      FragmentUrl(newu)
+                                                                   | x -> x) 
                 return expanded
             }
 
@@ -295,7 +297,7 @@ let dispatchMessage<'a> (dispatcherOwner:DispatcherObject) fce =
 
 let resolveTextFragmentsFromCache fragments =
     fragments |> Array.map (fun f -> 
-         match f with |FragmentUrl(u) -> let newu = UrlExpander.urlExpander.AsyncResolveUrlFromCache(u) |> Async.RunSynchronously // eh, todo
+         match f with |FragmentUrl(u) -> let newu = urlResolver.AsyncResolveUrlFromCache(u) |> Async.RunSynchronously // eh, todo
                                          match newu with
                                          | Some(longUrl) -> FragmentUrl(longUrl)
                                          | None -> FragmentUrl(u)

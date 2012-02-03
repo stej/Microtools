@@ -29,7 +29,8 @@ type ``Given empty urls database`` () =
         db.SaveUrl({ ShortUrl = "a"
                      LongUrl  = "b"
                      Date     = DateTime.Now
-                     StatusId = 1L})
+                     StatusId = 1L
+                     Complete = false})
         db.TranslateUrl("b").IsNone |> should be True
 
     [<Test>] 
@@ -41,7 +42,8 @@ type ``Given empty urls database`` () =
         db.SaveUrl({ ShortUrl = "a"
                      LongUrl  = "b"
                      Date     = now;
-                     StatusId = 5L })
+                     StatusId = 5L
+                     Complete = true })
 
         let record = db.TranslateUrl("a")
         record.IsSome |> should be True
@@ -49,6 +51,7 @@ type ``Given empty urls database`` () =
         record.Value.LongUrl |> should equal "b"
         record.Value.Date |> should equal now
         record.Value.StatusId |> should equal 5L
+        record.Value.Complete |> should equal true
 
     [<Test>] 
     member test.``Store many urls infos and check that all are stored and have correct translations`` () =
@@ -59,8 +62,9 @@ type ``Given empty urls database`` () =
         [1..100] 
         |> List.map (fun i -> async {  db.SaveUrl({ ShortUrl = ("a"+i.ToString())
                                                     LongUrl  = ("b"+i.ToString())
-                                                    Date     = now;
-                                                    StatusId = 5L }) |> ignore })
+                                                    Date     = now
+                                                    StatusId = 5L
+                                                    Complete = false }) |> ignore })
         |> Async.Parallel
         |> Async.RunSynchronously
         |> ignore
@@ -73,6 +77,7 @@ type ``Given empty urls database`` () =
             record.Value.LongUrl |> should equal ("b"+i.ToString())
             record.Value.Date |> should equal now
             record.Value.StatusId |> should equal 5L
+            record.Value.Complete |> should equal false
         )
 
     (*[<Test>] 
