@@ -246,7 +246,7 @@ let goUp () =
 //   )
 //   |> ignore
 
-let negateShowHide (menuItem:MenuItem) =
+let negateShowHide (menuItem:MenuItem) ()=
     showHiddenStatuses <- not showHiddenStatuses
     menuItem.IsChecked <- showHiddenStatuses
 
@@ -260,25 +260,29 @@ do
      
     let menuShowFiltered = new MenuItem(Header = "Show _filtered", 
                                         IsCheckable = true, 
-                                        ToolTip = "Show/hide filtered items")
-                           |> addMenu
+                                        ToolTip = "Show/hide filtered items")               |> addMenu
     let menuSwitch = new MenuItem(Header = "_Switch", ToolTip = "Switch to list/tree view") |> addMenu
     let menuClear = new MenuItem(Header = "_Clear", ToolTip = "Clear view")                 |> addMenu
     let menuUp = new MenuItem(Header = "Go _up", ToolTip = "Get older statuses")            |> addMenu
-
     let menuShortLinks = new MenuItem(Header = "Short links", 
                                       ToolTip = "Show only part of the link",
-                                      IsCheckable = true)
+                                      IsCheckable = true)                                   |> addMenu
+    let menuTop = new MenuItem(Header = "On top", 
+                                      ToolTip = "Is on top of other windows",
+                                      IsCheckable = true)                                   |> addMenu
     menuShortLinks.IsChecked <- showOnlyLinkPart
     menuShortLinks.Click.Add(fun _ -> showOnlyLinkPart <- not showOnlyLinkPart
-                                      refresh () )
-    addMenu menuShortLinks |> ignore
+                                      refresh ())
+    menuTop.IsChecked <- window.Topmost
 
+    let negateTopmost (menuItem:MenuItem) () = 
+        window.Topmost <- not window.Topmost
+        menuItem.IsChecked <- window.Topmost
     WpfUtils.Commands.bindCommand Key.S (switchPanes>>focusTweets) window menuSwitch
-    WpfUtils.Commands.bindCommand Key.F (fun () -> negateShowHide menuShowFiltered; refresh (); focusTweets()) window menuShowFiltered
-    WpfUtils.Commands.bindCommand Key.C (PreviewsState.userStatusesState.ClearStatuses >> refresh >> focusTweets) window menuClear
+    WpfUtils.Commands.bindCommand Key.F (negateShowHide menuShowFiltered>>refresh>>focusTweets) window menuShowFiltered
+    WpfUtils.Commands.bindCommand Key.C (PreviewsState.userStatusesState.ClearStatuses>>refresh>>focusTweets) window menuClear
     WpfUtils.Commands.bindCommand Key.U (goUp>>focusTweets) window menuUp
-    WpfUtils.Commands.bindCommand Key.T (fun () -> window.Topmost <- not window.Topmost;focusTweets()) window null
+    WpfUtils.Commands.bindCommand Key.T (negateTopmost menuTop>>focusTweets) window menuTop
     WpfUtils.Commands.bindClick MouseAction.LeftDoubleClick (switchPanes>>focusTweets) window null
 
 [<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]

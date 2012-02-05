@@ -4,7 +4,7 @@
   Title="Twitter client"
   Width="780"
   Height="400"
-  Topmost="true"
+  Topmost="false"
 >
   <DockPanel LastChildFill="true">
     <DockPanel LastChildFill="true"
