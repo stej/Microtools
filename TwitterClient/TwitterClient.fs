@@ -284,6 +284,8 @@ do
     WpfUtils.Commands.bindCommand Key.U (goUp>>focusTweets) window menuUp
     WpfUtils.Commands.bindCommand Key.T (negateTopmost menuTop>>focusTweets) window menuTop
     WpfUtils.Commands.bindClick MouseAction.LeftDoubleClick (switchPanes>>focusTweets) window null
+    WpfUtils.Commands.bindCommand Key.Add (WpfUtils.UISize.zoomIn>>refresh>>focusTweets) window null
+    WpfUtils.Commands.bindCommand Key.Subtract (WpfUtils.UISize.zoomOut>>refresh>>focusTweets) window null
 
 [<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]
 [<assembly: System.Runtime.InteropServices.Guid("b607f47b-df94-4c4c-a7ff-1a182bf8d8bb3")>]

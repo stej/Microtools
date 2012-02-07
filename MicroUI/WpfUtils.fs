@@ -54,13 +54,30 @@ type ConversationFace = {
 }
 type ConversationSource = ConversationFace * StatusInfoToDisplay
 
-let (fontSize, pictureSize) = 
-    let s = match Settings.Size with
-            | "big" -> (14., 48.)
-            | "medium" -> (13., 40.)
-            | _ -> (12., 30.)
-    linfop "UI size is {0}" s
-    s
+module UISize = 
+    let private sizes = [2, (14., 48.);
+                 1, (13., 40.);
+                 0, (12., 30.);
+                 -1, (10., 20.)] |> Map.ofList
+    let mutable private currentSize = 
+        match Settings.Size with
+        | "big" -> 2
+        | "medium" -> 1
+        | "small" -> 0
+        | _ -> -1
+
+    let mutable fontSize, pictureSize = 12., 30.
+    let private fillSizes () = 
+        let a,b = sizes.[currentSize]
+        fontSize <- a
+        pictureSize <- b
+    let zoomIn () =
+        currentSize <- Math.Min(currentSize + 1, 2)
+        fillSizes ()
+    let zoomOut () =
+        currentSize <- Math.Max(currentSize - 1, -1)
+        fillSizes ()
+    fillSizes ()
 
 let private createPicture imagePath size margin = 
     let source = new Imaging.BitmapImage()
@@ -76,7 +93,7 @@ let private createPicture imagePath size margin =
               VerticalAlignment = VerticalAlignment.Top)
               //Stretch <- Media.Stretch.Uniform
 let private createStatusPicture size margin (status:status) = 
-    let pic = createPicture (ImagesSource.getImagePath status) pictureSize margin
+    let pic = createPicture (ImagesSource.getImagePath status) UISize.pictureSize margin
     pic.ToolTip <- new ToolTip(Content = (sprintf "%s %A\n%s" status.UserName (status.Date.ToLocalTime()) status.Text))
     pic
 let private getRetweetImage () =
@@ -128,7 +145,7 @@ let private textFragmentsToTextblock showOnlyDomainInLinks fragments =
     let ret = new TextBlock(TextWrapping = TextWrapping.Wrap,
                             Padding = new Thickness(0.),
                             Margin = new Thickness(5., 0., 0., 5.),
-                            FontSize = fontSize)
+                            FontSize = UISize.fontSize)
     fragments |> textFragmentsToCtls showOnlyDomainInLinks
               |> fillTextBlock ret
     ret
@@ -136,7 +153,7 @@ let private textFragmentsToTextblock showOnlyDomainInLinks fragments =
 let createLittlePicture (previewFace, sDisplayInfo) = 
     let status = sDisplayInfo.StatusInfo.Status
     ldbgp "UI: Little picture for {0}" status
-    let ret = createStatusPicture pictureSize (new Thickness(2.)) status
+    let ret = createStatusPicture UISize.pictureSize (new Thickness(2.)) status
     ret.Opacity <- previewFace.ImageOpacity
     ldbgp "UI: Little picture for {0} done" status
     ret
@@ -181,7 +198,7 @@ let createDetail (conversationSource, sDisplayInfo) =
         | None -> textInformation :> UIElement
         | Some(info) -> wrapTextInfoAndRetweetIcon () :> UIElement
 
-    let imgContent = createStatusPicture pictureSize (new Thickness(5., 0., 0., 5.)) status
+    let imgContent = createStatusPicture UISize.pictureSize (new Thickness(5., 0., 0., 5.)) status
     let img = new Border(BorderBrush = Brushes.LightGray,
                      BorderThickness = new Thickness(0., 0., 0., 0.),
                      CornerRadius = new CornerRadius(2.),
@@ -272,7 +289,7 @@ let updateConversation (controls:conversationControls) (updatedStatuses:Conversa
         let filterInfo = sDisplayInfo.FilterInfo
         let detail, img, textblock = createDetail (conversationSource, sDisplayInfo)
 
-        img.Margin <- new Thickness(float conversationSource.Depth * (pictureSize+2.), 0., 0., 5.)
+        img.Margin <- new Thickness(float conversationSource.Depth * (UISize.pictureSize+2.), 0., 0., 5.)
         detail.Tag <- { UrlResolved = false }
         detail.Opacity <- conversationSource.Opacity
         detail.Background <- conversationSource.BackgroundColor
