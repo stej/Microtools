@@ -51,14 +51,25 @@ let focusTweets() =
     if imagesHolder.Visibility = Visibility.Visible then scrollImages.Focus() |> ignore
     else scrollDetails.Focus() |> ignore
 
+let settings = new ClientSettings.MySettings()
 let mutable showHiddenStatuses = false
 let mutable showOnlyLinkPart = true
 let mutable lastRefresh = DateTime.MinValue
-filterCtl.Text <- "#f:"+StatusFilter.defaultConfigFilter
+filterCtl.Text <- settings.LastFilter
 DbInterface.dbAccess <- StatusDb.statusesDb
 ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
 ExtraProcessors.Processors <- [ExtraProcessors.Url.ParseShortUrlsAndStore]
 WpfUtils.urlResolver <- new UrlResolver.UrlResolver(ShortenerDbInterface.urlsAccess)
+
+twitterLimits.Start()
+
+let fillDetails filter  = DisplayStatus.FilterAwareConversation.fill details filter
+let fillPictures filter =  DisplayStatus.LitlePreview.fill wrap filter
+
+// status downloaded from Twitter
+Twitter.NewStatusDownloaded 
+    |> Event.add (fun sInfo -> DbInterface.dbAccess.SaveStatus(sInfo)
+                               setAppState1 "Saving status {0}" sInfo)
 
 let getCurrentUISettings() = 
     let filterText = ref ""
@@ -74,24 +85,22 @@ let getCurrentUISettings() =
     { ShowOnlyLinkPart = showOnlyLinkPart
       Filter = { ShowHidden = showHiddenStatuses; FilterOutRule = statusFilterer } }
 
-// status downloaded from Twitter
-Twitter.NewStatusDownloaded 
-    |> Event.add (fun sInfo -> DbInterface.dbAccess.SaveStatus(sInfo)
-                               setAppState1 "Saving status {0}" sInfo)
+let setPanelsVisibility () =
+    imagesHolder.Visibility <- match settings.PreviewPanelVisible with 
+                            | true -> Visibility.Visible
+                            | false -> Visibility.Collapsed
+    detailsHolder.Visibility <- match not settings.PreviewPanelVisible with 
+                            | true -> Visibility.Visible
+                            | false -> Visibility.Collapsed
+let switchPanels () =
+    settings.PreviewPanelVisible <- not settings.PreviewPanelVisible
+let setWindowProperties () =
+    window.Topmost <- settings.OnTop
+    window.Top <- settings.WindowTop
+    window.Left <- settings.WindowLeft
+    window.Width <- settings.WindowWidth
+    window.Height <- settings.WindowHeight
 
-twitterLimits.Start()
-
-let fillDetails filter  = DisplayStatus.FilterAwareConversation.fill details filter
-let fillPictures filter =  DisplayStatus.LitlePreview.fill wrap filter
-
-let switchPanes () =
-    if imagesHolder.Visibility = Visibility.Visible then
-      imagesHolder.Visibility <- Visibility.Collapsed
-      detailsHolder.Visibility <- Visibility.Visible
-    else
-      imagesHolder.Visibility <- Visibility.Visible
-      detailsHolder.Visibility <- Visibility.Collapsed
-   
 let controlsCache = new System.Collections.Concurrent.ConcurrentDictionary<Int64, WpfUtils.conversationNodeControlsInfo>()
 let fillCache items = 
     let addToCache (item:WpfUtils.conversationNodeControlsInfo) = 
@@ -205,7 +214,10 @@ window.Loaded.Add(fun _ ->
 (filterCtl.TextChanged :> IObservable<_>)
     .Throttle(TimeSpan.FromMilliseconds(800.))
     .DistinctUntilChanged()
-    .Subscribe(fun _ -> refresh()) |> ignore
+    .Subscribe(fun _ -> 
+        WpfUtils.dispatchMessage limitCtl (fun r -> settings.LastFilter <- filterCtl.Text)
+        refresh()
+    ) |> ignore
 
 let goUp () = 
     async {
@@ -247,8 +259,8 @@ let goUp () =
 //   |> ignore
 
 let negateShowHide (menuItem:MenuItem) ()=
-    showHiddenStatuses <- not showHiddenStatuses
-    menuItem.IsChecked <- showHiddenStatuses
+    settings.ShowFilteredItems <- not settings.ShowFilteredItems
+    menuItem.IsChecked <- settings.ShowFilteredItems
 
 // bind context menu
 do
@@ -273,19 +285,24 @@ do
     menuShortLinks.IsChecked <- showOnlyLinkPart
     menuShortLinks.Click.Add(fun _ -> showOnlyLinkPart <- not showOnlyLinkPart
                                       refresh ())
-    menuTop.IsChecked <- window.Topmost
+    menuTop.IsChecked <- settings.OnTop
+    menuShowFiltered.IsChecked <- settings.ShowFilteredItems
 
     let negateTopmost (menuItem:MenuItem) () = 
-        window.Topmost <- not window.Topmost
-        menuItem.IsChecked <- window.Topmost
-    WpfUtils.Commands.bindCommand Key.S (switchPanes>>focusTweets) window menuSwitch
+        settings.OnTop <- not settings.OnTop
+        window.Topmost <- settings.OnTop
+        menuItem.IsChecked <- settings.OnTop
+    WpfUtils.Commands.bindCommand Key.S (switchPanels>>setPanelsVisibility>>focusTweets) window menuSwitch
     WpfUtils.Commands.bindCommand Key.F (negateShowHide menuShowFiltered>>refresh>>focusTweets) window menuShowFiltered
     WpfUtils.Commands.bindCommand Key.C (PreviewsState.userStatusesState.ClearStatuses>>refresh>>focusTweets) window menuClear
     WpfUtils.Commands.bindCommand Key.U (goUp>>focusTweets) window menuUp
     WpfUtils.Commands.bindCommand Key.T (negateTopmost menuTop>>focusTweets) window menuTop
-    WpfUtils.Commands.bindClick MouseAction.LeftDoubleClick (switchPanes>>focusTweets) window null
+    WpfUtils.Commands.bindClick MouseAction.LeftDoubleClick (switchPanels>>setPanelsVisibility>>focusTweets) window null
     WpfUtils.Commands.bindCommand Key.Add (WpfUtils.UISize.zoomIn>>refresh>>focusTweets) window null
     WpfUtils.Commands.bindCommand Key.Subtract (WpfUtils.UISize.zoomOut>>refresh>>focusTweets) window null
+
+    setPanelsVisibility ()
+    setWindowProperties ()
 
 [<assembly: System.Reflection.AssemblyTitle("TwitterClient")>]
 [<assembly: System.Runtime.InteropServices.Guid("b607f47b-df94-4c4c-a7ff-1a182bf8d8bb3")>]
@@ -297,3 +314,8 @@ do
     linfo (sprintf "%i-%i-%i-%i" ver.Major ver.Minor ver.Build ver.Revision)
     //Updates.update()
     (new Application()).Run(window) |> ignore
+    settings.WindowTop <- window.Top
+    settings.WindowLeft <- window.Left
+    settings.WindowWidth <- window.Width
+    settings.WindowHeight <- window.Height
+    settings.Save()
