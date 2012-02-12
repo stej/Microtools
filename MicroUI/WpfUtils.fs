@@ -15,6 +15,14 @@ open TextSplitter
 open ShortenerDbInterface
 
 let mutable (urlResolver : UrlResolver.UrlResolver) = (Array.zeroCreate 1).[0] // omg trick from http://cs.hubfs.net/topic/None/57408
+type StatusVisibility =
+    /// filter does not affect the status
+    | VisibleByFilter
+    /// filtered out, but it is visible because a child should be displayed
+    | VisibleByChildOtherwiseHidden
+    /// status is too old and was loaded from DB (or web) only to display the child
+    | VisibleByChildButIsTooOld
+    | Hidden
 type FilterInfo = {
     Filtered : bool
     HasUnfilteredDescendant : bool
@@ -24,6 +32,7 @@ and StatusInfoToDisplay =
     {   StatusInfo : statusInfo
         Children : StatusInfoToDisplay list
         FilterInfo : FilterInfo
+        Visibility : StatusVisibility
         mutable TextFragments : TextFragment array
     }
     member x.ExpandUrls() =
@@ -55,10 +64,11 @@ type ConversationFace = {
 type ConversationSource = ConversationFace * StatusInfoToDisplay
 
 module UISize = 
-    let private sizes = [2, (14., 48.);
-                 1, (13., 40.);
-                 0, (12., 30.);
-                 -1, (10., 20.)] |> Map.ofList
+    let private sizes =
+        [2, (14., 48.);
+         1, (13., 40.);
+         0, (12., 30.);
+         -1, (10., 20.)] |> Map.ofList
     let mutable private currentSize = 
         match Settings.Size with
         | "big" -> 2

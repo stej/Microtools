@@ -11,6 +11,7 @@ open ipy
 open TwitterLimits
 open TextSplitter
 open DisplayStatus
+open UIModel
 
 open System.Windows
 open System.Windows.Controls
@@ -19,8 +20,14 @@ open System.Windows.Documents
 
 type public Helpers (window, details:StackPanel, wrapContent:WrapPanel) = 
     let neverFilterer = fun _ -> false
-    let fillDetails  = FullConversation.fill details
-    let fillPictures = LitlePreview.fill wrapContent UISettingsDescriptor.Default
+
+    let fillDetails statuses = 
+        let uiSettings = UIModel.UISettingsDescriptor.Default
+        let toDisplay = UIModel.FilterAwareConversation.GetModel uiSettings statuses
+        DisplayStatus.FilterAwareConversation.fill details uiSettings toDisplay
+    let fillPictures statuses = 
+        let toDisplay = UIModel.LitlePreview.GetModel UIModel.UISettingsDescriptor.Default statuses
+        DisplayStatus.LitlePreview.fill wrapContent toDisplay
 
     member x.loadTree status = StatusesReplies.loadSavedReplyTree status
     member x.show (statuses: statusInfo seq) = 

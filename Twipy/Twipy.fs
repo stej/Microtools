@@ -36,6 +36,7 @@ let mutable setAppState = setAppStateNoAction
 DbInterface.dbAccess <- StatusDb.statusesDb
 ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
 ExtraProcessors.Processors <- [ExtraProcessors.Url.ParseShortUrlsAndStore]
+WpfUtils.urlResolver <- new UrlResolver.UrlResolver(ShortenerDbInterface.urlsAccess)
 twitterLimits.Start()
 
 // events

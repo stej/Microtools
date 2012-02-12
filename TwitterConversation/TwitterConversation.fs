@@ -125,11 +125,11 @@ let bindUpdate (controls:WpfUtils.conversationControls) status =
     )*)
 
 let private addConversationCtlsHelper fn addTo rootStatus =
-    let status = rootStatus.Status
+    let statusInfo2Display = UIModel.FullConversation.GetOneStatusModel rootStatus
     WpfUtils.dispatchMessage window (fun _ -> 
-        let mainCtls, _ = fn addTo panel rootStatus
-        controlsCache.[status.StatusId] <- mainCtls
-        bindUpdate mainCtls status)
+        let mainCtls, _ = fn addTo panel statusInfo2Display
+        controlsCache.[rootStatus.Status.StatusId] <- mainCtls
+        bindUpdate mainCtls rootStatus.Status)
 
 let addConversationCtls addTo rootStatus =
     addConversationCtlsHelper FullConversation.addOne addTo rootStatus
@@ -141,14 +141,16 @@ let addNewlyFoundConversationCtls addTo rootStatus =
 let refreshAfterNewStatsFound newStatuses updatedStatus = 
     let controls = controlsCache.[updatedStatus.Status.StatusId]
     let colorOptions = UIColorsDescriptor.ByNewStatusesAndLastUpdate newStatuses lastUpdateAll
+    let status2Display = UIModel.FullConversation.GetOneStatusModel updatedStatus
     WpfUtils.dispatchMessage controls.Statuses (fun _ ->
-        DisplayStatus.FullConversation.updateOneWithColors colorOptions controls updatedStatus |> ignore
+        DisplayStatus.FullConversation.updateOneWithColors colorOptions controls status2Display |> ignore
     )
 let refreshOneConversation updatedStatus = 
     let controls = controlsCache.[updatedStatus.Status.StatusId]
     let colorOptions = UIColorsDescriptor.ByLastUpdate lastUpdateAll
+    let status2Display = UIModel.FullConversation.GetOneStatusModel updatedStatus
     WpfUtils.dispatchMessage controls.Statuses (fun _ ->
-        DisplayStatus.FullConversation.updateOneWithColors colorOptions controls updatedStatus |> ignore
+        DisplayStatus.FullConversation.updateOneWithColors colorOptions controls status2Display |> ignore
     )
 
 StatusUpdated.Add(fun (controls, updatedStatus) -> refreshOneConversation updatedStatus)

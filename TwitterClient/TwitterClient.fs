@@ -5,6 +5,7 @@ open System.Xml
 open Utils
 open OAuth
 open Status
+open UIModel
 open System.Windows.Threading
 open System.Linq
 open TwitterLimits
@@ -52,7 +53,6 @@ let focusTweets() =
     else scrollDetails.Focus() |> ignore
 
 let settings = new ClientSettings.MySettings()
-let mutable showHiddenStatuses = false
 let mutable showOnlyLinkPart = true
 let mutable lastRefresh = DateTime.MinValue
 filterCtl.Text <- settings.LastFilter
@@ -63,8 +63,14 @@ WpfUtils.urlResolver <- new UrlResolver.UrlResolver(ShortenerDbInterface.urlsAcc
 
 twitterLimits.Start()
 
-let fillDetails filter  = DisplayStatus.FilterAwareConversation.fill details filter
-let fillPictures filter =  DisplayStatus.LitlePreview.fill wrap filter
+let fillDetails uiSettings (statuses: statusInfo list) = 
+    let toDisplay = UIModel.FilterAwareConversation.GetModel uiSettings statuses
+    DisplayStatus.FilterAwareConversation.fill details uiSettings toDisplay
+let fillPictures uiSettings (statuses: statusInfo list) =  
+    let toDisplay = UIModel.LitlePreview.GetModel uiSettings statuses
+    setCount statuses.Length toDisplay
+    setAppStateCount ()
+    DisplayStatus.LitlePreview.fill wrap toDisplay
 
 // status downloaded from Twitter
 Twitter.NewStatusDownloaded 
@@ -83,15 +89,15 @@ let getCurrentUISettings() =
             Brushes.Salmon, fun _ -> false
     WpfUtils.dispatchMessage wrap (fun _ -> filterCtl.Background <- color)
     { ShowOnlyLinkPart = showOnlyLinkPart
-      Filter = { ShowHidden = showHiddenStatuses; FilterOutRule = statusFilterer } }
+      Filter = { ShowHidden = settings.ShowFilteredItems; FilterOutRule = statusFilterer } }
 
 let setPanelsVisibility () =
     imagesHolder.Visibility <- match settings.PreviewPanelVisible with 
-                            | true -> Visibility.Visible
-                            | false -> Visibility.Collapsed
+                               | true -> Visibility.Visible
+                               | false -> Visibility.Collapsed
     detailsHolder.Visibility <- match not settings.PreviewPanelVisible with 
-                            | true -> Visibility.Visible
-                            | false -> Visibility.Collapsed
+                                | true -> Visibility.Visible
+                                | false -> Visibility.Collapsed
 let switchPanels () =
     settings.PreviewPanelVisible <- not settings.PreviewPanelVisible
 let setWindowProperties () =
@@ -152,8 +158,6 @@ let refresh =
                 let uiSettings = getCurrentUISettings()
                 
                 let filterStatusInfos = fillPictures uiSettings list
-                setCount list.Length filterStatusInfos
-                setAppStateCount ()
 
                 let detailsCtls = fillDetails uiSettings trees
                 fillCache detailsCtls

@@ -56,6 +56,7 @@
     <Compile Include="TextSplitter.fs" />
     <Compile Include="ImagesSource.fs" />
     <Compile Include="WpfUtils.fs" />
+    <Compile Include="UIModel.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="DisplayStatus.fs" />
   </ItemGroup>
