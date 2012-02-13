@@ -17,7 +17,9 @@ open ShortenerDbInterface
 let mutable (urlResolver : UrlResolver.UrlResolver) = (Array.zeroCreate 1).[0] // omg trick from http://cs.hubfs.net/topic/None/57408
 type StatusVisibility =
     /// filter does not affect the status
-    | VisibleByFilter
+    | Visible
+    /// filter applies, but user wants to see hidden statuses too
+    | VisibleForced
     /// filtered out, but it is visible because a child should be displayed
     | VisibleByChildOtherwiseHidden
     /// status is too old and was loaded from DB (or web) only to display the child

@@ -10,7 +10,7 @@ open Utils
 open WpfUtils
 open UIModel
 
-let OpacityFiltered, OpacityOld, OpacityVisible = 0.2, 0.5, 1.0
+let OpacityFiltered, OpacityOld, OpacityVisible = 0.3, 0.5, 1.0
 let StatusDefaultBrush, NewStatusBrush, NewlyFoundStatusBrush = Brushes.Transparent, Brushes.Yellow, Brushes.LightSalmon
 
 /// Used in TwitterConversation. Provides info needed to pick one color for status background.
@@ -123,11 +123,12 @@ module FilterAwareConversation =
     
     let private getConversationControlOpacity sDisplayInfo =
         match sDisplayInfo.Visibility with
+        | WpfUtils.Visible -> OpacityVisible
         | WpfUtils.VisibleByChildButIsTooOld -> OpacityOld
-        | WpfUtils.VisibleByFilter -> OpacityVisible
         | WpfUtils.VisibleByChildOtherwiseHidden -> OpacityFiltered
         | WpfUtils.Hidden -> lerrp "Status {0} is taken and opacity examined" sDisplayInfo.StatusInfo
                              OpacityVisible
+        | WpfUtils.VisibleForced -> OpacityFiltered
 
     let fill (details:StackPanel) (settings:UISettingsDescriptor) statusInfos2Display =    
         ldbg "UI: fillDetails"

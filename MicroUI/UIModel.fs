@@ -38,10 +38,6 @@ module internal CommonConversationHelpers =
 //            not sDisplayInfo.FilterInfo.HasUnfilteredDescendant
 
         member x.isStatusVisible (sInfo:statusInfo) (filterInfo: FilterInfo) =
-            let filterHasNoEffectOnStatus = //not (statusIsNotShownDueToFilter sDisplayInfo)
-                showHiddenStatuses ||
-                not filterInfo.Filtered ||
-                filterInfo.HasUnfilteredDescendant
             let isOlderThanFirstRequestedStatus = sInfo.Status.LogicalStatusId < _firstLogicalStatusId
 
             if isOlderThanFirstRequestedStatus then
@@ -53,10 +49,12 @@ module internal CommonConversationHelpers =
                 else
                     Hidden
             else
-                if showHiddenStatuses || not filterInfo.Filtered then
-                    VisibleByFilter
+                if not filterInfo.Filtered then
+                    Visible
                 else if filterInfo.HasUnfilteredDescendant then
                     VisibleByChildOtherwiseHidden
+                else if showHiddenStatuses then
+                    VisibleForced
                 else 
                     Hidden
 
