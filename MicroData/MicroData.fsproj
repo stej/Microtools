@@ -49,7 +49,7 @@
   <ItemGroup>
     <Compile Include="DbCommon.fs" />
     <Compile Include="StatusDb.fs" />
-    <Compile Include="UrlDb.fs" />
+    <Compile Include="MediaDb.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>

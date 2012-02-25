@@ -38,7 +38,7 @@ let continueUpdate = window.FindName("continue") :?> Button
 let cancelUpdate = window.FindName("cancel") :?> Button
 
 DbInterface.dbAccess <- StatusDb.statusesDb
-WpfUtils.urlResolver <- new UrlResolver.UrlResolver(ShortenerDbInterface.urlsAccess)
+WpfUtils.urlResolver <- new UrlResolver.UrlResolver(MediaDbInterface.urlsAccess)
 
 let mutable (lastUpdateAll:DateTime) = DateTime.MinValue
 

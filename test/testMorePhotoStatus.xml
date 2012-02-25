@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<status>
+  <created_at>Mon Feb 20 20:40:00 +0000 2012</created_at>
+  <id>171695616240517121</id>
+  <text>Po&#353;kr&#225;bal m&#283; kapr, tak jsem mu uk&#225;zal, kdo tady m&#225; navrch #koikoku http://t.co/MnyeLFwj</text>
+  <source>web</source>
+  <truncated>false</truncated>
+  <in_reply_to_status_id></in_reply_to_status_id>
+  <in_reply_to_user_id></in_reply_to_user_id>
+  <in_reply_to_screen_name></in_reply_to_screen_name>
+  <possibly_sensitive>false</possibly_sensitive>
+  <user>
+    <id>22200591</id>
+    <name>Pepa &#352;tefan</name>
+    <screen_name>stejcz</screen_name>
+    <location>Olomouc, Czech Republic</location>
+    <description>programov&#225;n&#237; :: fotocen&#237; :: j&#237;dlo :: sp&#225;nek :: &#382;eny :: zp&#283;v</description>
+    <profile_image_url>http://a0.twimg.com/profile_images/613380309/avatarBunny120Square_normal.png</profile_image_url>
+    <profile_image_url_https>https://si0.twimg.com/profile_images/613380309/avatarBunny120Square_normal.png</profile_image_url_https>
+    <url>http://www.leporelo.eu</url>
+    <protected>false</protected>
+    <followers_count>237</followers_count>
+    <profile_background_color>EFDE81</profile_background_color>
+    <profile_text_color>663B12</profile_text_color>
+    <profile_link_color>AE4750</profile_link_color>
+    <profile_sidebar_fill_color>FFEB80</profile_sidebar_fill_color>
+    <profile_sidebar_border_color>20627E</profile_sidebar_border_color>
+    <friends_count>202</friends_count>
+    <created_at>Fri Feb 27 22:34:17 +0000 2009</created_at>
+    <favourites_count>101</favourites_count>
+    <utc_offset>3600</utc_offset>
+    <time_zone>Prague</time_zone>
+    <profile_background_image_url>http://a0.twimg.com/profile_background_images/6885602/avatarBunny-Twitter.png</profile_background_image_url>
+    <profile_background_image_url_https>https://si0.twimg.com/profile_background_images/6885602/avatarBunny-Twitter.png</profile_background_image_url_https>
+    <profile_background_tile>false</profile_background_tile>
+    <profile_use_background_image>true</profile_use_background_image>
+    <geo_enabled>false</geo_enabled>
+    <verified>false</verified>
+    <statuses_count>3084</statuses_count>
+    <lang>en</lang>
+    <contributors_enabled>false</contributors_enabled>
+    <is_translator>false</is_translator>
+    <listed_count>24</listed_count>
+    <show_all_inline_media>false</show_all_inline_media>
+    <default_profile>false</default_profile>
+    <default_profile_image>false</default_profile_image>
+    <following>false</following>
+    <follow_request_sent>false</follow_request_sent>
+    <notifications>false</notifications>
+  </user>
+  <geo/>
+  <coordinates/>
+  <place/>
+  <contributors/>
+  <retweet_count>0</retweet_count>
+  <favorited>false</favorited>
+  <retweeted>false</retweeted>
+  <entities>
+    <user_mentions/>
+    <urls/>
+    <hashtags>
+      <hashtag start="58" end="66">
+        <text>koikoku</text>
+      </hashtag>
+    </hashtags>
+    <media>
+      <creative start="67" end="87">
+        <id>171695616248905728</id>
+        <media_url>http://p.twimg.com/AmH8QNgCAAABtv7.jpg</media_url>
+        <media_url_https>https://p.twimg.com/AmH8QNgCAAABtv7.jpg</media_url_https>
+        <url>http://t.co/MnyeLFwj</url>
+        <display_url>pic.twitter.com/MnyeLFwj</display_url>
+        <expanded_url>http://twitter.com/stejcz/status/171695616240517121/photo/1</expanded_url>
+        <type>photo</type>
+        <sizes>
+          <thumb>
+            <w>150</w>
+            <h>150</h>
+            <resize>crop</resize>
+          </thumb>
+          <medium>
+            <w>600</w>
+            <h>900</h>
+            <resize>fit</resize>
+          </medium>
+          <large>
+            <w>800</w>
+            <h>1200</h>
+            <resize>fit</resize>
+          </large>
+          <small>
+            <w>340</w>
+            <h>510</h>
+            <resize>fit</resize>
+          </small>
+        </sizes>
+      </creative>
+      <creative start="67" end="87">
+        <id>123</id>
+        <media_url>mu</media_url>
+        <media_url_https>https://p.twimg.com/AmH8QNgCAAABtv7.jpg</media_url_https>
+        <url>short</url>
+        <display_url>pic.twitter.com/MnyeLFwj</display_url>
+        <expanded_url>expanded</expanded_url>
+        <type>photo</type>
+        <sizes>
+          <thumb>
+            <w>150</w>
+            <h>150</h>
+            <resize>crop</resize>
+          </thumb>
+        </sizes>
+      </creative>
+    </media>
+  </entities>
+</status>

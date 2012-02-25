@@ -3,7 +3,7 @@ open System
 open Status
 open System.Xml
 open Utils
-open ShortenerDbInterface
+open MediaDbInterface
 
 let xml2Status (xml:XmlNode) = 
     ldbgp "Parsing status {0}" (xml.OuterXml)
@@ -104,9 +104,37 @@ module ExtraProcessors =
                         else "entities/urls/url"
             xpathNodes xpath xml
             |> Seq.map (parseUrlEntity sInfo)
-        let storeEntities entities =
+        let private storeEntities entities =
             entities |> Seq.iter urlsAccess.SaveIncompleteUrl
         let ParseShortUrlsAndStore (sInfo:statusInfo) (xml:XmlNode) =
             extractEntities sInfo xml |> storeEntities
+
+    module Photo = 
+        let private parseSizes (photoNode:XmlNode) = 
+            let sizesElements = 
+                xpathNodes "sizes/*" photoNode 
+                |> Seq.map (fun e -> e.Name)
+            let ret = String.Join(",", sizesElements)
+            printfn "photo sizes %s" ret
+            ret
+        let private parsePhotoEntity (sInfo:statusInfo) (xml:XmlNode) =
+            { Id = xpathValue "id" xml
+              ShortUrl = xpathValue "url" xml
+              LongUrl = xpathValue "expanded_url" xml
+              ImageUrl = xpathValue "media_url" xml
+              Date = DateTime.Now
+              StatusId = sInfo.Status.StatusId
+              Sizes = parseSizes xml
+            }
+        let extractEntities (sInfo:statusInfo) (xml:XmlNode) =
+            let xpath = if sInfo.IsRetweet() then "retweeted_status/entities/media/creative"
+                        else "entities/media/creative"
+            printfn "xpath is %s" xpath
+            xpathNodes xpath xml
+            |> Seq.map (parsePhotoEntity sInfo)
+        let private storePhotos photos =
+            photos |> Seq.iter urlsAccess.SavePhoto
+        let ParseShortUrlsAndStore (sInfo:statusInfo) (xml:XmlNode) =
+            extractEntities sInfo xml |> storePhotos
 
     let mutable Processors : (statusInfo -> XmlNode -> unit) list = []

@@ -8,7 +8,7 @@ type UrlShortenerMessages =
 | ResolveUrl of string * int64 * AsyncReplyChannel<string>
 | ResolveUrlFromCache of string * AsyncReplyChannel<string option>
 
-type UrlResolver(db:ShortenerDbInterface.IShortUrlsDatabase) =
+type UrlResolver(db:MediaDbInterface.IMediaDatabase) =
     /// Tries to get the long url from web and then save if it makes sense.
     /// If not successful, returns None
     let tryTranslateNew shortUrl statusId =
@@ -22,7 +22,7 @@ type UrlResolver(db:ShortenerDbInterface.IShortUrlsDatabase) =
                               StatusId = statusId
                               Complete = true })
                           Some(u)
-    let tryExpandIncomlete (urlInfo:ShortenerDbInterface.ShortUrlInfo) =
+    let tryExpandIncomlete (urlInfo:MediaDbInterface.ShortUrlInfo) =
         printfn "Trying to expand incomplete: %s / %s" urlInfo.ShortUrl urlInfo.LongUrl
         match UrlShortenerFunctions.extract urlInfo.LongUrl with
         | NotNeeded(u) -> db.SetComplete(urlInfo.ShortUrl)

@@ -279,24 +279,24 @@ type StatusesDbState(file) =
             | None ->
                 use cmd = conn.CreateCommand()
                 cmd.CommandText <- "INSERT INTO RetweetInfo(
-                    Id, RetweetId, Date, UserName, UserId, UserProfileImage, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Inserted
-                    ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16)"
-                addCmdParameter cmd "@p1" recordId
-                addCmdParameter cmd "@p2" r.RetweetId
-                addCmdParameter cmd "@p3" r.Date.Ticks
-                addCmdParameter cmd "@p4" r.UserName
-                addCmdParameter cmd "@p5" r.UserId
-                addCmdParameter cmd "@p6" r.UserProfileImage
-                addCmdParameter cmd "@p7" r.UserProtected
-                addCmdParameter cmd "@p8" r.UserFollowersCount
-                addCmdParameter cmd "@p9" r.UserFriendsCount
-                addCmdParameter cmd "@p10" r.UserCreationDate.Ticks
-                addCmdParameter cmd "@p11" r.UserFavoritesCount
-                addCmdParameter cmd "@p12" r.UserOffset
-                addCmdParameter cmd "@p13" r.UserUrl
-                addCmdParameter cmd "@p14" r.UserStatusesCount
-                addCmdParameter cmd "@p15" r.UserIsFollowing
-                addCmdParameter cmd "@p16" DateTime.Now.Ticks
+                    Id, RetweetId, Date, UserName, UserId, UserProfileImage, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Inserted)
+                    VALUES(@pId, @pRetweetId, @pDate, @pUserName, @pUserId, @pUserProfileImage, @pUserProtected, @pUserFollowersCount, @pUserFriendsCount, @pUserCreationDate, @pUserFavoritesCount, @pUserOffset, @pUserUrl, @pUserStatusesCount, @pUserIsFollowing, @pInserted)"
+                addCmdParameter cmd "@pId" recordId
+                addCmdParameter cmd "@pRetweetId" r.RetweetId
+                addCmdParameter cmd "@pDate" r.Date.Ticks
+                addCmdParameter cmd "@pUserName" r.UserName
+                addCmdParameter cmd "@pUserId" r.UserId
+                addCmdParameter cmd "@pUserProfileImage" r.UserProfileImage
+                addCmdParameter cmd "@pUserProtected" r.UserProtected
+                addCmdParameter cmd "@pUserFollowersCount" r.UserFollowersCount
+                addCmdParameter cmd "@pUserFriendsCount" r.UserFriendsCount
+                addCmdParameter cmd "@pUserCreationDate" r.UserCreationDate.Ticks
+                addCmdParameter cmd "@pUserFavoritesCount" r.UserFavoritesCount
+                addCmdParameter cmd "@pUserOffset" r.UserOffset
+                addCmdParameter cmd "@pUserUrl" r.UserUrl
+                addCmdParameter cmd "@pUserStatusesCount" r.UserStatusesCount
+                addCmdParameter cmd "@pUserIsFollowing" r.UserIsFollowing
+                addCmdParameter cmd "@pInserted" DateTime.Now.Ticks
                 cmd.ExecuteNonQuery() |> ignore
             recordId
 
@@ -321,31 +321,31 @@ type StatusesDbState(file) =
                     null
             use cmd = conn.CreateCommand()
             cmd.CommandText <- "INSERT INTO Status(
-                Id, StatusId, App, Account, Text, Date, UserName, UserId, UserProfileImage, ReplyTo, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Source, Inserted, RetweetInfoId, Hidden
-                ) VALUES(@p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23)"
-            addCmdParameter cmd "@p1" (sprintf "%s-%d" s.App s.StatusId)
-            addCmdParameter cmd "@p2" s.StatusId
-            addCmdParameter cmd "@p3" s.App
-            addCmdParameter cmd "@p4" s.Account
-            addCmdParameter cmd "@p5" s.Text
-            addCmdParameter cmd "@p6" s.Date.Ticks
-            addCmdParameter cmd "@p7" s.UserName
-            addCmdParameter cmd "@p8" s.UserId
-            addCmdParameter cmd "@p9" s.UserProfileImage
-            addCmdParameter cmd "@p10" s.ReplyTo
-            addCmdParameter cmd "@p11" s.UserProtected
-            addCmdParameter cmd "@p12" s.UserFollowersCount
-            addCmdParameter cmd "@p13" s.UserFriendsCount
-            addCmdParameter cmd "@p14" s.UserCreationDate.Ticks
-            addCmdParameter cmd "@p15" s.UserFavoritesCount
-            addCmdParameter cmd "@p16" s.UserOffset
-            addCmdParameter cmd "@p17" s.UserUrl
-            addCmdParameter cmd "@p18" s.UserStatusesCount
-            addCmdParameter cmd "@p19" s.UserIsFollowing
-            addCmdParameter cmd "@p20" (StatusSource2Int source)
-            addCmdParameter cmd "@p21" DateTime.Now.Ticks
-            addCmdParameter cmd "@p22" retweetInfoId
-            addCmdParameter cmd "@p23" false    // remove from db
+                Id, StatusId, App, Account, Text, Date, UserName, UserId, UserProfileImage, ReplyTo, UserProtected, UserFollowersCount, UserFriendsCount, UserCreationDate, UserFavoritesCount, UserOffset, UserUrl, UserStatusesCount, UserIsFollowing, Source, Inserted, RetweetInfoId, Hidden)
+                VALUES(@pId, @pStatusId, @pApp, @pAccount, @pText, @pDate, @pUserName, @pUserId, @pUserProfileImage, @pReplyTo, @pUserProtected, @pUserFollowersCount, @pUserFriendsCount, @pUserCreationDate, @pUserFavoritesCount, @pUserOffset, @pUserUrl, @pUserStatusesCount, @pUserIsFollowing, @pSource, @pInserted, @pRetweetInfoId, @pHidden)"
+            addCmdParameter cmd "@pId" (sprintf "%s-%d" s.App s.StatusId)
+            addCmdParameter cmd "@pStatusId" s.StatusId
+            addCmdParameter cmd "@pApp" s.App
+            addCmdParameter cmd "@pAccount" s.Account
+            addCmdParameter cmd "@pText" s.Text
+            addCmdParameter cmd "@pDate" s.Date.Ticks
+            addCmdParameter cmd "@pUserName" s.UserName
+            addCmdParameter cmd "@pUserId" s.UserId
+            addCmdParameter cmd "@pUserProfileImage" s.UserProfileImage
+            addCmdParameter cmd "@pReplyTo" s.ReplyTo
+            addCmdParameter cmd "@pUserProtected" s.UserProtected
+            addCmdParameter cmd "@pUserFollowersCount" s.UserFollowersCount
+            addCmdParameter cmd "@pUserFriendsCount" s.UserFriendsCount
+            addCmdParameter cmd "@pUserCreationDate" s.UserCreationDate.Ticks
+            addCmdParameter cmd "@pUserFavoritesCount" s.UserFavoritesCount
+            addCmdParameter cmd "@pUserOffset" s.UserOffset
+            addCmdParameter cmd "@pUserUrl" s.UserUrl
+            addCmdParameter cmd "@pUserStatusesCount" s.UserStatusesCount
+            addCmdParameter cmd "@pUserIsFollowing" s.UserIsFollowing
+            addCmdParameter cmd "@pSource" (StatusSource2Int source)
+            addCmdParameter cmd "@pInserted" DateTime.Now.Ticks
+            addCmdParameter cmd "@pRetweetInfoId" retweetInfoId
+            addCmdParameter cmd "@pHidden" false    // remove from db
             cmd.ExecuteNonQuery() |> ignore
         useDb file (fun conn ->
             ldbg "Save statuses start"

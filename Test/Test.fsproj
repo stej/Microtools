@@ -61,8 +61,8 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="..\MicroCommon\StatusDbInterface.fs">
       <Link>StatusDbInterface.fs</Link>
     </Compile>
-    <Compile Include="..\MicroCommon\ShortenerDbInterface.fs">
-      <Link>ShortenerDbInterface.fs</Link>
+    <Compile Include="..\MicroCommon\MediaDbInterface.fs">
+      <Link>MediaDbInterface.fs</Link>
     </Compile>
     <Compile Include="..\MicroCommon\StatusXmlProcessors.fs">
       <Link>StatusXmlProcessors.fs</Link>
@@ -94,8 +94,8 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="..\MicroData\StatusDb.fs">
       <Link>StatusDb.fs</Link>
     </Compile>
-    <Compile Include="..\MicroData\UrlDb.fs">
-      <Link>UrlDb.fs</Link>
+    <Compile Include="..\MicroData\MediaDb.fs">
+      <Link>MediaDb.fs</Link>
     </Compile>
     <Compile Include="..\MicroUI\ImagesSource.fs">
       <Link>ImagesSource.fs</Link>
@@ -142,11 +142,17 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
       <Link>statuses.db</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="urls.db">
-      <Link>urls.db</Link>
+    <None Include="packages.config" />
+    <Content Include="testPhotoStatus.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Include="media.db">
+      <Link>media.db</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="packages.config" />
+    <Content Include="testMorePhotoStatus.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="DevDefined.OAuth">

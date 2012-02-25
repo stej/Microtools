@@ -10,10 +10,12 @@ open StatusXmlProcessors
 
 type ``Given status xml document`` ()=
     let xml = new XmlDocument()
+    let xmlWithPhoto = new XmlDocument()
+    let xmlWithTwoPhotos = new XmlDocument()
     do
-      let path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testStatus.xml")
-      printfn "%s" path
-      xml.Load(path)
+      xml.Load(Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testStatus.xml"))
+      xmlWithPhoto.Load(Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testPhotoStatus.xml"))
+      xmlWithTwoPhotos.Load(Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "testMorePhotoStatus.xml"))
 
     [<Test>] 
     member test.``parse status`` () =
@@ -38,6 +40,42 @@ type ``Given status xml document`` ()=
         urls.[0].LongUrl  |> should equal "http://youtu.be/3cz6bEkdX4Q"
         urls.[0].ShortUrl |> should equal "http://t.co/wnobaUTk"
         urls.[0].StatusId |> should equal (sInfo.StatusId())
+
+    [<Test>]
+    member test.``parse photo entity`` () =
+        let node = xmlWithPhoto.SelectSingleNode("status")
+        let sInfo = { Status = (xml2Status node).Value
+                      Children = new ResizeArray<_>()
+                      Source = Timeline }
+        let photos = ExtraProcessors.Photo.extractEntities sInfo node |> Seq.toList
+        photos.Length |> should equal 1
+        photos.[0].Id |> should equal "171695616248905728"
+        photos.[0].ShortUrl |> should equal "http://t.co/MnyeLFwj"
+        photos.[0].LongUrl |> should equal "http://twitter.com/stejcz/status/171695616240517121/photo/1"
+        photos.[0].ImageUrl |> should equal "http://p.twimg.com/AmH8QNgCAAABtv7.jpg"
+        photos.[0].StatusId |> should equal (sInfo.StatusId())
+        photos.[0].Sizes    |> should equal "thumb,medium,large,small"
+
+    [<Test>]
+    member test.``parse more photo entities`` () =
+        let node = xmlWithTwoPhotos.SelectSingleNode("status")
+        let sInfo = { Status = (xml2Status node).Value
+                      Children = new ResizeArray<_>()
+                      Source = Timeline }
+        let photos = ExtraProcessors.Photo.extractEntities sInfo node |> Seq.toList
+        photos.Length |> should equal 2
+        photos.[0].Id |> should equal "171695616248905728"
+        photos.[0].ShortUrl |> should equal "http://t.co/MnyeLFwj"
+        photos.[0].LongUrl |> should equal "http://twitter.com/stejcz/status/171695616240517121/photo/1"
+        photos.[0].ImageUrl |> should equal "http://p.twimg.com/AmH8QNgCAAABtv7.jpg"
+        photos.[0].StatusId |> should equal (sInfo.StatusId())
+        photos.[0].Sizes    |> should equal "thumb,medium,large,small"
+        photos.[1].Id |> should equal "123"
+        photos.[1].ShortUrl |> should equal "short"
+        photos.[1].LongUrl |> should equal "expanded"
+        photos.[1].ImageUrl |> should equal "mu"
+        photos.[1].StatusId |> should equal (sInfo.StatusId())
+        photos.[1].Sizes    |> should equal "thumb"
         
 [<TestFixture>] 
 type ``Given retweet xml document`` ()=

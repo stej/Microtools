@@ -1,12 +1,12 @@
-﻿module UrlDb
+﻿module MediaDb
 
 open System
 open System.Data.SQLite
 open Utils
 open DbCommon
-open ShortenerDbInterface
+open MediaDbInterface
 
-let mutable fileName = "urls.db"
+let mutable fileName = "media.db"
 
 let private readUrl (rd:SQLiteDataReader) =
     { ShortUrl = str rd "ShortUrl"
@@ -16,12 +16,23 @@ let private readUrl (rd:SQLiteDataReader) =
       Complete = bol rd "Complete"
     }
 
-type private UrlsDbMessages =
+let private readPhoto (rd:SQLiteDataReader) =
+    { Id       = str rd "Id"
+      ShortUrl = str rd "ShortUrl"
+      LongUrl  = str rd "LongUrl"
+      ImageUrl = str rd "ImageUrl"
+      Date     = date rd "Date"
+      StatusId = long rd "StatusId"
+      Sizes    = str rd "Sizes"
+    }
+
+type private MediaDbMessages =
 | TranslateUrl of string * AsyncReplyChannel<ShortUrlInfo option>
 | SaveUrl of ShortUrlInfo
 | GetUrlsFromSql of string * AsyncReplyChannel<ShortUrlInfo list>
 | SetComplete of string 
 | UpdateExtracted of string * string
+| SavePhoto of PhotoInfo
 
 type UrlsDbState(file) =
     let translateUrl (shortUrl:string) = 
@@ -76,6 +87,22 @@ type UrlsDbState(file) =
             addCmdParameter cmd "@p1" shortUrl
             cmd.ExecuteNonQuery() |> ignore
         )
+    let savePhoto (photoInfo:PhotoInfo) =
+        printfn "Store %s->%s (%d) at %A" photoInfo.ShortUrl photoInfo.ImageUrl photoInfo.StatusId photoInfo.Date
+        useDb file (fun conn ->
+            use cmd = conn.CreateCommand(CommandText = 
+                "INSERT INTO Photo(Id, ShortUrl, LongUrl, ImageUrl, Date, StatusId, Sizes) 
+                VALUES(@pId, @pShortUrl, @pLongUrl, @pImageUrl, @pDate, @pStatusId, @pSizes)"
+            )
+            addCmdParameter cmd "@pId" photoInfo.Id
+            addCmdParameter cmd "@pShortUrl" photoInfo.ShortUrl
+            addCmdParameter cmd "@pLongUrl" photoInfo.LongUrl
+            addCmdParameter cmd "@pImageUrl" photoInfo.ImageUrl
+            addCmdParameter cmd "@pDate" photoInfo.Date.Ticks
+            addCmdParameter cmd "@pStatusId" photoInfo.StatusId
+            addCmdParameter cmd "@pSizes" photoInfo.Sizes
+            cmd.ExecuteNonQuery() |> ignore
+        )
     let mbox = MailboxProcessor.Start(fun mbox ->
             printfn "starting urls db"
             let rec loop() = async {
@@ -97,6 +124,9 @@ type UrlsDbState(file) =
                 | UpdateExtracted(shortUrl, longUrl) ->
                     updateExtracted shortUrl longUrl
                     return! loop()
+                | SavePhoto(photoInfo) ->
+                    savePhoto photoInfo
+                    return! loop()
             }
             ldbg "Starting url db"
             loop()
@@ -107,11 +137,12 @@ type UrlsDbState(file) =
 
     member x.GetUrlsFromSql(sql) = mbox.PostAndReply(fun reply -> GetUrlsFromSql(sql, reply))
 
-    interface ShortenerDbInterface.IShortUrlsDatabase with
+    interface MediaDbInterface.IMediaDatabase with
         member x.TranslateUrl(shortUrl) = mbox.PostAndReply(fun reply -> TranslateUrl(shortUrl, reply))
         member x.SaveUrl(info) = mbox.Post(SaveUrl(info))
         member x.SaveIncompleteUrl(info) = mbox.Post(SaveUrl({info with Complete = false}))
         member x.SetComplete(shortUrl) = mbox.Post(SetComplete(shortUrl))
         member x.UpdateExtracted(shortUrl, longUrl) = mbox.Post(UpdateExtracted(shortUrl, longUrl))
+        member x.SavePhoto(info) = mbox.Post(SavePhoto(info))
 
 let urlsDb = new UrlsDbState(fileName)

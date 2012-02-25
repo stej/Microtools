@@ -34,9 +34,9 @@ let setAppStateShowInUI state = WpfUtils.dispatchMessage appStateCtl (fun _ -> a
 let mutable setAppState = setAppStateNoAction
 
 DbInterface.dbAccess <- StatusDb.statusesDb
-ShortenerDbInterface.urlsAccess <- UrlDb.urlsDb
-ExtraProcessors.Processors <- [ExtraProcessors.Url.ParseShortUrlsAndStore]
-WpfUtils.urlResolver <- new UrlResolver.UrlResolver(ShortenerDbInterface.urlsAccess)
+MediaDbInterface.urlsAccess <- MediaDb.urlsDb
+ExtraProcessors.Processors <- [ExtraProcessors.Url.ParseShortUrlsAndStore; ExtraProcessors.Photo.ParseShortUrlsAndStore]
+WpfUtils.urlResolver <- new UrlResolver.UrlResolver(MediaDbInterface.urlsAccess)
 twitterLimits.Start()
 
 // events
@@ -50,7 +50,7 @@ let newScope() =
     values.["db"]   <- (StatusDb.statusesDb :> obj)
     values.["limits"] <- (twitterLimits :> obj)
     values.["h"]    <- (ScriptingHelpers.Helpers(window, details, wrapContent) :> obj)
-    values.["urls"] <- (UrlDb.urlsDb :> obj)
+    values.["urls"] <- (MediaDb.urlsDb :> obj)
     createScope values
 let scope = ref (newScope())
 

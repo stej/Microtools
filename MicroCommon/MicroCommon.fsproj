@@ -60,7 +60,7 @@
     <Compile Include="Utils.fs" />
     <Compile Include="Status.fs" />
     <Compile Include="StatusDbInterface.fs" />
-    <Compile Include="ShortenerDbInterface.fs" />
+    <Compile Include="MediaDbInterface.fs" />
     <Compile Include="StatusFilter.fs" />
     <Compile Include="StatusFunctions.fs" />
     <Compile Include="OAuth.fs" />

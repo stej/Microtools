@@ -4,7 +4,7 @@ open System.Xml
 open System.IO
 open StatusXmlProcessors
 open StatusDb
-open UrlDb
+open MediaDb
 open DbCommon
 
 module testStatusesDbUtils =
@@ -32,13 +32,13 @@ module testUrlsDbUtils =
     open StatusDb
     open DbCommon
 
-    let dbPath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "urls.db")
+    let dbPath = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "media.db")
 
     let getDbObject() = 
         printfn "Returning new urls db state, path: %s" dbPath
         new UrlsDbState(dbPath)
     let dbInterface() =
-        getDbObject() :> ShortenerDbInterface.IShortUrlsDatabase
+        getDbObject() :> MediaDbInterface.IMediaDatabase
     let deleteDbContent() =
         useDb dbPath (fun conn ->
             use cmd = conn.CreateCommand(CommandText = "delete from UrlTranslation;")
