@@ -120,6 +120,7 @@ type StatusesDbMessages =
 | SaveStatus of statusInfo
 | SaveStatuses of statusInfo list
 | DeleteStatus of statusInfo * AsyncReplyChannel<Int64>
+| FindStatuses of (string*string*string) list * AsyncReplyChannel<statusInfo seq>
 
 type StatusesDbState(file) =
     let checkLastIdRowExists (conn:SQLiteConnection) rowName =
@@ -224,7 +225,7 @@ type StatusesDbState(file) =
             cmd.CommandText <- "Select s.*,  
                                     case when s.RetweetInfoid is null then s.StatusId else r.RetweetId end as LogicalstatusId
                                     from Status s 
-                                    left join REtweetInfo r on s.RetweetInfoId=r.Id 
+                                    left join RetweetInfo r on s.RetweetInfoId=r.Id 
                                     where LogicalstatusId < @p1 and 
                                         (source = @p2 or source = @p3) 
                                     order by LogicalstatusId desc 
@@ -242,6 +243,22 @@ type StatusesDbState(file) =
             cmd.CommandText <- sql
             executeSelectStatuses cmd |> List.map ((addRetweetInfo conn) >> dbStatus2statusInfo)
         )
+    let findStatuses (conditions: (string*string*string) list) =
+        ldbgp "findSTatuses {0}" conditions
+        if conditions.IsEmpty then
+            []
+        else
+            useDb file (fun conn ->
+                use cmd = conn.CreateCommand()
+                let where = String.Join(" and ", (conditions |> List.map (fun (a,_,_)->a)))
+                cmd.CommandText <- "select * from Status where Source in (@sourceTimeline, @sourceRetw, @sourceReqConv) and " + where
+                for (cond, value,par) in conditions do
+                    addCmdParameter cmd par value
+                addCmdParameter cmd "@sourceTimeline" (StatusSource2Int Status.Timeline)
+                addCmdParameter cmd "@sourceRetw" (StatusSource2Int Status.Retweet)
+                addCmdParameter cmd "@sourceReqConv" (StatusSource2Int Status.RequestedConversation)
+                executeSelectStatuses cmd |> List.map ((addRetweetInfo conn) >> dbStatus2statusInfo)
+            )
     let updateStatusSource source (status:status) =
         useDb file (fun conn ->
             use cmd = conn.CreateCommand(CommandText = "update Status set source = @p0 where StatusId = @p1")
@@ -442,6 +459,9 @@ type StatusesDbState(file) =
                 | GetStatusesFromSql(sql, chnl) ->
                     chnl.Reply(getStatusesFromSql(sql))
                     return! loop()
+                | FindStatuses(conditions, chnl) ->
+                    chnl.Reply(findStatuses(conditions))
+                    return! loop()
                  }
             ldbg "Starting status db"
             loop()
@@ -479,5 +499,7 @@ type StatusesDbState(file) =
         member x.UpdateLastListItemId(listId, status) = mbox.Post(UpdateLastListItemId(listId, status))
 
         member x.ReadStatusReplies(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusReplies(id, reply))
+
+        member x.Find(conditions) = mbox.PostAndReply(fun reply -> FindStatuses(conditions, reply))
 
 let statusesDb = new StatusesDbState(fileName)

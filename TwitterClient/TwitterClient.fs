@@ -34,6 +34,9 @@ let appStateCtl = window.FindName("appState") :?> TextBlock
 let filterCtl = window.FindName("filter") :?> TextBox
 let scrollDetails = window.FindName("scrollDetails") :?> ScrollViewer
 let scrollImages = window.FindName("scrollImages") :?> ScrollViewer
+let findPanel = window.FindName("findPanel") :?> DockPanel
+let find = window.FindName("find") :?> TextBox
+let clearOnFind = window.FindName("clearOnFind") :?> CheckBox
 //let tweetsWrapper = window.FindName("tweetsWrapper") :?> Panel
 //let contentGrid = window.FindName("content") :?> Panel
 
@@ -106,6 +109,13 @@ let setWindowProperties () =
     window.Left <- settings.WindowLeft
     window.Width <- settings.WindowWidth
     window.Height <- settings.WindowHeight
+let showHideFindPanel () =
+    if findPanel.Visibility = Visibility.Visible then
+        findPanel.Visibility <- Visibility.Collapsed
+        focusTweets()
+    else
+        findPanel.Visibility <- Visibility.Visible
+        find.Focus() |> ignore
 
 let controlsCache = new System.Collections.Concurrent.ConcurrentDictionary<Int64, WpfUtils.conversationNodeControlsInfo>()
 let fillCache items = 
@@ -222,6 +232,25 @@ window.Loaded.Add(fun _ ->
         WpfUtils.dispatchMessage limitCtl (fun r -> settings.LastFilter <- filterCtl.Text)
         refresh()
     ) |> ignore
+find.KeyDown
+    .Where(fun (src:KeyEventArgs) -> src.Key = Key.Enter )
+    .Subscribe(fun _ -> 
+        // start async, because this handler runs on UI thread.. the app would not be responsive
+        // and furthermore some UI state is reported during adding statuses which caused deadlocks..
+        let textToFind = find.Text
+        let clear = clearOnFind.IsChecked.HasValue && clearOnFind.IsChecked.Value
+        async { 
+            UIState.addWorking()
+            setAppStateCount ()
+            TweetsFinder.find textToFind 
+            |> (fun stats -> if clear then PreviewsState.userStatusesState.ClearStatuses ()
+                             stats)
+            |> PreviewsState.userStatusesState.AddStatusesWithoutDownload
+            setAppStateCount ()
+            UIState.addDone()
+            refresh ()
+        } |> Async.Start   
+    ) |> ignore
 
 let goUp () = 
     async {
@@ -274,10 +303,10 @@ do
 
     window.ContextMenu <- new ContextMenu()
      
-    let menuShowFiltered = new MenuItem(Header = "Show _filtered", 
+    let menuShowFiltered = new MenuItem(Header = "Show f_iltered", 
                                         IsCheckable = true, 
                                         ToolTip = "Show/hide filtered items")               |> addMenu
-    let menuSwitch = new MenuItem(Header = "_Switch", ToolTip = "Switch to list/tree view") |> addMenu
+    let menuSwitch = new MenuItem(Header = "Switc_h", ToolTip = "Switch to list/tree view") |> addMenu
     let menuClear = new MenuItem(Header = "_Clear", ToolTip = "Clear view")                 |> addMenu
     let menuUp = new MenuItem(Header = "Go _up", ToolTip = "Get older statuses")            |> addMenu
     let menuShortLinks = new MenuItem(Header = "Short links", 
@@ -296,14 +325,15 @@ do
         settings.OnTop <- not settings.OnTop
         window.Topmost <- settings.OnTop
         menuItem.IsChecked <- settings.OnTop
-    WpfUtils.Commands.bindCommand Key.S (switchPanels>>setPanelsVisibility>>focusTweets) window menuSwitch
-    WpfUtils.Commands.bindCommand Key.F (negateShowHide menuShowFiltered>>refresh>>focusTweets) window menuShowFiltered
+    WpfUtils.Commands.bindCommand Key.H (switchPanels>>setPanelsVisibility>>focusTweets) window menuSwitch
+    WpfUtils.Commands.bindCommand Key.I (negateShowHide menuShowFiltered>>refresh>>focusTweets) window menuShowFiltered
     WpfUtils.Commands.bindCommand Key.C (PreviewsState.userStatusesState.ClearStatuses>>refresh>>focusTweets) window menuClear
     WpfUtils.Commands.bindCommand Key.U (goUp>>focusTweets) window menuUp
     WpfUtils.Commands.bindCommand Key.T (negateTopmost menuTop>>focusTweets) window menuTop
     WpfUtils.Commands.bindClick MouseAction.LeftDoubleClick (switchPanels>>setPanelsVisibility>>focusTweets) window null
     WpfUtils.Commands.bindCommand Key.Add (WpfUtils.UISize.zoomIn>>refresh>>focusTweets) window null
     WpfUtils.Commands.bindCommand Key.Subtract (WpfUtils.UISize.zoomOut>>refresh>>focusTweets) window null
+    WpfUtils.Commands.bindCommand Key.F (showHideFindPanel) window null
 
     setPanelsVisibility ()
     setWindowProperties ()

@@ -13,6 +13,7 @@ type IStatusesDatabase =
     abstract SaveStatuses : statusInfo list -> unit
     abstract SaveStatus: statusInfo -> unit
     abstract ReadStatusReplies: int64 -> statusInfo seq
+    abstract Find : (string*string*string) list -> statusInfo seq    // bad interface description
 
 let mutable dbAccess:IStatusesDatabase = 
     { new IStatusesDatabase with
@@ -26,4 +27,5 @@ let mutable dbAccess:IStatusesDatabase =
         member x.SaveStatuses(_) = failwith "not implemented"
         member x.SaveStatus(_) = failwith "not implemented"
         member x.ReadStatusReplies(_) = failwith "not implemented"
+        member x.Find(_) = failwith "not implemented"
     }

@@ -32,7 +32,7 @@ let private mergeStatusesCollections (collection1:#seq<statusInfo>) (collection2
 ///   the status is added as its child. If the parent is reply itself, the loop continues, until we find a
 ///   conversation root that is added to collection @currInfosWithRoots
 ///   - if any two statuses share the same parent, they are added to the parent's collection; there is no duplication
-let private addAndRootStatuses currInfos currInfosWithRoots (toAdd:seq<statusInfo>) =
+let private addAndRootStatusesCore statusGetter currInfos currInfosWithRoots (toAdd:seq<statusInfo>) =
     let plain = mergeStatusesCollections currInfos toAdd |> Seq.toList
 
     ldbg "Begin create tree"
@@ -44,7 +44,7 @@ let private addAndRootStatuses currInfos currInfosWithRoots (toAdd:seq<statusInf
     ldbg "Begin create tree - rewrite statuses"
 
     // and create tree again
-    let rooted = flattenedTreeMap.Values |> StatusesReplies.rootConversationsWithDownload []
+    let rooted = flattenedTreeMap.Values |> statusGetter []
     ldbg "End create tree"
 
     (plain, rooted)
@@ -56,9 +56,12 @@ let private addAndRootStatuses currInfos currInfosWithRoots (toAdd:seq<statusInf
     = status and the same retweeted status can arrive in any order; the retweeted status has priority
     in the same way Timeline source has biggest priority than others
 *)
+let addAndRootStatuses = addAndRootStatusesCore StatusesReplies.rootConversationsWithDownload
+let addAndRootStatusesNoDownload = addAndRootStatusesCore StatusesReplies.rootConversationsWithNoDownload
   
 type PreviewStateMessages =
 | AddStatuses of statusInfo seq * AsyncReplyChannel<unit>
+| AddStatusesWithoutDownload of statusInfo seq * AsyncReplyChannel<unit>
 | GetStatuses of AsyncReplyChannel<statusInfo list * statusInfo list>
 | GetFirstStatusId of AsyncReplyChannel<Int64 option>
 | ClearStatuses
@@ -71,18 +74,26 @@ type UserStatusesState() =
                 ldbgp "Preview state message: {0}" msg
                 match msg with
                 | AddStatuses(toAdd, chnl) ->
-                    //tady dodelat logiku
                     let newstatuses, newStatusesWithRoots = addAndRootStatuses statuses statusesWithRoots toAdd
                     ldbgp "Added. Count of statuses: {0}" newstatuses.Length
                     chnl.Reply(())
                     return! loop newstatuses newStatusesWithRoots
+
+                | AddStatusesWithoutDownload(toAdd, chnl) ->
+                    let newstatuses, newStatusesWithRoots = addAndRootStatusesNoDownload statuses statusesWithRoots toAdd
+                    ldbgp "Added. Count of statuses: {0}" newstatuses.Length
+                    chnl.Reply(())
+                    return! loop newstatuses newStatusesWithRoots
+
                 | ClearStatuses ->
                     return! loop [] []
+
                 | GetStatuses(chnl) ->
                     // debug - show only conversations
                     //chnl.Reply(statuses |> List.filter(fun s -> s.Children.Count > 0), statusesWithRoots |> List.filter(fun s -> s.Children.Count > 0))
                     chnl.Reply(statuses, statusesWithRoots)
                     return! loop statuses statusesWithRoots
+
                 | GetFirstStatusId(chnl) ->
                     let id = if statuses.Length > 0 then 
                                 let first = Flatten statuses |> Seq.map extractStatus 
@@ -98,6 +109,7 @@ type UserStatusesState() =
     do
         mbox.Error.Add(fun exn -> lerrex exn "Error in previews mailbox")
     member x.AddStatuses(s) = mbox.PostAndReply(fun reply -> AddStatuses(s, reply))
+    member x.AddStatusesWithoutDownload(s) = mbox.PostAndReply(fun reply -> AddStatusesWithoutDownload(s, reply))
     member x.GetStatuses() = mbox.PostAndReply(GetStatuses)
     member x.GetFirstStatusId() = mbox.PostAndReply(GetFirstStatusId)
     member x.ClearStatuses() = mbox.Post(ClearStatuses)

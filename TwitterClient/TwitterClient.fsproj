@@ -45,6 +45,7 @@
     <Compile Include="SubscriptionsConfig.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="UIState.fs" />
+    <Compile Include="TweetsFinder.fs" />
     <Compile Include="TwitterClient.fs" />
     <None Include="App.config" />
     <None Include="TwitterClient.xaml">

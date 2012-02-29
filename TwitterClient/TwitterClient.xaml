@@ -6,16 +6,36 @@
   Height="400"
   Topmost="false"
 >
-  <DockPanel LastChildFill="true">
+   <DockPanel LastChildFill="true">
+    <DockPanel LastChildFill="true"
+        DockPanel.Dock="Bottom"
+        x:Name="findPanel"
+        Visibility="Collapsed">
+      <Label DockPanel.Dock="Left"
+        Padding="0" 
+        Width="40"
+        Margin="5 3 5 0">Find:</Label>
+      <CheckBox Height="15" 
+        DockPanel.Dock="Right"
+        Margin="5 0 5 0" 
+        IsChecked="true"
+        KeyboardNavigation.TabIndex="2"
+        Name="clearOnFind">Clear</CheckBox>
+      <TextBox 
+        KeyboardNavigation.TabIndex="1"
+        x:Name="find"></TextBox>
+    </DockPanel>
     <DockPanel LastChildFill="true"
         DockPanel.Dock="Bottom">
       <Label DockPanel.Dock="Left"
         Padding="0" 
+        Width="40"
         Margin="5 3 5 0">Filter:</Label>
       <TextBox 
         MinLines="1"
         MaxLines="2"
         TextWrapping="Wrap" 
+        KeyboardNavigation.TabIndex="0"
         x:Name="filter"></TextBox>
     </DockPanel>
     <StackPanel
@@ -36,8 +56,7 @@
             x:Name="appState" 
             Height="20"></TextBlock>
     </StackPanel>
-    <!-- strange, ugly, working
-      only one of the borders is visible - what panel should I use? -->
+    <!-- strange, ugly, working only one of the borders is visible - what panel should I use? -->
     <UniformGrid Columns="1" Rows="1">
       <Border   
         BorderThickness="2"
