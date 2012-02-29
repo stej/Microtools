@@ -36,6 +36,7 @@ if (!$runOnly) {
 	"$rootDir\MicroData\StatusDb.fs" `
 	"$rootDir\MicroData\MediaDb.fs" `
 	"$rootDir\MicroUI\ImagesSource.fs" `
+	"$rootDir\MicroUI\TextSplitter.fs" `
 	"$rootDir\Twipy\Cmdline.fs" `
 	"$rootDir\TwitterClient\UIState.fs" `
 	"$rootDir\TwitterClient\SubscriptionsConfig.fs" `
@@ -55,6 +56,9 @@ if (!$runOnly) {
 	"$rootDir\test\test.statusFilter.fs" `
 	"$rootDir\test\test.subscriptionsConfig.fs" `
 	"$rootDir\test\test.UrlResolver.fs" `
+	"$rootDir\test\test.testUrlsDb.fs" `
+	"$rootDir\test\test.textSplitter.fs" `
+	"$rootDir\test\test.bug2.fs" `
   --target:library --platform:x86 --out:$res `
   --reference:$rootDir\lib\DevDefined.OAuth.dll `
   --reference:$rootDir\lib\log4net.dll `
@@ -76,7 +80,7 @@ if ($? -or $runOnly) {
   copy-item $rootDir\test\testPhotoStatus.xml $rootDir\bin -force
   copy-item $rootDir\test\testMorePhotoStatus.xml $rootDir\bin -force
   copy-item $rootDir\statuses.db $rootDir\bin\test.statuses.db -force
-  copy-item $rootDir\urls.db $rootDir\bin\test.urls.db -force
+  copy-item $rootDir\media.db $rootDir\bin\test.media.db -force
   copy-item $rootDir\test\app.config $rootDir\bin\MicroTest.dll.config
   copy-item $rootDir\packages\FParsec.0.9.1\lib\net40\FParsec.dll $rootDir\bin
   copy-item $rootDir\packages\FParsec.0.9.1\lib\net40\FParsecCS.dll $rootDir\bin

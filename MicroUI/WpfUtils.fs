@@ -93,6 +93,9 @@ module UISize =
         fillSizes ()
     fillSizes ()
 
+let private getCorrectUri url =
+    try new Uri(url)
+    with _ -> new Uri("http://localhost")
 let private createPicture imagePath size margin = 
     let source = new Imaging.BitmapImage()
     source.BeginInit();
@@ -120,7 +123,7 @@ let private BrowseHlClick (e:Navigation.RequestNavigateEventArgs) =
 let private linkFromUrl (hyperlinkContentGetter: _ -> string*string*string) fragment =
     let link, text, tooltip = hyperlinkContentGetter fragment
     let hl = new Hyperlink(new Run(text),
-                           NavigateUri = new Uri(link),
+                           NavigateUri = getCorrectUri link,
                            TextDecorations = null,
                            ToolTip = tooltip)
     hl.RequestNavigate.Add(BrowseHlClick)

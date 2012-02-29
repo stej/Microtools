@@ -39,6 +39,14 @@ type ``Given some texts to split`` ()=
         | _                      -> failwith "mention not parsed"
 
     [<Test>] 
+    member test.``Text with t.co link is correctly parsed`` () =
+        let f = TextSplitter.splitText "test http://t.co/abc"
+        f.Length |> should equal 2
+        match f.[1] with
+        | FragmentUrl(w) -> w |> should equal "http://t.co/abc"
+        | _              -> failwith "mention not parsed"
+
+    [<Test>] 
     member test.``Text with all types returns correctly parsed fragments`` () =
         let f = TextSplitter.splitText "user @user1 reported abuse at http://google.com #bug #bugg cc @user2"
         f.Length |> should equal 10

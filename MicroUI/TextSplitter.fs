@@ -8,10 +8,16 @@ type TextFragment =
     | FragmentUserMention of string
     | FragmentHash of string
 
-let private regexUrl = new System.Text.RegularExpressions.Regex(    
-                                "(?<user>@\w+)|" + 
-                                "(?<hash>#\w+)|" +
-                                "(?<url>https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+(?:/?$|[\w\d:#@%/;$()~_?+\-=\\\.&*]*[\w\d:#@%/;$()~_+\-=\\&*]))")
+let regexPattern = @"(?<user>@\w+)|" +
+                   @"(?<hash>#\w+)|" +
+                   @"(?<url>" +
+                      @"https?:(?://|\\\\)+(?:[\w\-]+\.)+[\w]+" +  //http://a.b.c
+                      @"(?:" +
+                           @"(?:\b(?!/)|$|(?=\)))|" +                   // ends with word boundary (and there is no following /), $, or there is following ')'
+                           @"/(?:[\w\d:#@%/;$()~_+\-=\\&*?\.]*"+
+                               @"[\w\d:#@%/;$()~_+\-=\\&*])" + ")" + ")"
+
+let private regexUrl = new System.Text.RegularExpressions.Regex(regexPattern)
 
 let splitText text =
     let getFragment part =

@@ -130,6 +130,7 @@ rem xcopy $(ProjectDir)testStatus.xml $(TargetDir)</PostBuildEvent>
     <Compile Include="test.statusFilter.fs" />
     <Compile Include="test.subscriptionsConfig.fs" />
     <Compile Include="test.urlResolver.fs" />
+    <Compile Include="test.bug2.fs" />
     <Content Include="testRetweet.xml">
       <Link>testRetweet.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
