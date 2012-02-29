@@ -251,7 +251,7 @@ type StatusesDbState(file) =
             useDb file (fun conn ->
                 use cmd = conn.CreateCommand()
                 let where = String.Join(" and ", (conditions |> List.map (fun (a,_,_)->a)))
-                cmd.CommandText <- "select * from Status where Source in (@sourceTimeline, @sourceRetw, @sourceReqConv) and " + where
+                cmd.CommandText <- "select * from Status where Source in (@sourceTimeline, @sourceRetw, @sourceReqConv) and " + where + " order by StatusId desc limit 0,8000"
                 for (cond, value,par) in conditions do
                     addCmdParameter cmd par value
                 addCmdParameter cmd "@sourceTimeline" (StatusSource2Int Status.Timeline)
