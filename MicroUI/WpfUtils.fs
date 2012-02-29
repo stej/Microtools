@@ -67,12 +67,14 @@ type ConversationSource = ConversationFace * StatusInfoToDisplay
 
 module UISize = 
     let private sizes =
-        [2, (14., 48.);
-         1, (13., 40.);
-         0, (12., 30.);
+        [3, (16., 60.)
+         2, (14., 48.)
+         1, (13., 40.)
+         0, (12., 30.)
          -1, (10., 20.)] |> Map.ofList
     let mutable private currentSize = 
         match Settings.Size with
+        | "superbig" -> 3
         | "big" -> 2
         | "medium" -> 1
         | "small" -> 0
@@ -84,7 +86,7 @@ module UISize =
         fontSize <- a
         pictureSize <- b
     let zoomIn () =
-        currentSize <- Math.Min(currentSize + 1, 2)
+        currentSize <- Math.Min(currentSize + 1, 3)
         fillSizes ()
     let zoomOut () =
         currentSize <- Math.Max(currentSize - 1, -1)
@@ -180,7 +182,8 @@ let createDetail (conversationSource, sDisplayInfo) =
         let textInformation = 
             let m = new TextBlock(TextWrapping = TextWrapping.Wrap,
                                   Padding = new Thickness(0.),
-                                  Margin = new Thickness(5., 0., 0., 5.))
+                                  Margin = new Thickness(5., 0., 0., 5.),
+                                  FontSize = (UISize.fontSize-1.))
             let hl userName statusId = 
                   let l = new Hyperlink(new Run(sprintf "%d" (statusId)),
                                         NavigateUri = new Uri(sprintf "http://twitter.com/#!/%s/status/%d" userName statusId))
