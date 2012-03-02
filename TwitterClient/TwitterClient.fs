@@ -199,6 +199,9 @@ window.Loaded.Add(fun _ ->
     setAppState "Loading.."
     let rec asyncloop checkerfce statusesType = 
         async { 
+            while inFindMode do
+                do! Async.Sleep(1000)   // sleep second, don't update in edit mode
+
             UIState.addWorking()
             setAppStateCount ()
 
