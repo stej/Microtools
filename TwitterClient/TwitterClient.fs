@@ -37,11 +37,11 @@ let scrollImages = window.FindName("scrollImages") :?> ScrollViewer
 let findPanel = window.FindName("findPanel") :?> DockPanel
 let find = window.FindName("find") :?> TextBox
 let clearOnFind = window.FindName("clearOnFind") :?> CheckBox
-//let tweetsWrapper = window.FindName("tweetsWrapper") :?> Panel
-//let contentGrid = window.FindName("content") :?> Panel
 
+let runOnUIThread fn =
+    WpfUtils.dispatchMessage window fn
 let setAppState state = 
-    WpfUtils.dispatchMessage appStateCtl (fun _ -> appStateCtl.Text <- state)
+    runOnUIThread (fun _ -> appStateCtl.Text <- state)
 let setAppState1 format p1 = 
     String.Format(format, [|p1|]) |> setAppState
 let setAppState2 (format:string) p1 p2 = 
@@ -58,6 +58,7 @@ let focusTweets() =
 let settings = new ClientSettings.MySettings()
 let mutable showOnlyLinkPart = true
 let mutable lastRefresh = DateTime.MinValue
+let mutable inFindMode = false
 filterCtl.Text <- settings.LastFilter
 DbInterface.dbAccess <- StatusDb.statusesDb
 MediaDbInterface.urlsAccess <- MediaDb.urlsDb
@@ -82,7 +83,7 @@ Twitter.NewStatusDownloaded
 
 let getCurrentUISettings() = 
     let filterText = ref ""
-    WpfUtils.dispatchMessage wrap (fun _ -> filterText := filterCtl.Text)
+    runOnUIThread (fun _ -> filterText := filterCtl.Text)
     let color, statusFilterer = 
         match StatusFilter.getStatusFilterer !filterText with
         | Some(parsedExpressions) ->
@@ -90,17 +91,13 @@ let getCurrentUISettings() =
         | None ->
             lerr "Parsing filters"
             Brushes.Salmon, fun _ -> false
-    WpfUtils.dispatchMessage wrap (fun _ -> filterCtl.Background <- color)
+    runOnUIThread (fun _ -> filterCtl.Background <- color)
     { ShowOnlyLinkPart = showOnlyLinkPart
       Filter = { ShowHidden = settings.ShowFilteredItems; FilterOutRule = statusFilterer } }
 
 let setPanelsVisibility () =
-    imagesHolder.Visibility <- match settings.PreviewPanelVisible with 
-                               | true -> Visibility.Visible
-                               | false -> Visibility.Collapsed
-    detailsHolder.Visibility <- match not settings.PreviewPanelVisible with 
-                                | true -> Visibility.Visible
-                                | false -> Visibility.Collapsed
+    imagesHolder.Visibility <-  if settings.PreviewPanelVisible then Visibility.Visible else Visibility.Collapsed
+    detailsHolder.Visibility <- if settings.PreviewPanelVisible then Visibility.Collapsed else Visibility.Visible
 let switchPanels () =
     settings.PreviewPanelVisible <- not settings.PreviewPanelVisible
 let setWindowProperties () =
@@ -110,10 +107,16 @@ let setWindowProperties () =
     window.Width <- settings.WindowWidth
     window.Height <- settings.WindowHeight
 let showHideFindPanel () =
-    if findPanel.Visibility = Visibility.Visible then
-        findPanel.Visibility <- Visibility.Collapsed
-        focusTweets()
+    if inFindMode then
+        if find.IsFocused then
+            findPanel.Visibility <- Visibility.Collapsed
+            inFindMode <- not inFindMode
+            focusTweets()
+        else
+            // the only situation when only focus is changed
+            find.Focus() |> ignore
     else
+        inFindMode <- not inFindMode
         findPanel.Visibility <- Visibility.Visible
         find.Focus() |> ignore
 
@@ -140,7 +143,7 @@ let resolveUrls () =
                     | true, v -> 
                            do! v.StatusToDisplay.ExpandUrls()
                            let currentUISettings = getCurrentUISettings ()
-                           WpfUtils.dispatchMessage wrap (fun _ -> FilterAwareConversation.updateText currentUISettings  v)
+                           runOnUIThread (fun _ -> FilterAwareConversation.updateText currentUISettings  v)
                     | _  -> ()
             }
         let ids = controlsCache.Keys |> Seq.sort |> Seq.toList
@@ -217,7 +220,7 @@ window.Loaded.Add(fun _ ->
         let rec asyncLoop() =
             let limits = twitterLimits.GetLimitsString()
             ldbgp "limits: {0}" limits
-            WpfUtils.dispatchMessage limitCtl (fun r -> limitCtl.Text <- limits)
+            runOnUIThread (fun r -> limitCtl.Text <- limits)
             async { do! Async.Sleep(2500) } |> Async.RunSynchronously
             asyncLoop()
         asyncLoop()
@@ -229,7 +232,7 @@ window.Loaded.Add(fun _ ->
     .Throttle(TimeSpan.FromMilliseconds(800.))
     .DistinctUntilChanged()
     .Subscribe(fun _ -> 
-        WpfUtils.dispatchMessage limitCtl (fun r -> settings.LastFilter <- filterCtl.Text)
+        runOnUIThread (fun r -> settings.LastFilter <- filterCtl.Text)
         refresh()
     ) |> ignore
 find.KeyDown
@@ -249,6 +252,7 @@ find.KeyDown
             setAppStateCount ()
             UIState.addDone()
             refresh ()
+            runOnUIThread (fun _ -> focusTweets())
         } |> Async.Start   
     ) |> ignore
 
@@ -265,31 +269,6 @@ let goUp () =
             |> PreviewsState.userStatusesState.AddStatuses
         refresh() 
     } |> Async.Start
-
-//contentGrid.MouseDoubleClick.Add(fun _ -> switchPanes () )
-//contentGrid.PreviewDoubleClick.Add(fun _ -> switchPanes () )
-//imagesHolder.MouseRightButtonUp.Add(fun _ -> switchPanes () )
-//detailsHolder.MouseRightButtonUp.Add(fun _ -> switchPanes () )
-
-//http://stackoverflow.com/questions/5228364/reactive-framework-doubleclick
-//http://stackoverflow.com/questions/1274378/cleanest-single-click-double-click-handling-in-silverlight
-// nefunguje
-//(contentGrid.PreviewMouseDown :> IObservable<_>)
-//   .TimeInterval()
-//   .Subscribe(fun (evt:TimeInterval<Input.MouseButtonEventArgs>) -> if evt.Interval.TotalMilliseconds < 300. then switchPanes ())
-//   |> ignore
-//(window.PreviewMouseDown :> IObservable<_>)
-//   .TimeInterval()
-//   .Subscribe(fun (evt:TimeInterval<Input.MouseButtonEventArgs>) -> if evt.Interval.TotalMilliseconds < 300. then switchPanes ())
-//   |> ignore
-//(imagesHolder.MouseLeftButtonDown :> IObservable<_>).Merge(
-//(detailsHolder.MouseLeftButtonDown :> IObservable<_>))
-//   .TimeInterval()
-//   .Subscribe(
-//      fun (evt:TimeInterval<Input.MouseButtonEventArgs>) -> 
-//         if evt.Interval.TotalMilliseconds < 300. then switchPanes ()
-//   )
-//   |> ignore
 
 let negateShowHide (menuItem:MenuItem) ()=
     settings.ShowFilteredItems <- not settings.ShowFilteredItems
