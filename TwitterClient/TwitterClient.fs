@@ -13,6 +13,7 @@ open DisplayStatus
 open StatusXmlProcessors
 open SubscriptionsConfig
 open System.Threading
+open UIRefresher
 
 OAuth.checkAccessTokenFile()
 
@@ -40,20 +41,14 @@ let clearOnFind = window.FindName("clearOnFind") :?> CheckBox
 
 let runOnUIThread fn =
     WpfUtils.dispatchMessage window fn
-let setAppState state = 
-    runOnUIThread (fun _ -> appStateCtl.Text <- state)
-let setAppState1 format p1 = 
-    String.Format(format, [|p1|]) |> setAppState
-let setAppState2 (format:string) p1 p2 = 
-    String.Format(format, p1, p2) |> setAppState
-let setAppStateCount () = 
-    setAppState (UIState.getAppStrState())
-let setCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) = 
-    let filtered = filterStatusInfos |> List.fold (fun count curr -> if curr.FilterInfo.Filtered then count+1 else count) 0
-    UIState.setCounts count filtered
 let focusTweets() =
     if imagesHolder.Visibility = Visibility.Visible then scrollImages.Focus() |> ignore
     else scrollDetails.Focus() |> ignore
+let setAppState = UIRefresher.setAppState window appStateCtl
+let setAppState1 format p1 = 
+    String.Format(format, [|p1|]) |> setAppState
+let setAppStateCount () = 
+    setAppState (UIState.getAppStrState())
 
 let settings = new ClientSettings.MySettings()
 let mutable showOnlyLinkPart = true
@@ -66,15 +61,6 @@ ExtraProcessors.Processors <- [ExtraProcessors.Url.ParseShortUrlsAndStore; Extra
 WpfUtils.urlResolver <- new UrlResolver.UrlResolver(MediaDbInterface.urlsAccess)
 
 twitterLimits.Start()
-
-let fillDetails uiSettings (statuses: statusInfo list) = 
-    let toDisplay = UIModel.FilterAwareConversation.GetModel uiSettings statuses
-    DisplayStatus.FilterAwareConversation.fill details uiSettings toDisplay
-let fillPictures uiSettings (statuses: statusInfo list) =  
-    let toDisplay = UIModel.LitlePreview.GetModel uiSettings statuses
-    setCount statuses.Length toDisplay
-    setAppStateCount ()
-    DisplayStatus.LitlePreview.fill wrap toDisplay
 
 // status downloaded from Twitter
 Twitter.NewStatusDownloaded 
@@ -120,67 +106,9 @@ let showHideFindPanel () =
         findPanel.Visibility <- Visibility.Visible
         find.Focus() |> ignore
 
-let controlsCache = new System.Collections.Concurrent.ConcurrentDictionary<Int64, WpfUtils.conversationNodeControlsInfo>()
-let fillCache items = 
-    let addToCache (item:WpfUtils.conversationNodeControlsInfo) = 
-        let id = item.StatusToDisplay.StatusInfo.LogicalStatusId()
-        controlsCache.[id] <- item
-    controlsCache.Clear()
-    ldbg "CURLS: Clearing ctls cache"
-    items |> List.map (fun (mainCtls, statusesCtls) -> statusesCtls)
-          |> List.concat
-          |> List.iter addToCache
-    lastRefresh <- DateTime.Now
-    ldbgp2 "CURLS: update last refresh to {0}, cache size: {1}" lastRefresh controlsCache.Count
-
-let resolveUrls () = 
-    async {
-        let started = DateTime.Now
-        linfop2 "CURLS: Starting resolving urls from {0}, thread id: {1}" started Thread.CurrentThread.ManagedThreadId
-        let expandControlUrls id =
-            async { 
-                match controlsCache.TryGetValue(id) with
-                    | true, v -> 
-                           do! v.StatusToDisplay.ExpandUrls()
-                           let currentUISettings = getCurrentUISettings ()
-                           runOnUIThread (fun _ -> FilterAwareConversation.updateText currentUISettings  v)
-                    | _  -> ()
-            }
-        let ids = controlsCache.Keys |> Seq.sort |> Seq.toList
-        linfop2 "CURLS: Count of ids to resolve: {0}, thread id {1}" ids.Length Thread.CurrentThread.ManagedThreadId 
-
-        for id in ids do
-            if started >= lastRefresh then
-                do! expandControlUrls id
-            
-        linfop2 "CURLS: resolving urls ended from {0}, thread id: {1}" started Thread.CurrentThread.ManagedThreadId
-
-    } |> Async.Start
-
-let refresh =
-    let refresher = 
-        MailboxProcessor.Start(fun mbox ->
-            let rec loop () = async {
-                let! msg = mbox.Receive()
-                let list,trees = PreviewsState.userStatusesState.GetStatuses()
-                ldbgp2 "CLI: Count of statuses: {0}/{1}" list.Length trees.Length
-
-                ImagesSource.ensureStatusesImages trees |> ignore
-                ldbg "CLI: Refreshing panels"
-
-                let uiSettings = getCurrentUISettings()
-                
-                let filterStatusInfos = fillPictures uiSettings list
-
-                let detailsCtls = fillDetails uiSettings trees
-                fillCache detailsCtls
-
-                resolveUrls ()
-                ldbg "CLI: Refresh done"
-                return! loop()
-            }
-            loop ())
-    fun () -> refresher.Post("")
+let refresh = 
+    let agent = RefresherAgent(window, wrap, details, appStateCtl)
+    fun () -> agent.Refresh(getCurrentUISettings())
 
 
 
@@ -268,7 +196,6 @@ let goUp () =
             | Some(id) -> linfop "first status id is {0}" id
                           id
         StatusDb.statusesDb.GetTimelineStatusesBefore(Utils.Settings.UpCount,firstStatusId)
-            |> ImagesSource.ensureStatusesImages
             |> PreviewsState.userStatusesState.AddStatuses
         refresh() 
     } |> Async.Start

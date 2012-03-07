@@ -159,7 +159,7 @@ twitterLimits.Start()
 
 window.Loaded.Add(fun _ ->
     // status added to tree
-    StatusesReplies.StatusAdded |> Event.add (ImagesSource.ensureStatusImage >> ignore)
+    StatusesReplies.StatusAdded |> Event.add ImagesSource.ensureStatusImage
     // show what status is loaded
     //StatusesReplies.LoadingStatusReplyTree 
     //    |> Event.add (fun status -> setState (sprintf "Loading %s - %d" status.UserName status.StatusId))
@@ -174,8 +174,8 @@ window.Loaded.Add(fun _ ->
     async {
         setState "Reading.."
         let statuses = readStatuses()
+        ImagesSource.ensureStatusesImages statuses
         statuses
-            |> ImagesSource.ensureStatusesImages
             |> Seq.iteri (fun i sInfo -> setState (sprintf "Reading status %i" i)
                                          let status = sInfo.Status
                                          sInfo |> StatusesReplies.loadSavedReplyTree
@@ -191,9 +191,12 @@ window.Loaded.Add(fun _ ->
 // add statuses, that were not visible, because they hadn't any children, but now, they got new children through 
 // all the searches
 let addNewlyFoundConversations() =
-    readStatuses() 
+    let statuses = 
+        readStatuses() 
         |> Seq.filter (fun sInfo -> not (ConversationState.conversationsState.ContainsStatus(sInfo.StatusId())))
+    statuses
         |> ImagesSource.ensureStatusesImages
+    statuses
         |> Seq.sortBy (fun sInfo -> sInfo.StatusId())   // sort ascending, because the statuses are added to the beginning -> makes descending order
         |> Seq.iter (fun sInfo -> sInfo |> StatusesReplies.loadSavedReplyTree
                                         |> ConversationState.conversationsState.AddConversation

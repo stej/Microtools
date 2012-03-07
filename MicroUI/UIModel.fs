@@ -94,6 +94,7 @@ module LitlePreview =
     let GetModel (settings:UISettingsDescriptor) statuses : StatusInfoToDisplay list =
         let visibilityDecider = new CommonConversationHelpers.ConversationStatusVisibilityDecider(settings.Filter.ShowHidden)
 
+        // todo: async
         statuses 
         |> Seq.toList
         |> List.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))
@@ -104,6 +105,7 @@ module FilterAwareConversation =
     let GetModel (settings:UISettingsDescriptor) statuses : StatusInfoToDisplay list =
         let visibilityDecider = new CommonConversationHelpers.ConversationStatusVisibilityDecider(settings.Filter.ShowHidden)
 
+         // todo: async
         statuses 
         |> Seq.toList
         |> List.map (fun sInfo -> (sInfo, StatusFunctions.GetNewestDisplayDateFromConversation sInfo))

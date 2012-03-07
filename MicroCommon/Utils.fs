@@ -3,6 +3,7 @@
 open System
 open System.Threading
 open System.Xml
+open Microsoft.FSharp.Control.WebExtensions
 
 log4net.Config.XmlConfigurator.Configure()
 let private logger =  log4net.LogManager.GetLogger("loggerdefault");
@@ -92,8 +93,11 @@ let TwitterDateOrDefault (value:string) =
         groups.["s"].Value |> IntOrDefault,
         DateTimeKind.Utc)
 let BoolOrDefault deflt (value:string) =
-    try Convert.ToBoolean(value)
-    with ex -> deflt
+    if String.IsNullOrEmpty(value) then 
+        deflt
+    else
+        try Convert.ToBoolean(value)
+        with ex -> deflt
 
 let private urlShortenerRegex = new System.Text.RegularExpressions.Regex @"^(https?://([^./]+\.)+\w+)/?(?<rest>.*)"
 let shortenUrlToDomain (url:string) = 
@@ -124,6 +128,16 @@ let isValidRegex regex =
         true
     with _ ->
         false
+
+let AsyncDownloadData uri = 
+    // http://fssnip.net/6d
+    let w = new System.Net.WebClient()
+    Async.FromContinuations(fun (cont, econt, ccont) ->
+       w.DownloadDataCompleted.Add(fun res ->
+         if res.Error <> null then econt res.Error
+         elif res.Cancelled then ccont (new OperationCanceledException())
+         else cont res.Result)
+       w.DownloadDataAsync(uri))
         
 (*
 // by Tomas Petricek

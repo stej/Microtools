@@ -25,17 +25,15 @@ let private imageInCache url user =
     File.Exists(imagePath)
     
 let private downloadImage (url:string) user =
-    try 
-      let wc = new System.Net.WebClient()
-      let image = wc.DownloadData(url)
-      let imagePath = getImagePathFromUrl url user
-      File.WriteAllBytes(imagePath, image)
-    with ex -> 
-      lerrex ex (sprintf "Unable to download image %s" url)
-    
-//let getImagePathByParams url user =
-//    getImagePathFromUrl url user
-    
+    async {
+        try 
+            let! image = AsyncDownloadData (new Uri(url))
+            let imagePath = getImagePathFromUrl url user
+            File.WriteAllBytes(imagePath, image)
+        with ex -> 
+            lerrex ex (sprintf "Unable to download image %s" url)
+    }
+
 let getImagePath (status:Status.status) =
     let (url, user) = status.UserProfileImage, status.UserName
     if url = Status.emptyStatusUserProfileImage then
@@ -43,23 +41,31 @@ let getImagePath (status:Status.status) =
     else
         getImagePathFromUrl url user
     
+let asyncEnsureStatusImage (status: Status.status) =
+    async {
+        let (url, user) = status.UserProfileImage, status.UserName
+        if url = Status.emptyStatusUserProfileImage then
+            ()
+        else if not (imageInCache url user) then
+            do! downloadImage url user
+        return status
+    }
 let ensureStatusImage (status: Status.status) =
-    let (url, user) = status.UserProfileImage, status.UserName
-    if url = Status.emptyStatusUserProfileImage then
-        ()
-    else if not (imageInCache url user) then
-        downloadImage url user
-    status
-//let ensureStatusImageNoRet (status: Status.status) =
-//    ensureStatusImage status |> ignore
+    asyncEnsureStatusImage status |> Async.RunSynchronously |> ignore
 
+let asyncEnsureStatusesImages (conversations: Status.statusInfo seq) =
+    let flat = conversations
+                |> StatusFunctions.Flatten
+                |> Seq.toList
+    async {
+        for sInfo in flat do
+            let status = sInfo.Status
+            let! tmp = asyncEnsureStatusImage status
+            ()
+    }
 let ensureStatusesImages (conversations: Status.statusInfo seq) =
-    conversations
-        |> StatusFunctions.Flatten
-        |> Seq.toList
-        |> List.iter (Status.extractStatus >> ensureStatusImage >> ignore)
-    conversations
-    
+    asyncEnsureStatusesImages conversations |> Async.Start   // todo: same thread?
+        
 linfop "Images directory is {0}" directory
 if not (Directory.Exists(directory)) then 
     linfop "Creating {0}" directory
