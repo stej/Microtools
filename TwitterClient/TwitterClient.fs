@@ -47,8 +47,6 @@ let focusTweets() =
 let setAppState = UIRefresher.setAppState window appStateCtl
 let setAppState1 format p1 = 
     String.Format(format, [|p1|]) |> setAppState
-let setAppStateCount () = 
-    setAppState (UIState.getAppStrState())
 
 let settings = new ClientSettings.MySettings()
 let mutable showOnlyLinkPart = true
@@ -106,23 +104,12 @@ let showHideFindPanel () =
         findPanel.Visibility <- Visibility.Visible
         find.Focus() |> ignore
 
-let refresh = 
+let refreshWithModel, maybeRefresh, refresh = 
     let agent = RefresherAgent(window, wrap, details, appStateCtl)
-    fun () -> agent.Refresh(getCurrentUISettings())
+    (fun asyncModelGet -> agent.Refresh(getCurrentUISettings(), asyncModelGet)),
+    (fun asyncModelGet -> agent.MaybeRefresh(getCurrentUISettings(), asyncModelGet)),
+    (fun () -> agent.Refresh(getCurrentUISettings(), async{ () }))
 
-
-
-let StatusesLoadedEvent = new Event<statusInfo list option>()
-let StatusesLoadedPublished = StatusesLoadedEvent.Publish
-
-// event is not neede actually, maybe convert back..
-StatusesLoadedPublished |> Event.add (fun list ->
-    UIState.addDone() 
-    match list with
-    | Some(l) when l.Length > 0 -> l |> PreviewsState.userStatusesState.AddStatuses
-                                   refresh()
-    | _                         -> ()
-)
 window.Loaded.Add(fun _ ->
     setAppState "Loading.."
     let rec asyncloop checkerfce statusesType = 
@@ -130,14 +117,16 @@ window.Loaded.Add(fun _ ->
             while inFindMode do
                 do! Async.Sleep(1000)   // sleep second, don't update in edit mode
 
-            UIState.addWorking()
-            setAppStateCount ()
-
-            let! statuses = checkerfce() 
-            statuses |> Twitter.PersonalStatuses.saveStatuses statusesType
-            statuses |> StatusesLoadedEvent.Trigger 
-
-            setAppStateCount ()    // at least show that we are done..
+            let getstatuses = async {
+                            let! statuses = checkerfce() 
+                            statuses |> Twitter.PersonalStatuses.saveStatuses statusesType
+                            match statuses with
+                            | Some(l) when l.Length > 0 -> PreviewsState.userStatusesState.AddStatuses l
+                                                           return true
+                            | _                         -> return false
+            }
+            maybeRefresh getstatuses
+            
             do! Async.Sleep(Utils.Settings.TwitterClientFetchInterval*1000)
             return! asyncloop checkerfce statusesType
         }
@@ -159,33 +148,27 @@ window.Loaded.Add(fun _ ->
 )
 
 // react on changes in filter; what is this cast? http://stackoverflow.com/questions/5131372/how-to-convert-a-wpf-button-click-event-into-observable-using-rx-and-f
-(filterCtl.TextChanged :> IObservable<_>)
-    .Throttle(TimeSpan.FromMilliseconds(800.))
-    .DistinctUntilChanged()
-    .Subscribe(fun _ -> 
-        runOnUIThread (fun r -> settings.LastFilter <- filterCtl.Text)
+filterCtl.KeyDown.Add(fun args ->
+    if args.Key = Key.Enter then
+        settings.LastFilter <- filterCtl.Text
         refresh()
-    ) |> ignore
-find.KeyDown
-    .Where(fun (src:KeyEventArgs) -> src.Key = Key.Enter )
-    .Subscribe(fun _ -> 
+)
+find.KeyDown.Add(fun args -> 
+    if args.Key = Key.Enter then
         // start async, because this handler runs on UI thread.. the app would not be responsive
         // and furthermore some UI state is reported during adding statuses which caused deadlocks..
         let textToFind = find.Text
         let clear = clearOnFind.IsChecked.HasValue && clearOnFind.IsChecked.Value
         async { 
-            UIState.addWorking()
-            setAppStateCount ()
+            // todo: async
             TweetsFinder.find textToFind 
             |> (fun stats -> if clear then PreviewsState.userStatusesState.ClearStatuses ()
                              stats)
             |> PreviewsState.userStatusesState.AddStatusesWithoutDownload
-            setAppStateCount ()
-            UIState.addDone()
-            refresh ()
+            // todo: UI stuff
             runOnUIThread (fun _ -> focusTweets())
-        } |> Async.Start   
-    ) |> ignore
+        } |> refreshWithModel
+)
 
 let goUp () = 
     async {
@@ -195,10 +178,10 @@ let goUp () =
                           Int64.MaxValue
             | Some(id) -> linfop "first status id is {0}" id
                           id
-        StatusDb.statusesDb.GetTimelineStatusesBefore(Utils.Settings.UpCount,firstStatusId)
-            |> PreviewsState.userStatusesState.AddStatuses
-        refresh() 
-    } |> Async.Start
+        let! statuses = StatusDb.statusesDb.AsyncGetTimelineStatusesBefore(Utils.Settings.UpCount,firstStatusId)
+        statuses |> PreviewsState.userStatusesState.AddStatuses
+        
+    } |> refreshWithModel
 
 let negateShowHide (menuItem:MenuItem) ()=
     settings.ShowFilteredItems <- not settings.ShowFilteredItems
@@ -235,13 +218,13 @@ do
         window.Topmost <- settings.OnTop
         menuItem.IsChecked <- settings.OnTop
     WpfUtils.Commands.bindCommand Key.H (switchPanels>>setPanelsVisibility>>focusTweets) window menuSwitch
-    WpfUtils.Commands.bindCommand Key.I (negateShowHide menuShowFiltered>>refresh>>focusTweets) window menuShowFiltered
-    WpfUtils.Commands.bindCommand Key.C (PreviewsState.userStatusesState.ClearStatuses>>refresh>>focusTweets) window menuClear
+    WpfUtils.Commands.bindCommand Key.I (negateShowHide menuShowFiltered>>focusTweets>>refresh) window menuShowFiltered
+    WpfUtils.Commands.bindCommand Key.C (PreviewsState.userStatusesState.ClearStatuses>>focusTweets>>refresh) window menuClear
     WpfUtils.Commands.bindCommand Key.U (goUp>>focusTweets) window menuUp
     WpfUtils.Commands.bindCommand Key.T (negateTopmost menuTop>>focusTweets) window menuTop
     WpfUtils.Commands.bindClick MouseAction.LeftDoubleClick (switchPanels>>setPanelsVisibility>>focusTweets) window null
-    WpfUtils.Commands.bindCommand Key.Add (WpfUtils.UISize.zoomIn>>refresh>>focusTweets) window null
-    WpfUtils.Commands.bindCommand Key.Subtract (WpfUtils.UISize.zoomOut>>refresh>>focusTweets) window null
+    WpfUtils.Commands.bindCommand Key.Add (WpfUtils.UISize.zoomIn>>focusTweets>>refresh) window null
+    WpfUtils.Commands.bindCommand Key.Subtract (WpfUtils.UISize.zoomOut>>focusTweets>>refresh) window null
     WpfUtils.Commands.bindCommand Key.F (showHideFindPanel) window null
 
     setPanelsVisibility ()

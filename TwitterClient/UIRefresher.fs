@@ -22,7 +22,6 @@ let setAppState2 window tb (format:string) p1 p2 =
 let setAppStateCount window tb = 
     setAppState window tb (UIState.getAppStrState())
 
-//let private controlsCache = new ConcurrentDictionary<Int64, WpfUtils.conversationNodeControlsInfo>()
 let private fillCache items = 
     let cache = new ConcurrentDictionary<Int64, WpfUtils.conversationNodeControlsInfo>()
     let addToCache (item:WpfUtils.conversationNodeControlsInfo) = 
@@ -62,6 +61,9 @@ type private RefreshMsg =
     
 type RefresherAgent(window : Window, wrapper : WrapPanel, details : StackPanel, appStateCtl : TextBlock) =  
     let mutable cancel : CancellationTokenSource = null
+
+    let cts = ref (new CancellationTokenSource())
+    let syncContext = System.Threading.SynchronizationContext.Current
     
     let setCount count (filterStatusInfos: WpfUtils.StatusInfoToDisplay list) = 
         let filtered = filterStatusInfos |> List.fold (fun count curr -> if curr.FilterInfo.Filtered then count+1 else count) 0
@@ -80,47 +82,50 @@ type RefresherAgent(window : Window, wrapper : WrapPanel, details : StackPanel, 
         
     let updateStatusText window uiSettings ctl =
         WpfUtils.dispatchMessage window (fun _ -> DisplayStatus.FilterAwareConversation.updateText uiSettings ctl)
-    let mbox = 
-        MailboxProcessor.Start(fun mbx ->
-            let rec loop () = async {
-                let! msg = mbx.Receive()
-                match msg with
-                | RefreshMsg(uiSettings, chnl) ->
-                    let cancelSrc = new CancellationTokenSource()
-                    chnl.Reply(cancelSrc)
-                    let updateui = 
-                        async {
-                            let! list,trees = PreviewsState.userStatusesState.AsyncGetStatuses()
-                            ldbgp2 "CLI: Count of statuses: {0}/{1}" list.Length trees.Length
+    let updateui uiSettings = 
+        async {
+            let! list,trees = PreviewsState.userStatusesState.AsyncGetStatuses()
+            ldbgp2 "CLI: Count of statuses: {0}/{1}" list.Length trees.Length
 
-                            do! ImagesSource.asyncEnsureStatusesImages trees
-                            ldbg "CLI: Refreshing panels"
+            do! ImagesSource.asyncEnsureStatusesImages trees
+            ldbg "CLI: Refreshing panels"
                             
-                            let filterStatusInfos = fillPictures uiSettings list
-                            let detailsCtls = fillDetails uiSettings trees
+            let filterStatusInfos = fillPictures uiSettings list
+            let detailsCtls = fillDetails uiSettings trees
                             
-                            // todo: resolve urls
-                            let ctls = fillCache detailsCtls
-                            let textUpdater = updateStatusText window uiSettings
-                            do! resolveUrls ctls textUpdater
-                            ldbg "CLI: Refresh done"
-                        }
-                    //let asyncUpdate = Async.TryCancelled(updateui, (fun c -> printfn "refresh cancelled"))
-                    //Async.RunSynchronously(asyncUpdate, -1, cancelSrc.Token)
-                    // I consider this still as a workaround.. 
-                    // tried to find better solution here: http://stackoverflow.com/questions/9601299/async-trycancelled-doesnt-work-with-async-runsynchronously
-                    try
-                        Async.RunSynchronously(updateui, -1, cancelSrc.Token)
-                    with
-                        | :? OperationCanceledException -> linfo "refresh cancelled"
-                    return! loop()
-            }
-            loop ())
-    do
-        mbox.Error.Add(fun exn -> lerrex exn "Error in limits refresher")
-    member x.Refresh(uiSettings) = 
-        if cancel <> null then
-            cancel.Cancel()
-            cancel.Dispose()
-        cancel <- mbox.PostAndReply(fun reply -> RefreshMsg(uiSettings, reply))
-        ldbg "Refresh at end"
+            // todo: resolve urls
+            let ctls = fillCache detailsCtls
+            let textUpdater = updateStatusText window uiSettings
+            do! resolveUrls ctls textUpdater
+            ldbg "CLI: Refresh done"
+        }
+
+    member x.Refresh(uiSettings, modelGetter) = 
+        (!cts).Cancel()
+        cts := new CancellationTokenSource()
+        let update = async { 
+                        UIState.addWorking()
+                        setAppStateCount window appStateCtl
+
+                        do! Async.SwitchToThreadPool()
+
+                        do! modelGetter
+                        do! updateui uiSettings
+                     }
+        let showDone () =
+            UIState.addDone()
+            setAppStateCount window appStateCtl
+        Async.StartWithContinuations(update,
+                                     (fun _ -> showDone()),
+                                     (fun e -> ()),
+                                     (fun canc -> linfo "Cancelled..."
+                                                  showDone()),
+                                     (!cts).Token)
+
+    member x.MaybeRefresh(uiSettings, modelGetter) = 
+        // todo: use bool from modelGetter 
+        // false -> don't update UI
+        let getter = async { let! tmp = modelGetter
+                             () 
+                     }
+        x.Refresh(uiSettings, getter)

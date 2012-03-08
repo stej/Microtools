@@ -244,7 +244,7 @@ type StatusesDbState(file) =
             executeSelectStatuses cmd |> List.map ((addRetweetInfo conn) >> dbStatus2statusInfo)
         )
     let findStatuses (conditions: (string*string*string) list) =
-        ldbgp "findSTatuses {0}" conditions
+        linfop "FindStatuses {0}" conditions
         if conditions.IsEmpty then
             []
         else
