@@ -349,11 +349,11 @@ module Commands =
             | :? KeyEventArgs as args -> _key = args.Key
             | _ -> false
 
-    let bindCommand key fn (window:Window) (menuItem:MenuItem) =
+    let bindCommand key modifiers fn (window:Window) (menuItem:MenuItem) =
         //http://stackoverflow.com/questions/1361350/keyboard-shortcuts-in-wpf
         let rt = new RoutedCommand()
         //let gesture = new AnyKeyGesture(key)      // fires when i type the key in textbox -- not desired -> added CTRL modifier
-        let gesture = new KeyGesture(key, ModifierKeys.Control)
+        let gesture = new KeyGesture(key, modifiers)
         rt.InputGestures.Add(gesture) |> ignore
         let commandBinding = new CommandBinding(rt, 
                                                 new ExecutedRoutedEventHandler(fun _ _ -> fn()))

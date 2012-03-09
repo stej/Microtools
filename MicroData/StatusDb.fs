@@ -500,6 +500,6 @@ type StatusesDbState(file) =
 
         member x.ReadStatusReplies(id:Int64) = mbox.PostAndReply(fun reply -> ReadStatusReplies(id, reply))
 
-        member x.Find(conditions) = mbox.PostAndReply(fun reply -> FindStatuses(conditions, reply))
+        member x.Find(conditions) = mbox.PostAndAsyncReply(fun reply -> FindStatuses(conditions, reply))
 
 let statusesDb = new StatusesDbState(fileName)

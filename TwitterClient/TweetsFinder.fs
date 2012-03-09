@@ -17,8 +17,10 @@ let private parseFindFilter filter =
     | None -> None
 
 let find filter =
-    match parseFindFilter filter with
-    | Some(conditions) ->
-        DbInterface.dbAccess.Find(conditions)
-    | None ->
-        Seq.empty
+    async {
+        match parseFindFilter filter with
+        | Some(conditions) ->
+            return! DbInterface.dbAccess.Find(conditions)
+        | None ->
+            return Seq.empty
+    }

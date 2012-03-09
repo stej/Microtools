@@ -13,7 +13,7 @@ type IStatusesDatabase =
     abstract SaveStatuses : statusInfo list -> unit
     abstract SaveStatus: statusInfo -> unit
     abstract ReadStatusReplies: int64 -> statusInfo seq
-    abstract Find : (string*string*string) list -> statusInfo seq    // bad interface description
+    abstract Find : (string*string*string) list -> Async<statusInfo seq>    // bad interface description
 
 let mutable dbAccess:IStatusesDatabase = 
     { new IStatusesDatabase with

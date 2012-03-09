@@ -44,6 +44,8 @@ let runOnUIThread fn =
 let focusTweets() =
     if imagesHolder.Visibility = Visibility.Visible then scrollImages.Focus() |> ignore
     else scrollDetails.Focus() |> ignore
+let focusFilter() =
+    filterCtl.Focus() |> ignore
 let setAppState = UIRefresher.setAppState window appStateCtl
 let setAppState1 format p1 = 
     String.Format(format, [|p1|]) |> setAppState
@@ -104,11 +106,10 @@ let showHideFindPanel () =
         findPanel.Visibility <- Visibility.Visible
         find.Focus() |> ignore
 
-let refreshWithModel, maybeRefresh, refresh = 
+let refreshWithModel, refresh = 
     let agent = RefresherAgent(window, wrap, details, appStateCtl)
     (fun asyncModelGet -> agent.Refresh(getCurrentUISettings(), asyncModelGet)),
-    (fun asyncModelGet -> agent.MaybeRefresh(getCurrentUISettings(), asyncModelGet)),
-    (fun () -> agent.Refresh(getCurrentUISettings(), async{ () }))
+    (fun () -> agent.Refresh(getCurrentUISettings()))
 
 window.Loaded.Add(fun _ ->
     setAppState "Loading.."
@@ -125,7 +126,9 @@ window.Loaded.Add(fun _ ->
                                                            return true
                             | _                         -> return false
             }
-            maybeRefresh getstatuses
+            let! refreshWindow = getstatuses
+            if refreshWindow then
+                refresh ()
             
             do! Async.Sleep(Utils.Settings.TwitterClientFetchInterval*1000)
             return! asyncloop checkerfce statusesType
@@ -147,7 +150,6 @@ window.Loaded.Add(fun _ ->
     } |> Async.Start
 )
 
-// react on changes in filter; what is this cast? http://stackoverflow.com/questions/5131372/how-to-convert-a-wpf-button-click-event-into-observable-using-rx-and-f
 filterCtl.KeyDown.Add(fun args ->
     if args.Key = Key.Enter then
         settings.LastFilter <- filterCtl.Text
@@ -160,12 +162,11 @@ find.KeyDown.Add(fun args ->
         let textToFind = find.Text
         let clear = clearOnFind.IsChecked.HasValue && clearOnFind.IsChecked.Value
         async { 
-            // todo: async
-            TweetsFinder.find textToFind 
-            |> (fun stats -> if clear then PreviewsState.userStatusesState.ClearStatuses ()
-                             stats)
-            |> PreviewsState.userStatusesState.AddStatusesWithoutDownload
-            // todo: UI stuff
+            let! found = TweetsFinder.find textToFind 
+            if clear then 
+                PreviewsState.userStatusesState.ClearStatuses ()
+            PreviewsState.userStatusesState.AddStatusesWithoutDownload found
+
             runOnUIThread (fun _ -> focusTweets())
         } |> refreshWithModel
 )
@@ -217,15 +218,16 @@ do
         settings.OnTop <- not settings.OnTop
         window.Topmost <- settings.OnTop
         menuItem.IsChecked <- settings.OnTop
-    WpfUtils.Commands.bindCommand Key.H (switchPanels>>setPanelsVisibility>>focusTweets) window menuSwitch
-    WpfUtils.Commands.bindCommand Key.I (negateShowHide menuShowFiltered>>focusTweets>>refresh) window menuShowFiltered
-    WpfUtils.Commands.bindCommand Key.C (PreviewsState.userStatusesState.ClearStatuses>>focusTweets>>refresh) window menuClear
-    WpfUtils.Commands.bindCommand Key.U (goUp>>focusTweets) window menuUp
-    WpfUtils.Commands.bindCommand Key.T (negateTopmost menuTop>>focusTweets) window menuTop
+    WpfUtils.Commands.bindCommand Key.E ModifierKeys.Control (switchPanels>>setPanelsVisibility>>focusTweets) window menuSwitch
+    WpfUtils.Commands.bindCommand Key.I ModifierKeys.Control (negateShowHide menuShowFiltered>>focusTweets>>refresh) window menuShowFiltered
+    WpfUtils.Commands.bindCommand Key.C ModifierKeys.Control (PreviewsState.userStatusesState.ClearStatuses>>focusTweets>>refresh) window menuClear
+    WpfUtils.Commands.bindCommand Key.U ModifierKeys.Control (goUp>>focusTweets) window menuUp
+    WpfUtils.Commands.bindCommand Key.T ModifierKeys.Control (negateTopmost menuTop>>focusTweets) window menuTop
     WpfUtils.Commands.bindClick MouseAction.LeftDoubleClick (switchPanels>>setPanelsVisibility>>focusTweets) window null
-    WpfUtils.Commands.bindCommand Key.Add (WpfUtils.UISize.zoomIn>>focusTweets>>refresh) window null
-    WpfUtils.Commands.bindCommand Key.Subtract (WpfUtils.UISize.zoomOut>>focusTweets>>refresh) window null
-    WpfUtils.Commands.bindCommand Key.F (showHideFindPanel) window null
+    WpfUtils.Commands.bindCommand Key.Add ModifierKeys.Control (WpfUtils.UISize.zoomIn>>focusTweets>>refresh) window null
+    WpfUtils.Commands.bindCommand Key.Subtract ModifierKeys.Control (WpfUtils.UISize.zoomOut>>focusTweets>>refresh) window null
+    WpfUtils.Commands.bindCommand Key.F ModifierKeys.Control (showHideFindPanel) window null
+    WpfUtils.Commands.bindCommand Key.I (ModifierKeys.Control|||ModifierKeys.Shift) focusFilter window null
 
     setPanelsVisibility ()
     setWindowProperties ()

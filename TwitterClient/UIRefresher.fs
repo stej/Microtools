@@ -100,32 +100,36 @@ type RefresherAgent(window : Window, wrapper : WrapPanel, details : StackPanel, 
             ldbg "CLI: Refresh done"
         }
 
+    let showDone () =
+        UIState.addDone()
+        setAppStateCount window appStateCtl
+    let showWorking () =
+        UIState.addWorking()
+        setAppStateCount window appStateCtl
     member x.Refresh(uiSettings, modelGetter) = 
         (!cts).Cancel()
         cts := new CancellationTokenSource()
         let update = async { 
-                        UIState.addWorking()
-                        setAppStateCount window appStateCtl
+                        showWorking ()
 
                         do! Async.SwitchToThreadPool()
-
                         do! modelGetter
                         do! updateui uiSettings
                      }
-        let showDone () =
-            UIState.addDone()
-            setAppStateCount window appStateCtl
         Async.StartWithContinuations(update,
                                      (fun _ -> showDone()),
-                                     (fun e -> ()),
-                                     (fun canc -> linfo "Cancelled..."
+                                     (fun e -> lerrex e "Error in async update"),
+                                     (fun canc -> linfo "Cancelled in refresh ..."
                                                   showDone()),
                                      (!cts).Token)
 
-    member x.MaybeRefresh(uiSettings, modelGetter) = 
-        // todo: use bool from modelGetter 
-        // false -> don't update UI
-        let getter = async { let! tmp = modelGetter
-                             () 
+    member x.Refresh(uiSettings) = 
+        let update = async {
+                        showWorking ()
+                        do! updateui uiSettings
                      }
-        x.Refresh(uiSettings, getter)
+        Async.StartWithContinuations(update,
+                                     (fun _ -> showDone()),
+                                     (fun e -> lerrex e "Error in async update"),
+                                     (fun canc -> linfo "Cancelled in no model refresh..."
+                                                  showDone()))
